@@ -23,7 +23,10 @@ STOPWORDS = {
     'those', 'through', 'to', 'too', 'under', 'until', 'up', 'very', 'was', 'wasn', 'we', 'were',
     'what', 'when', 'where', 'which', 'while', 'who', 'whom', 'why', 'will', 'with', 'would', 'you',
     'your', 'yours', 'yourself', 'yourselves', 'tell', 'give', 'show', 'please', 'proper', 'answer',
-    'details', 'descriptive', 'descriptecd', 'desc', 'information', 'guide', 'steps'
+    'details', 'descriptive', 'descriptecd', 'desc', 'information', 'guide', 'steps',
+    'make', 'do', 'get', 'set', 'take', 'put', 'say', 'see', 'know', 'think', 'want', 'use',
+    'find', 'like', 'need', 'help', 'hi', 'hello', 'hey', 'joke', 'jokes', 'funny', 'story',
+    'stories', 'game', 'song', 'poem', 'write', 'sing'
 }
 
 # Domain-specific synonym expansions for Bangladesh e-GP terminology
@@ -70,7 +73,7 @@ class RetrievalService:
         q_lower = question.lower()
         raw_words = [w for w in re.findall(r'\w+', q_lower) if w not in STOPWORDS]
         if not raw_words:
-            raw_words = re.findall(r'\w+', q_lower)
+            return []
 
         expanded = list(raw_words)
         for term, syns in DOMAIN_SYNONYMS.items():
@@ -104,14 +107,22 @@ class RetrievalService:
                 score += 15.0
 
             # 1. Exact multi-word phrase match (huge boost)
+            matched_phrase = False
             for phrase in DOMAIN_SYNONYMS.keys():
                 if phrase in q_lower and phrase in text:
                     score += 8.0
+                    matched_phrase = True
+
+            # Check term coverage: chunk must contain at least 50% of query keywords unless grounded by intent/phrase
+            matched_words = [w for w in raw_words if re.search(r'\b' + re.escape(w) + r'\b', text)]
+            term_coverage = len(matched_words) / len(raw_words) if raw_words else 0.0
+
+            if term_coverage < 0.5 and not matched_phrase and not is_account_intent and not is_workflow_intent and not is_app_intent:
+                continue
 
             # 2. Raw keyword matches
-            for w in raw_words:
-                if re.search(r'\b' + re.escape(w) + r'\b', text):
-                    score += 3.0
+            for w in matched_words:
+                score += 3.0
 
             # 3. Expanded term matches
             for ew in expanded:
@@ -146,6 +157,11 @@ class RetrievalService:
         """
         if not self.load_index_if_needed():
             return "No manual index is loaded. Please run ingestion and index building first.", []
+
+        # Early guardrail: If text query has no substantive keywords and no image is attached
+        raw_words = [w for w in re.findall(r'\w+', question.lower()) if w not in STOPWORDS]
+        if not raw_words and image is None:
+            return "No relevant context found in manuals.", []
 
         # 1. FAISS Dense Retrieval
         if image is not None:
@@ -194,6 +210,11 @@ class RetrievalService:
                     }
 
         if not combined_scores:
+            return "No relevant context found in manuals.", []
+
+        # Filter out irrelevant noise (e.g. non-procurement queries like "make a joke")
+        raw_words = [w for w in re.findall(r'\w+', question.lower()) if w not in STOPWORDS]
+        if not kw_results and (not raw_words or max_faiss < 0.35):
             return "No relevant context found in manuals.", []
 
         # Sort and take top_k

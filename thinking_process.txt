@@ -421,3 +421,27 @@ Solution:
    - Added Streamlit runtime detection using 'get_script_run_ctx()'.
    - If not running inside Streamlit, it seamlessly launches 'python -m streamlit run' as a subprocess.
    - Both 'python streamlit_app.py' and 'streamlit run streamlit_app.py' now work seamlessly.
+
+--------------------------------------------------------------------------------
+20. OUT-OF-DOMAIN GUARDRAILS & GUIDELINE 4 IMPLEMENTATION
+--------------------------------------------------------------------------------
+Problem Analysis:
+When the user typed "make a joke", the RAG pipeline previously attempted to answer by
+retrieving unrelated manual chunks that happened to contain the generic verb "make"
+(e.g., "To make changes..."), and synthesized those contract signing steps as if they
+were a response to the joke request.
+
+Root Cause:
+1. Retrieval lacked early stopword/filler verb filtering; single word collision ("make")
+   achieved high normalized keyword ranking despite having zero procurement relevance.
+2. The LLM synthesis fallback lacked domain boundary checks and did not enforce Guideline 4
+   when context was irrelevant.
+
+Solution Applied:
+1. Expanded STOPWORDS to filter common verbs ('make', 'do', 'joke', 'story', 'game', etc.).
+2. Enforced a 50% keyword coverage requirement in 'retrieval_service.py' for non-phrase matches.
+3. Added proactive intent classification in 'llm_service.py':
+   - Greetings receive an official welcome.
+   - Entertainment requests are politely declined.
+   - Unfound questions strictly output Guideline 4:
+     "I could not find information regarding this in the current e-GP manuals. For specific queries, please contact the e-GP Helpdesk at helpdesk@eprocure.gov.bd or call +880-960-4224224."

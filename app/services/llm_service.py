@@ -178,11 +178,8 @@ class LLMService:
         """
         if not context or "No relevant context" in context or "No manual index" in context:
             return (
-                "I could not find information regarding this question in the loaded e-GP manual.\n\n"
-                "For direct support, please contact the official Bangladesh e-GP Helpdesk:\n"
-                "- **Helpdesk Email**: `helpdesk@eprocure.gov.bd`\n"
-                "- **Helpline**: +880-960-4224224\n"
-                "- **Office Hours**: Sunday to Thursday, 9:00 AM to 5:00 PM"
+                "I could not find information regarding this in the current e-GP manuals. "
+                "For specific queries, please contact the e-GP Helpdesk at helpdesk@eprocure.gov.bd or call +880-960-4224224."
             )
 
         q_lower = question.lower().strip()
@@ -343,6 +340,7 @@ class LLMService:
     def generate_answer(self, question: str, context: str, image: Optional[str] = None) -> str:
         """
         Generates an answer using Qwen2.5-VL-72B-Instruct with the provided context.
+        Enforces strict domain guardrails, greeting handling, and Guideline 4.
         
         Args:
             question: The user query.
@@ -352,6 +350,34 @@ class LLMService:
         Returns:
             Chatbot answer text.
         """
+        q_clean = re.sub(r'[^\w\s]', '', question.lower()).strip()
+        tokens = q_clean.split()
+
+        # 1. Casual Greetings Guardrail
+        greetings = {"hi", "hello", "hey", "greetings", "good morning", "good afternoon", "good evening", "assalamu alaikum", "salam"}
+        if q_clean in greetings or (len(tokens) <= 2 and any(t in greetings for t in tokens)):
+            return (
+                "Hello! I am your official e-GP (electronic Government Procurement) Manual Assistant.\n\n"
+                "I am here to guide you through procurement guidelines, tender submissions, Annual Procurement Plan (APP) preparation, workflow approvals, and account setup.\n\n"
+                "How can I assist you with the e-GP portal today?"
+            )
+
+        # 2. Out-of-Domain / Entertainment Guardrail (e.g. "make a joke", "tell a story")
+        off_topic_triggers = {"joke", "jokes", "funny", "story", "stories", "poem", "song", "sing", "game", "weather", "cricket", "football", "movie"}
+        if any(t in off_topic_triggers for t in tokens):
+            return (
+                "I am the official e-GP (electronic Government Procurement) Manual Assistant.\n\n"
+                "I am strictly dedicated to providing accurate, cited procedural guidance on government procurement rules, system workflows, and user manuals. I cannot fulfill entertainment requests such as telling jokes.\n\n"
+                "Please feel free to ask any question regarding official e-GP procedures or portal operations."
+            )
+
+        # 3. Guideline 4: If context does not contain enough information
+        if not context or "No relevant context" in context or "No manual index" in context:
+            return (
+                "I could not find information regarding this in the current e-GP manuals. "
+                "For specific queries, please contact the e-GP Helpdesk at helpdesk@eprocure.gov.bd or call +880-960-4224224."
+            )
+
         # Mode 1: Local Transformers
         if self._mode == "local_transformers" and self._local_model is not None:
             try:

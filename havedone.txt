@@ -205,3 +205,15 @@ ALL DELIVERABLES SUCCESSFULLY COMPLETED AND VERIFIED.
        - Configured 'llm_service.py' to automatically detect 'HF_TOKEN' from either '.env' (locally) or 'st.secrets' (on Streamlit Cloud).
        - Automatically maps to serverless-compatible 'Qwen/Qwen2.5-72B-Instruct'.
        - Added fallback resilience: if token has no paid credits or fails, smart synthesis instantly generates the cited answer without crash.
+
+17. DOMAIN GUARDRAILS & GUIDELINE 4 ENFORCEMENT (November 2026 Update)
+   [x] Solved Hallucination / False Retrieval on Off-Topic Queries (e.g. 'make a joke'):
+       - Early Guardrail in 'retrieval_service.py':
+         * Added generic action verbs ('make', 'do', 'get', 'joke', 'story', 'game', etc.) to STOPWORDS.
+         * Enforced term coverage rule: a chunk must match at least 50% of substantive keywords to qualify as a keyword hit.
+         * When query has no substantive procurement keywords, retrieval immediately returns 'No relevant context found in manuals.' and empty sources list '[]'.
+       - Strict System Prompt & Guideline 4 Guardrails in 'llm_service.py':
+         * Casual greetings ('hi', 'hello', 'good morning') return a professional e-GP welcome.
+         * Out-of-domain entertainment requests ('make a joke', 'tell a story') are politely rejected, reiterating the bot's official mandate.
+         * Questions not found in the official manual strictly output Guideline 4:
+           "I could not find information regarding this in the current e-GP manuals. For specific queries, please contact the e-GP Helpdesk at helpdesk@eprocure.gov.bd or call +880-960-4224224."
