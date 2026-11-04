@@ -26,7 +26,8 @@ STOPWORDS = {
     'details', 'descriptive', 'descriptecd', 'desc', 'information', 'guide', 'steps',
     'make', 'do', 'get', 'set', 'take', 'put', 'say', 'see', 'know', 'think', 'want', 'use',
     'find', 'like', 'need', 'help', 'hi', 'hello', 'hey', 'joke', 'jokes', 'funny', 'story',
-    'stories', 'game', 'song', 'poem', 'write', 'sing'
+    'stories', 'game', 'song', 'poem', 'write', 'sing',
+    'user', 'users', 'pe', 'manual', 'manuals', 'portal', 'system', 'way'
 }
 
 # Domain-specific synonym expansions for Bangladesh e-GP terminology
@@ -43,11 +44,26 @@ DOMAIN_SYNONYMS = {
     'workflow': ['workflow', 'approved', 'checker', 'approver', 'flow', 'sub menu'],
     'annual procurement plan': ['app', 'annual procurement plan', 'procurement nature', 'package'],
     'app': ['annual procurement plan', 'procurement nature', 'package'],
+    'place tender': ['create tender', 'tender preparation', 'search app', 'published packages', 'screen d1', 'screen d2', 'screen d3'],
+    'place a tender': ['create tender', 'tender preparation', 'search app', 'published packages', 'screen d1', 'screen d2', 'screen d3'],
+    'place new tender': ['create tender', 'tender preparation', 'search app', 'published packages', 'screen d1', 'screen d2', 'screen d3'],
+    'create tender': ['create tender', 'tender preparation', 'search app', 'published packages', 'screen d1', 'screen d2', 'screen d3'],
+    'new tender': ['create tender', 'tender preparation', 'search app', 'screen d1', 'screen d2', 'screen d3'],
+    'tender creation': ['create tender', 'tender preparation', 'search app', 'published packages', 'screen d1', 'screen d2', 'screen d3'],
+    'delete tender': ['cancellation process', 'cancel tender', 'cancelled tab', 'screen d50', 'screen d77', 'cannot change it', 'delete row'],
+    'delete a tender': ['cancellation process', 'cancel tender', 'cancelled tab', 'screen d50', 'screen d77', 'cannot change it', 'delete row'],
+    'cancel tender': ['cancellation process', 'cancel tender', 'cancelled tab', 'screen d50', 'screen d77'],
+    'cancellation': ['cancellation process', 'cancel tender', 'cancelled tab', 'screen d50', 'screen d77'],
+    'corrigendum': ['corrigendum', 'amendment', 'notice tab', 'screen d49'],
+    'amendment': ['corrigendum', 'amendment', 'notice tab', 'screen d49'],
+    'retender': ['re-tendering', 're-tender', 'screen j5'],
+    're-tender': ['re-tendering', 're-tender', 'screen j5'],
     'tender': ['tender', 'notice', 'proposal', 'procuring entity', 'tenderer'],
-    'evaluation': ['evaluation', 'pec', 'toc', 'poc', 'technical', 'financial'],
+    'evaluation': ['evaluation', 'pec', 'toc', 'poc', 'technical', 'financial', 'screen g1'],
     'audit': ['audit', 'audit trail', 'log'],
     'cms': ['cms', 'contract management', 'measurement', 'invoice'],
     'my account': ['profile', 'view profile', 'edit profile', 'nid', 'mobile'],
+    'security': ['tender security', 'proposal security', 'bank guarantee'],
 }
 
 
@@ -75,6 +91,10 @@ class RetrievalService:
         if not raw_words:
             return []
 
+        # If query is about placing a tender/bid, treat 'place' as an action verb, not a location
+        if "place" in raw_words and any(t in q_lower for t in ["tender", "bid", "proposal"]):
+            raw_words = [w for w in raw_words if w != "place"]
+
         expanded = list(raw_words)
         for term, syns in DOMAIN_SYNONYMS.items():
             if term in q_lower or all(w in raw_words for w in term.split()):
@@ -87,6 +107,41 @@ class RetrievalService:
         ])
         is_workflow_intent = "approved workflow" in q_lower or ("workflow" in q_lower and "approved" in q_lower)
         is_app_intent = "annual procurement plan" in q_lower or bool(re.search(r'\bapp\b', q_lower))
+
+        is_create_tender_intent = (
+            any(k in q_lower for k in [
+                "place a new tender", "place new tender", "place a tender", "place tender",
+                "create tender", "create a tender", "create new tender", "new tender",
+                "tender creation", "prepare tender", "tender preparation", "publish tender",
+                "how to tender", "how to place tender", "how to create tender"
+            ])
+            or bool(re.search(r'\b(place|create|prepare|publish|float)\s+(?:a\s+)?(?:new\s+)?tender\b', q_lower))
+        )
+
+        is_delete_tender_intent = (
+            any(k in q_lower for k in [
+                "delete tender", "delete a tender", "delete new tender", "how to delete a tender",
+                "cancel tender", "cancel a tender", "cancellation of tender", "cancellation process",
+                "how to cancel a tender", "remove tender", "drop tender", "withdraw tender"
+            ])
+            or bool(re.search(r'\b(delete|cancel|cancellation|remove|drop)\s+(?:a\s+)?(?:new\s+)?tender\b', q_lower))
+        )
+
+        is_corrigendum_intent = any(k in q_lower for k in [
+            "corrigendum", "amendment", "amend tender", "modify tender", "change tender notice"
+        ])
+
+        is_retender_intent = any(k in q_lower for k in [
+            "retender", "re-tender", "re-tendering", "retendering"
+        ])
+
+        is_eval_intent = any(k in q_lower for k in [
+            "evaluation", "evaluate proposal", "proposal evaluation", "technical evaluation", "financial evaluation", "pec"
+        ])
+
+        is_security_intent = any(k in q_lower for k in [
+            "tender security", "proposal security", "bank guarantee", "security submission", "validity extension"
+        ])
 
         for c in chunks:
             text = c.get("text", "").lower()
@@ -106,6 +161,36 @@ class RetrievalService:
             if is_app_intent and page in (21, 22, 23, 24, 25):
                 score += 15.0
 
+            if is_create_tender_intent:
+                if page in (54, 55):
+                    score += 35.0
+                elif page == 56:
+                    score += 25.0
+                elif page == 45:
+                    score += 18.0
+
+            if is_delete_tender_intent:
+                if page == 178:
+                    score += 35.0
+                elif page == 191:
+                    score += 25.0
+                elif page == 309:
+                    score += 20.0
+                elif page in (78, 86, 115):
+                    score += 12.0
+
+            if is_corrigendum_intent and page in (176, 177):
+                score += 25.0
+
+            if is_retender_intent and page in (307, 308):
+                score += 25.0
+
+            if is_eval_intent and page in (208, 209, 210, 211):
+                score += 20.0
+
+            if is_security_intent and page in (56, 57, 304):
+                score += 20.0
+
             # 1. Exact multi-word phrase match (huge boost)
             matched_phrase = False
             for phrase in DOMAIN_SYNONYMS.keys():
@@ -117,7 +202,13 @@ class RetrievalService:
             matched_words = [w for w in raw_words if re.search(r'\b' + re.escape(w) + r'\b', text)]
             term_coverage = len(matched_words) / len(raw_words) if raw_words else 0.0
 
-            if term_coverage < 0.5 and not matched_phrase and not is_account_intent and not is_workflow_intent and not is_app_intent:
+            any_intent_grounded = any([
+                is_account_intent, is_workflow_intent, is_app_intent,
+                is_create_tender_intent, is_delete_tender_intent,
+                is_corrigendum_intent, is_retender_intent, is_eval_intent, is_security_intent
+            ])
+
+            if term_coverage < 0.5 and not matched_phrase and not any_intent_grounded:
                 continue
 
             # 2. Raw keyword matches
