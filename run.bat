@@ -22,7 +22,7 @@ echo The app will open in your default browser shortly.
 echo (Press Ctrl+C in this window anytime to close)
 echo.
 
-"%ST_EXE%" run frontend\streamlit_app.py
+"%ST_EXE%" run streamlit_app.py
 
 pause
 

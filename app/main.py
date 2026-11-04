@@ -3,6 +3,13 @@ FastAPI Application Entry Point.
 Starts the e-GP Manual Chatbot REST API server.
 """
 import os
+import sys
+
+# Ensure project root is in sys.path even when running 'python app/main.py' directly
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

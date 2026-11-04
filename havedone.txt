@@ -178,3 +178,18 @@ ALL DELIVERABLES SUCCESSFULLY COMPLETED AND VERIFIED.
        - Tucked maintenance/re-indexing into a subtle expandable settings drawer.
    [x] Created 1-Click Windows Launcher:
        - Created 'run.bat' so normal users can just double-click to start the chatbot in their browser.
+
+13. ROOT STREAMLIT ENTRYPOINT (November 2026 Update)
+   [x] Created root-level 'streamlit_app.py':
+       - Enables launching directly from root via: 'streamlit run streamlit_app.py'
+       - Compatible with Streamlit Community Cloud and HuggingFace Spaces default entrypoints.
+       - Updated 'run.bat' to launch 'streamlit_app.py'.
+
+14. DIRECT PYTHON INVOCATION & RUNNER AUTO-DETECTION (November 2026 Update)
+   [x] Enhanced 'app/main.py':
+       - Injected 'ROOT_DIR' into 'sys.path' at top of file, resolving 'ModuleNotFoundError: No module named app' when run directly via 'python app/main.py'.
+       - Added '__main__' block running Uvicorn automatically.
+   [x] Enhanced 'streamlit_app.py':
+       - Added runtime detection: if executed via plain 'python streamlit_app.py', it automatically launches 'python -m streamlit run' and opens the default browser.
+       - If executed via 'streamlit run streamlit_app.py', it renders the UI as usual.
+   [x] Updated 'README.md' Quickstart Guide with simple copy-pasteable execution options (1-click run.bat, python streamlit_app.py, python app/main.py).

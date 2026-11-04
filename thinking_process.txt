@@ -393,3 +393,31 @@ Actions:
    - Added friendly 1-click question chips and clear conversation controls.
 3. 1-Click Launching:
    - Created 'run.bat' for double-click launching on Windows.
+
+--------------------------------------------------------------------------------
+18. ROOT STREAMLIT ENTRYPOINT CONVENIENCE
+--------------------------------------------------------------------------------
+Reasoning:
+Standard deployment platforms (Streamlit Community Cloud, Hugging Face Spaces) and
+developers typically expect 'streamlit_app.py' to reside at the repository root.
+Providing a root-level 'streamlit_app.py' that seamlessly hooks into the frontend
+pipeline allows users to run:
+    streamlit run streamlit_app.py
+from the project root without specifying the subfolder path.
+
+--------------------------------------------------------------------------------
+19. DIRECT PYTHON RUNNER ARCHITECTURE
+--------------------------------------------------------------------------------
+Problem:
+Users often try running scripts using plain 'python <script.py>':
+1. 'python app/main.py' failed because 'app' was not in sys.path when invoked from the subfolder.
+2. 'python streamlit_app.py' aborted or required 'streamlit run' syntax.
+
+Solution:
+1. In 'app/main.py':
+   - Added automatic 'sys.path' root detection before importing routers.
+   - Added 'if __name__ == "__main__": uvicorn.run(...)'.
+2. In 'streamlit_app.py':
+   - Added Streamlit runtime detection using 'get_script_run_ctx()'.
+   - If not running inside Streamlit, it seamlessly launches 'python -m streamlit run' as a subprocess.
+   - Both 'python streamlit_app.py' and 'streamlit run streamlit_app.py' now work seamlessly.

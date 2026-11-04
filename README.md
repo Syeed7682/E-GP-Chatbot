@@ -212,19 +212,28 @@ python scripts/ingest_documents.py
 python scripts/build_faiss_index.py
 ```
 
-### 5. Launch the FastAPI Backend
+### 5. Launch the Application
+
+#### Option A: 1-Click Launch (Easiest)
+Simply double-click **`run.bat`** on Windows, and the app will open directly in your browser.
+
+#### Option B: Run the Streamlit Web Interface
+Run either command from the project root:
 ```bash
-uvicorn app.main:app --reload --port 8000
+streamlit run streamlit_app.py
 ```
+*(or simply: `python streamlit_app.py`)*
+
+The chatbot will open in your browser at [http://localhost:8501](http://localhost:8501).
+
+#### Option C: Run the FastAPI REST Backend (Optional)
+If you wish to test the API directly or access Swagger Docs:
+```bash
+python app/main.py
+```
+*(or: `uvicorn app.main:app --reload --port 8000`)*
 - Swagger Interactive Docs: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 - Health Check: [http://127.0.0.1:8000/api/chat/health](http://127.0.0.1:8000/api/chat/health)
-
-### 6. Launch the Streamlit Frontend
-In a separate terminal:
-```bash
-streamlit run frontend/streamlit_app.py
-```
-Open [http://localhost:8501](http://localhost:8501) in your browser.
 
 ---
 
