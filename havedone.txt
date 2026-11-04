@@ -193,3 +193,9 @@ ALL DELIVERABLES SUCCESSFULLY COMPLETED AND VERIFIED.
        - Added runtime detection: if executed via plain 'python streamlit_app.py', it automatically launches 'python -m streamlit run' and opens the default browser.
        - If executed via 'streamlit run streamlit_app.py', it renders the UI as usual.
    [x] Updated 'README.md' Quickstart Guide with simple copy-pasteable execution options (1-click run.bat, python streamlit_app.py, python app/main.py).
+
+15. STREAMLIT CLOUD MODULE IMPORT FIX (November 2026 Update)
+   [x] Fixed Streamlit Cloud 'TypeError: Failed to fetch dynamically imported module: ... ChatInput.DkuqVMIK.js':
+       - Replaced runtime dynamic 'exec(compile(...))' in 'streamlit_app.py' with direct top-level Streamlit AST components.
+       - Raised Streamlit dependency requirement to 'streamlit>=1.35.0' in 'requirements.txt'.
+       - Synchronized 'streamlit_app.py' and 'frontend/streamlit_app.py'.
