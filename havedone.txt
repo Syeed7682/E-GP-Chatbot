@@ -199,3 +199,9 @@ ALL DELIVERABLES SUCCESSFULLY COMPLETED AND VERIFIED.
        - Replaced runtime dynamic 'exec(compile(...))' in 'streamlit_app.py' with direct top-level Streamlit AST components.
        - Raised Streamlit dependency requirement to 'streamlit>=1.35.0' in 'requirements.txt'.
        - Synchronized 'streamlit_app.py' and 'frontend/streamlit_app.py'.
+
+16. HUGGING FACE TOKEN INTEGRATION FOR QWEN (November 2026 Update)
+   [x] Dynamic Token & Model Resolution:
+       - Configured 'llm_service.py' to automatically detect 'HF_TOKEN' from either '.env' (locally) or 'st.secrets' (on Streamlit Cloud).
+       - Automatically maps to serverless-compatible 'Qwen/Qwen2.5-72B-Instruct'.
+       - Added fallback resilience: if token has no paid credits or fails, smart synthesis instantly generates the cited answer without crash.

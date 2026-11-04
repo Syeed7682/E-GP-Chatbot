@@ -13,6 +13,15 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
+# Sync Streamlit Cloud secrets into environment variables
+try:
+    if hasattr(st, "secrets"):
+        for k, v in st.secrets.items():
+            if isinstance(v, str):
+                os.environ.setdefault(k, v)
+except Exception:
+    pass
+
 from app.services.retrieval_service import retrieval_service
 from app.services.llm_service import llm_service
 from app.services.faiss_service import faiss_service

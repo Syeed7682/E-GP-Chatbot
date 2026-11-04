@@ -14,8 +14,31 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-HF_TOKEN = os.getenv("HF_TOKEN", "").strip()
-LLM_MODEL = os.getenv("LLM_MODEL", "Qwen/Qwen2.5-VL-72B-Instruct")
+def get_hf_token() -> str:
+    """Gets HF_TOKEN from environment variable or Streamlit Cloud secrets."""
+    token = os.getenv("HF_TOKEN", "").strip()
+    if not token:
+        try:
+            import streamlit as st
+            if hasattr(st, "secrets") and "HF_TOKEN" in st.secrets:
+                token = str(st.secrets["HF_TOKEN"]).strip()
+        except Exception:
+            pass
+    return token
+
+def get_llm_model() -> str:
+    """Gets LLM_MODEL from environment variable or Streamlit Cloud secrets."""
+    model = os.getenv("LLM_MODEL", "Qwen/Qwen2.5-72B-Instruct").strip()
+    try:
+        import streamlit as st
+        if hasattr(st, "secrets") and "LLM_MODEL" in st.secrets:
+            model = str(st.secrets["LLM_MODEL"]).strip()
+    except Exception:
+        pass
+    return model
+
+HF_TOKEN = get_hf_token()
+LLM_MODEL = get_llm_model()
 USE_LOCAL_LLM = os.getenv("USE_LOCAL_LLM", "false").lower() in ("true", "1", "yes")
 SYSTEM_PROMPT_PATH = os.path.join(os.path.dirname(__file__), "../prompts/system_prompt.txt")
 
@@ -338,6 +361,16 @@ class LLMService:
                 print(f"[llm_service] Local transformers generation failed: {e}. Falling back.")
 
         # Mode 2: Hugging Face Inference API
+        current_token = get_hf_token()
+        if self._hf_client is None and current_token and current_token != "your_huggingface_api_token_here":
+            try:
+                from huggingface_hub import InferenceClient
+                self._hf_client = InferenceClient(token=current_token)
+                self.model_name = get_llm_model()
+                print(f"[llm_service] Dynamic HF client initialized for '{self.model_name}'.")
+            except Exception as e:
+                print(f"[llm_service] Could not initialize HF client: {e}")
+
         if self._hf_client is not None:
             user_message = (
                 f"Context from e-GP Manuals:\n{context}\n\n"
