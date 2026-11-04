@@ -1,0 +1,27 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Environment files
+.env
+.venv/
+env/
+venv/
+ENV/
+
+# Large raw PDF files (prevents GitHub 100MB file size limit rejection)
+data/raw/*.pdf
+!data/raw/.gitkeep
+
+# System and IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Streamlit logs
+.streamlit/
+

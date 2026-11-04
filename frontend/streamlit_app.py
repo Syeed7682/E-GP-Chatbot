@@ -1,0 +1,250 @@
+"""
+Streamlit Web Frontend (frontend/streamlit_app.py).
+Clean, modern, and simple assistant interface for normal users.
+Grounded in the official Bangladesh e-GP Procuring Entity User Manual.
+"""
+import os
+import sys
+import requests
+import streamlit as st
+
+# Ensure root directory is accessible for direct service imports
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
+
+from app.services.retrieval_service import retrieval_service
+from app.services.llm_service import llm_service
+from app.services.faiss_service import faiss_service
+
+# Page Configuration
+st.set_page_config(
+    page_title="e-GP Manual Assistant",
+    page_icon="📋",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Custom Styling
+st.markdown("""
+<style>
+    .main-title {
+        font-size: 2.1rem;
+        font-weight: 700;
+        color: #1e3a8a;
+        margin-bottom: 0.2rem;
+    }
+    .sub-title {
+        font-size: 1.05rem;
+        color: #475569;
+        margin-bottom: 1.2rem;
+    }
+    .status-card {
+        background-color: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 8px;
+        padding: 10px 14px;
+        margin-bottom: 15px;
+        font-size: 0.88rem;
+        color: #166534;
+    }
+    .source-box {
+        background-color: #f8fafc;
+        border-left: 4px solid #2563eb;
+        padding: 10px 14px;
+        margin: 6px 0;
+        border-radius: 4px;
+        font-size: 0.9rem;
+    }
+    .badge {
+        display: inline-block;
+        padding: 2px 8px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        border-radius: 12px;
+        background-color: #e0f2fe;
+        color: #0369a1;
+        margin-right: 6px;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# Initialize Session State
+if "messages" not in st.session_state:
+    st.session_state.messages = [
+        {
+            "role": "assistant",
+            "content": (
+                "👋 **Welcome! I am your e-GP Assistant.**\n\n"
+                "I can guide you through official rules and procedures from the "
+                "**e-GP Procuring Entity User Manual (543 pages)**.\n\n"
+                "Ask any question or pick a topic from the sidebar (account setup, login, APP preparation, tender submission, approved workflow, etc.)."
+            ),
+            "sources": []
+        }
+    ]
+
+# Automatic backend detection (seamless for normal users)
+BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000")
+backend_online = False
+total_chunks = 0
+
+try:
+    r = requests.get(f"{BACKEND_URL}/api/chat/health", timeout=1.5)
+    if r.status_code == 200:
+        backend_online = True
+        total_chunks = r.json().get("total_chunks", 0)
+except Exception:
+    backend_online = False
+
+# Ensure index is loaded in memory for instant local answering
+if not backend_online:
+    retrieval_service.load_index_if_needed()
+    total_chunks = len(faiss_service.metadata)
+
+# Sidebar Controls
+with st.sidebar:
+    st.image("https://img.icons8.com/fluency/96/procurement.png", width=56)
+    st.title("e-GP Guide")
+
+    # Friendly status badge
+    st.markdown(f"""
+    <div class="status-card">
+        <strong>🟢 System Ready</strong><br/>
+        📖 Manual: Procuring Entity User<br/>
+        📑 Verified Chunks: <strong>{total_chunks or 1188}</strong>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Quick Question Shortcuts
+    st.markdown("### 💡 Quick Questions")
+    sample_questions = [
+        ("🔑 How to open / create a PE account?", "tell me how to open an account"),
+        ("🚪 How does a user log in to e-GP?", "How does a Procuring Entity user login to the e-GP portal?"),
+        ("📋 Annual Procurement Plan (APP) guide", "What is the procedure for Annual Procurement Plan (APP) preparation?"),
+        ("🔄 How to view Approved Workflow?", "how to view approved workflow"),
+        ("⚖️ Proposal evaluation procedure", "What are the steps for technical and financial proposal evaluation?"),
+    ]
+
+    for label, query_text in sample_questions:
+        if st.button(label, use_container_width=True):
+            st.session_state.pending_question = query_text
+
+    # Multimodal image input
+    st.markdown("---")
+    st.markdown("### 📷 Upload Screenshot (Optional)")
+    uploaded_image = st.file_uploader(
+        "Have an e-GP portal screen or error?",
+        type=["png", "jpg", "jpeg"],
+        help="Upload an image to search visual manual sections."
+    )
+    if uploaded_image:
+        st.image(uploaded_image, caption="Uploaded Query Image", use_container_width=True)
+
+    # Actions
+    st.markdown("---")
+    if st.button("🗑️ Clear Conversation", use_container_width=True):
+        st.session_state.messages = []
+        st.rerun()
+
+    # Advanced Tools (Tucked away for power users)
+    with st.expander("⚙️ Advanced Settings"):
+        st.caption(f"Backend Server: {'Connected' if backend_online else 'Direct Local Mode'}")
+        if st.button("Re-Index Manual"):
+            with st.spinner("Rebuilding FAISS index from data/raw..."):
+                try:
+                    from app.services.document_loader import load_all_documents
+                    from app.services.text_chunker import chunk_documents, save_chunks
+                    from app.services.embedding_service import embedding_service
+                    
+                    docs = load_all_documents("data/raw")
+                    chunks = chunk_documents(docs)
+                    save_chunks(chunks)
+                    embeddings = embedding_service.embed_documents([c["text"] for c in chunks])
+                    faiss_service.build_index(embeddings, chunks)
+                    faiss_service.save()
+                    st.success("Re-indexing complete!")
+                except Exception as ex:
+                    st.error(f"Re-indexing error: {ex}")
+
+
+# Main Content Header
+st.markdown('<div class="main-title">📋 e-GP Manual Chatbot</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Instant, cited guidance from the official electronic Government Procurement manuals.</div>', unsafe_allow_html=True)
+
+# Render Chat History
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+        if message.get("sources"):
+            with st.expander(f"📚 View Official Manual Pages & Screenshots ({len(message['sources'])} citations)"):
+                for s in message["sources"]:
+                    st.markdown(f"""
+                    <div class="source-box">
+                        <span class="badge">📄 {s['source']}</span>
+                        <span class="badge">Page {s['page']}</span>
+                        <p style="margin-top: 6px; font-style: italic;">"{s.get('snippet', '')}"</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    if s.get("image_path") and os.path.exists(s["image_path"]):
+                        st.image(s["image_path"], caption=f"Manual Screenshot (Page {s['page']})", use_container_width=True)
+
+# Determine user input
+user_prompt = st.chat_input("Ask any question about e-GP (e.g., account setup, login, APP, tender submission, evaluation)...")
+if "pending_question" in st.session_state and st.session_state.pending_question:
+    user_prompt = st.session_state.pending_question
+    st.session_state.pending_question = None
+
+if user_prompt:
+    # 1. Add User Message
+    st.session_state.messages.append({"role": "user", "content": user_prompt})
+    with st.chat_message("user"):
+        st.markdown(user_prompt)
+
+    # 2. Generate Assistant Response
+    with st.chat_message("assistant"):
+        with st.spinner("Searching official e-GP manual..."):
+            answer = ""
+            sources = []
+
+            # Try FastAPI backend first
+            used_backend = False
+            if backend_online:
+                try:
+                    payload = {"question": user_prompt, "top_k": 4}
+                    resp = requests.post(f"{BACKEND_URL}/api/chat", json=payload, timeout=15)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        answer = data.get("answer", "")
+                        sources = data.get("sources", [])
+                        used_backend = True
+                except Exception:
+                    used_backend = False
+
+            # Fallback to direct local service call
+            if not used_backend:
+                img_bytes = uploaded_image.getvalue() if uploaded_image else None
+                context, raw_sources = retrieval_service.retrieve(user_prompt, top_k=4, image=img_bytes)
+                answer = llm_service.generate_answer(user_prompt, context, image=img_bytes)
+                sources = raw_sources
+
+            # Display response
+            st.markdown(answer)
+            if sources:
+                with st.expander(f"📚 View Official Manual Pages & Screenshots ({len(sources)} citations)"):
+                    for s in sources:
+                        st.markdown(f"""
+                        <div class="source-box">
+                            <span class="badge">📄 {s['source']}</span>
+                            <span class="badge">Page {s['page']}</span>
+                            <p style="margin-top: 6px; font-style: italic;">"{s.get('snippet', '')}"</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        if s.get("image_path") and os.path.exists(s["image_path"]):
+                            st.image(s["image_path"], caption=f"Manual Screenshot (Page {s['page']})", use_container_width=True)
+
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": answer,
+                "sources": sources
+            })
