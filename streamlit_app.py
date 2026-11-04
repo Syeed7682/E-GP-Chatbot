@@ -156,22 +156,53 @@ with st.sidebar:
 st.markdown('<div class="main-title">📋 e-GP Manual Chatbot</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-title">Instant, cited guidance from the official electronic Government Procurement manuals.</div>', unsafe_allow_html=True)
 
+# Helper: resolve image path to absolute
+def resolve_image_path(img_path: str) -> str:
+    """Convert relative image path to absolute using ROOT_DIR."""
+    if not img_path:
+        return ""
+    # Already absolute
+    if os.path.isabs(img_path):
+        return img_path
+    # Normalize Windows backslashes
+    img_path = img_path.replace("\\", "/")
+    return os.path.join(ROOT_DIR, img_path)
+
+def render_sources(sources: list):
+    """Render source citation boxes with page screenshots."""
+    # Deduplicate by page number (keep first occurrence)
+    seen_pages = set()
+    unique_sources = []
+    for s in sources:
+        pg = s.get("page")
+        if pg not in seen_pages:
+            seen_pages.add(pg)
+            unique_sources.append(s)
+
+    for s in unique_sources:
+        col1, col2 = st.columns([1, 2])
+        with col1:
+            st.markdown(f"""
+            <div class="source-box">
+                <span class="badge">📄 {s['source']}</span><br/>
+                <span class="badge">Page {s['page']}</span>
+                <p style="margin-top: 6px; font-style: italic; font-size:0.82rem;">"{s.get('snippet', '')[:180]}..."</p>
+            </div>
+            """, unsafe_allow_html=True)
+        with col2:
+            img_path = resolve_image_path(s.get("image_path", ""))
+            if img_path and os.path.exists(img_path):
+                st.image(img_path, caption=f"📖 Page {s['page']}", use_container_width=True)
+            else:
+                st.info(f"📄 Page {s['page']} — screenshot not available locally.")
+
 # 7. Render Chat History
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
         if message.get("sources"):
             with st.expander(f"📚 View Official Manual Pages & Screenshots ({len(message['sources'])} citations)"):
-                for s in message["sources"]:
-                    st.markdown(f"""
-                    <div class="source-box">
-                        <span class="badge">📄 {s['source']}</span>
-                        <span class="badge">Page {s['page']}</span>
-                        <p style="margin-top: 6px; font-style: italic;">"{s.get('snippet', '')}"</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    if s.get("image_path") and os.path.exists(s["image_path"]):
-                        st.image(s["image_path"], caption=f"Manual Screenshot (Page {s['page']})", use_container_width=True)
+                render_sources(message["sources"])
 
 # 8. User Input & Query Handling
 user_prompt = st.chat_input("Ask any question about e-GP (e.g., account setup, login, APP, tender submission, evaluation)...")
@@ -213,16 +244,7 @@ if user_prompt:
             st.markdown(answer)
             if sources:
                 with st.expander(f"📚 View Official Manual Pages & Screenshots ({len(sources)} citations)"):
-                    for s in sources:
-                        st.markdown(f"""
-                        <div class="source-box">
-                            <span class="badge">📄 {s['source']}</span>
-                            <span class="badge">Page {s['page']}</span>
-                            <p style="margin-top: 6px; font-style: italic;">"{s.get('snippet', '')}"</p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        if s.get("image_path") and os.path.exists(s["image_path"]):
-                            st.image(s["image_path"], caption=f"Manual Screenshot (Page {s['page']})", use_container_width=True)
+                    render_sources(sources)
 
             st.session_state.messages.append({
                 "role": "assistant",
