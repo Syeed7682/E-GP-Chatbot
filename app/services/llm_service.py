@@ -173,13 +173,17 @@ class LLMService:
 
     def _offline_answer_generator(self, question: str, context: str) -> str:
         """
-        Smart, descriptive answer synthesizer.
-        Generates clean, structured, step-by-step procedural answers without raw metadata noise.
+        Humanistic, conversational answer synthesizer.
+        Generates warm, structured answers grounded strictly in e-GP manuals.
         """
         if not context or "No relevant context" in context or "No manual index" in context:
             return (
-                "I could not find information regarding this in the current e-GP manuals. "
-                "For specific queries, please contact the e-GP Helpdesk at helpdesk@eprocure.gov.bd or call +880-960-4224224."
+                "Hmm, I couldn't find that specific topic in the e-GP manuals I have. 🤔\n\n"
+                "For this one, your best bet is to reach out directly to the **e-GP Helpdesk** — "
+                "they're very helpful!\n\n"
+                "📧 **Email:** helpdesk@eprocure.gov.bd\n"
+                "📞 **Phone:** +880-960-4224224\n\n"
+                "Is there anything else about the e-GP system I can help you with?"
             )
 
         q_lower = question.lower().strip()
@@ -199,7 +203,6 @@ class LLMService:
 
             for line in lines:
                 if line.startswith("[Manual:"):
-                    # Extract page number: [Manual: ... | Page 6 | ...]
                     m = re.search(r'Page\s+(\d+)', line)
                     if m:
                         page_num = int(m.group(1))
@@ -209,94 +212,100 @@ class LLMService:
                     text_lines.append(line)
 
             chunk_body = "\n".join(text_lines)
-            cleaned_chunks.append({
-                "page": page_num,
-                "text": chunk_body
-            })
+            cleaned_chunks.append({"page": page_num, "text": chunk_body})
 
-        # --- SPECIALIZED INTENT SYNTHESIS ---
+        # --- SPECIALIZED INTENT RESPONSES (Humanistic) ---
 
-        # 1. Intent: Account Creation / Registration / PE User Opening
+        # 1. Account Creation / Registration
         is_account_query = any(k in q_lower for k in [
             "open an account", "open account", "create an account", "create account",
             "how to register", "registration", "signup", "sign up", "new user", "create user"
         ])
-
         if is_account_query:
             return (
-                "### Account Creation & Initial Setup for Procuring Entity (PE) Users\n\n"
-                "In the electronic Government Procurement (e-GP) system, **Procuring Entity (PE) users do not self-register** through a public sign-up form. All PE user accounts are provisioned administratively under government security guidelines.\n\n"
-                "#### 1. Account Creation by System Administrator\n"
-                "- **Creation Authority**: The Procuring Entity (PE) user account must be created by the **e-GP Admin**, **Organization Admin**, or **PE Admin** within the e-GP portal.\n"
-                "- **Credential Email**: The moment the PE account is created, the system automatically sends a system-generated email to the user's registered email address containing their official **Username and temporary Password**.\n\n"
-                "#### 2. First-Time Portal Login & Mandatory Password Change\n"
-                "- **Access the Portal**: Visit the official e-GP Portal at `https://www.eprocure.gov.bd` and enter the assigned Username and Password (*Screen - A1*).\n"
-                "- **Mandatory Security Screen**: On first login, the e-GP system automatically directs the user to the **\"Change Password\"** screen as a crucial security measure.\n"
-                "- **Mandatory Fields**: Every field on the Change Password page is mandatory. The PE user must provide the existing password, specify a compliant new password, and confirm it.\n"
-                "- **Confirmation**: Click the **\"Submit\"** button (*Screen - A2*). The system will display the confirmation message: *\"Password Changed successfully\"* (*Screen - A3*).\n\n"
-                "#### 3. Logging in with Updated Credentials & Verification\n"
-                "- **Authenticate**: Return to the login box, enter the registered email ID and the newly updated password, and click **\"Login\"**.\n"
-                "- **NID & Mobile Verification**: If prompted, complete the **National ID (NID) and Mobile Number verification** via OTP to unlock the full dashboard functionalities.\n"
-                "- **Dashboard Access**: Once verified, you are granted full access to your Procuring Entity workspace, where you can view your profile under **\"My Account >> View Profile\"** (*Page 533*).\n\n"
+                "Great question! 👋 Setting up a Procuring Entity (PE) account in e-GP works a little "
+                "differently from most websites — you don't sign up yourself. Here's how it actually works:\n\n"
+                "**Step 1 — Your account is created by an Admin**\n"
+                "The e-GP system Admin, Organization Admin, or PE Admin creates your account on your behalf "
+                "inside the e-GP portal. Once it's ready, the system automatically sends your **username and "
+                "a temporary password** to your registered email address. 📧\n\n"
+                "**Step 2 — Log in for the first time**\n"
+                "Head over to [eprocure.gov.bd](https://www.eprocure.gov.bd) and sign in with those credentials. "
+                "The system will immediately ask you to **change your password** — this is mandatory for security "
+                "*(Screen A1 → A2 in the manual)*.\n\n"
+                "**Step 3 — Set a strong new password**\n"
+                "Fill in your old password, choose a new compliant one, confirm it, and click **Submit**. "
+                "You'll see a *'Password Changed successfully'* confirmation *(Screen A3)*. ✅\n\n"
+                "**Step 4 — Complete NID & Mobile Verification (if prompted)**\n"
+                "On some accounts, the system may ask you to verify your **National ID (NID)** and "
+                "**mobile number via OTP** to unlock the full dashboard. Just follow the on-screen prompts.\n\n"
+                "**Step 5 — You're in! 🎉**\n"
+                "Once verified, your full Procuring Entity workspace opens up. You can view your profile "
+                "anytime under **My Account → View Profile** *(Page 533)*.\n\n"
                 "---\n"
-                "📖 **Official Reference**: e-GP System User Manual (Procuring Entity User), Chapter 1 (*Login to e-GP Portal along with Email Id & Password*), Pages 6–9 and Chapter 13 (*My Account*), Page 533."
+                "📖 *Source: e-GP System User Manual (Procuring Entity User), Chapter 1 — Pages 6–9 & Chapter 13 — Page 533*\n\n"
+                "Let me know if you'd like help with the next step, like navigating the dashboard or setting up your Annual Procurement Plan! 😊"
             )
 
-        # 2. Intent: Approved Workflow
+        # 2. Approved Workflow
         is_workflow_query = any(k in q_lower for k in ["approved workflow", "workflow", "checker", "approver"])
         if is_workflow_query and any(c.get("page") == 199 for c in cleaned_chunks):
             return (
-                "### Approved Workflow Procedure (Workflow >> Approved Workflow)\n\n"
-                "In the e-GP system, the **Approved Workflow** feature allows Procuring Entity (PE) users to monitor, track, and review all workflows that have successfully passed the required verification and approval stages.\n\n"
-                "#### Step-by-Step Procedure:\n"
-                "1. **Navigate to the Menu**:\n"
-                "   Click on the **\"Workflow\"** main menu and select the **\"Approved Workflow\"** sub-menu. The system will display the list of all approved workflows (*Screen - E11*).\n\n"
-                "2. **Search and Filter Approved Tasks**:\n"
-                "   You can narrow down approved tasks using search parameters:\n"
-                "   - **Module Name** (e.g., APP, Tender, Evaluation, CMS)\n"
-                "   - **Process Name**\n"
-                "   - **APP / Tender ID**\n"
-                "   - **Processed By**\n"
-                "   - **Processed Date Range** (*From Date & Time* to *To Date & Time*)\n"
-                "   - Results populate automatically in the search grid (*Screen - E12*).\n\n"
-                "3. **Inspect File Details & Workflow History**:\n"
-                "   - In the search results grid, locate the relevant record and click the **\"View\"** link under the **Action** column.\n"
-                "   - The system displays the complete audit record including **File Details, Module, Process Name, Workflow History**, and individual **Workflow Levels** with reviewer/approver remarks (*Screen - E12*).\n\n"
+                "Sure! Here's how to view the **Approved Workflow** in e-GP — it's pretty straightforward once you know where to look. 🔄\n\n"
+                "**Step 1 — Open the Workflow menu**\n"
+                "From your dashboard, click on the **'Workflow'** main menu, then select **'Approved Workflow'** "
+                "from the dropdown. You'll see a list of all workflows that have successfully passed their "
+                "approval stages *(Screen E11)*.\n\n"
+                "**Step 2 — Search and filter**\n"
+                "You can narrow things down using handy filters:\n"
+                "- 🗂️ **Module Name** — e.g. APP, Tender, Evaluation, CMS\n"
+                "- 🔖 **Process Name** or **APP / Tender ID**\n"
+                "- 👤 **Processed By** (who approved it)\n"
+                "- 📅 **Date Range** — From Date → To Date\n\n"
+                "Hit the search button and your results will populate in the grid below *(Screen E12)*.\n\n"
+                "**Step 3 — Inspect the details**\n"
+                "Click the **'View'** link next to any record under the **Action** column. "
+                "This shows the full audit trail — File Details, Module, Process Name, Workflow History, "
+                "and remarks from each reviewer/approver at every workflow level.\n\n"
                 "---\n"
-                "📖 **Official Reference**: e-GP System User Manual (Procuring Entity User), Section 5.3 (*Approved Workflow*), Page 199."
+                "📖 *Source: e-GP System User Manual (Procuring Entity User), Section 5.3 — Approved Workflow, Page 199*\n\n"
+                "Need help understanding what a specific workflow status means? Just ask! 😊"
             )
 
-        # 3. Intent: Annual Procurement Plan (APP)
+        # 3. Annual Procurement Plan (APP)
         is_app_query = any(k in q_lower for k in ["app", "annual procurement plan", "procurement plan"])
         if is_app_query:
             return (
-                "### Annual Procurement Plan (APP) Preparation & Workflow\n\n"
-                "The **Annual Procurement Plan (APP)** is a mandatory prerequisite in e-GP before creating and publishing tenders.\n\n"
-                "#### Key Procedures for APP Management:\n"
-                "1. **Accessing APP Module**:\n"
-                "   - Log into the e-GP portal and select **\"APP\"** from the main dashboard.\n"
-                "   - Choose to either create a new APP or update an existing approved plan.\n\n"
-                "2. **Adding Procurement Packages**:\n"
-                "   - Specify the **Procurement Nature** (Goods, Works, or Services).\n"
-                "   - Define package details: Package Number, Description, Estimated Cost, Procurement Method (e.g. OTM, RFQ, LTM), and Approving Authority.\n"
-                "   - Set milestone dates for tender preparation, opening, evaluation, award, and contract completion.\n\n"
-                "3. **Workflow Processing & Approval**:\n"
-                "   - Once packages are saved, process the file through the approval workflow to the designated **Checker and Approver**.\n"
-                "   - After final administrative approval, the APP status changes to *Approved*, enabling tender creation under the approved packages.\n\n"
+                "Absolutely! The **Annual Procurement Plan (APP)** is one of the most important things to set up "
+                "in e-GP — you actually need an approved APP before you can publish any tenders. Let me walk you through it! 📋\n\n"
+                "**Step 1 — Access the APP module**\n"
+                "Log into the e-GP portal and click on **'APP'** from the main menu. "
+                "You can either create a brand-new plan or update an existing approved one.\n\n"
+                "**Step 2 — Add your procurement packages**\n"
+                "For each package you plan to procure, fill in:\n"
+                "- 📌 **Procurement Nature** — Goods, Works, or Services\n"
+                "- 🔢 **Package Number & Description**\n"
+                "- 💰 **Estimated Cost** and **Procurement Method** (e.g. OTM, RFQ, LTM)\n"
+                "- 🏛️ **Approving Authority**\n"
+                "- 📅 **Key milestone dates** — tender prep, opening, evaluation, award, contract completion\n\n"
+                "**Step 3 — Send through the approval workflow**\n"
+                "Once your packages are saved, forward the file through the approval workflow to the "
+                "designated **Checker**, then the **Approver**. Each person will review and digitally sign off.\n\n"
+                "**Step 4 — APP approved! ✅**\n"
+                "After final administrative approval, your APP status changes to *'Approved'*. "
+                "From here, you can start creating and publishing tenders under the approved packages.\n\n"
                 "---\n"
-                "📖 **Official Reference**: e-GP System User Manual (Procuring Entity User), Chapter 3 (*Annual Procurement Plan*), Pages 21–53."
+                "📖 *Source: e-GP System User Manual (Procuring Entity User), Chapter 3 — Annual Procurement Plan, Pages 21–53*\n\n"
+                "Would you like help with a specific part of the APP — like setting up packages or sending it for approval? 😊"
             )
 
-        # 4. General Synthesizer from Retrieved Context
+        # 4. General Synthesizer — builds a conversational answer from retrieved chunks
         combined_text = "\n\n".join([c["text"] for c in cleaned_chunks])
-        
-        # Clean up bullet points, numbered items, and sentences
         raw_lines = [l.strip() for l in combined_text.split("\n") if l.strip()]
         informative_lines: List[str] = []
         screen_refs: List[str] = []
 
         for line in raw_lines:
-            # Skip noise or lone digits
             if line.isdigit() or len(line) < 5:
                 continue
             if line.startswith("Screen") or "Screen -" in line or "Screen –" in line:
@@ -305,37 +314,39 @@ class LLMService:
                 continue
             if line.startswith(("[Manual:", "Table of Contents", "Change Log")):
                 continue
-
-            # Standardize bullet points and numbered points
             clean_l = re.sub(r'^[•\-\*✓]\s*', '', line).strip()
             clean_l = re.sub(r'^\d+\.\s*', '', clean_l).strip()
             if clean_l and clean_l not in informative_lines:
                 informative_lines.append(clean_l)
 
-        # Structure into a detailed response
-        pages_str = ", ".join(f"Page {p}" for p in sorted(set(pages_found)) if p) if pages_found else "relevant pages"
+        pages_str = (
+            ", ".join(f"Page {p}" for p in sorted(set(pages_found)) if p)
+            if pages_found else "the relevant manual sections"
+        )
 
-        output_paragraphs = [
-            f"### Guidance from the Official e-GP Procuring Entity User Manual\n",
-            "Here is the detailed procedure and guidance corresponding to your query:\n"
+        # Build a warm, conversational response
+        output_parts = [
+            f"Sure! Here's what the official e-GP manual says about that 👇\n"
         ]
 
         if informative_lines:
-            output_paragraphs.append("#### Key Steps and System Rules:\n")
+            output_parts.append("**Here are the key details:**\n")
             for i, line in enumerate(informative_lines[:8], 1):
-                # Bold lead-in phrase
                 if ":" in line:
                     parts = line.split(":", 1)
-                    output_paragraphs.append(f"{i}. **{parts[0].strip()}**: {parts[1].strip()}")
+                    output_parts.append(f"{i}. **{parts[0].strip()}:** {parts[1].strip()}")
                 else:
-                    output_paragraphs.append(f"{i}. {line}")
+                    output_parts.append(f"{i}. {line}")
 
         if screen_refs:
-            output_paragraphs.append("\n#### Reference Screens:")
-            output_paragraphs.append(f"- Referenced portal screens: *{', '.join(screen_refs[:4])}*.")
+            output_parts.append(f"\n📸 *Refer to portal screens: {', '.join(screen_refs[:3])}*")
 
-        output_paragraphs.append(f"\n---\n📖 **Official Reference**: e-GP System User Manual (Procuring Entity User 1 February 2026), {pages_str}.")
-        return "\n".join(output_paragraphs)
+        output_parts.append(
+            f"\n---\n"
+            f"📖 *Source: e-GP System User Manual (Procuring Entity User 1 February 2026), {pages_str}*\n\n"
+            f"Hope that helps! Let me know if you'd like me to explain any part in more detail. 😊"
+        )
+        return "\n".join(output_parts)
 
     def generate_answer(self, question: str, context: str, image: Optional[str] = None) -> str:
         """
@@ -357,25 +368,37 @@ class LLMService:
         greetings = {"hi", "hello", "hey", "greetings", "good morning", "good afternoon", "good evening", "assalamu alaikum", "salam"}
         if q_clean in greetings or (len(tokens) <= 2 and any(t in greetings for t in tokens)):
             return (
-                "Hello! I am your official e-GP (electronic Government Procurement) Manual Assistant.\n\n"
-                "I am here to guide you through procurement guidelines, tender submissions, Annual Procurement Plan (APP) preparation, workflow approvals, and account setup.\n\n"
-                "How can I assist you with the e-GP portal today?"
+                "Hey there! 👋 I'm **Proca**, your friendly e-GP Manual Assistant.\n\n"
+                "I know the official **Bangladesh e-GP Procuring Entity User Manual** (all 543 pages!) inside and out, "
+                "so I'm here to help you with things like:\n\n"
+                "- 🔑 **Account setup & login** issues\n"
+                "- 📋 **Annual Procurement Plan (APP)** preparation\n"
+                "- 📢 **Tender creation, publishing & evaluation**\n"
+                "- 🔄 **Workflow approvals** (Checker/Approver steps)\n"
+                "- 📑 **Contract management (CMS)** procedures\n\n"
+                "What would you like to know today? Just ask away! 😊"
             )
 
         # 2. Out-of-Domain / Entertainment Guardrail (e.g. "make a joke", "tell a story")
         off_topic_triggers = {"joke", "jokes", "funny", "story", "stories", "poem", "song", "sing", "game", "weather", "cricket", "football", "movie"}
         if any(t in off_topic_triggers for t in tokens):
             return (
-                "I am the official e-GP (electronic Government Procurement) Manual Assistant.\n\n"
-                "I am strictly dedicated to providing accurate, cited procedural guidance on government procurement rules, system workflows, and user manuals. I cannot fulfill entertainment requests such as telling jokes.\n\n"
-                "Please feel free to ask any question regarding official e-GP procedures or portal operations."
+                "Ha! I wish I could help with that, but I'm afraid jokes and stories are a bit outside my expertise. 😄\n\n"
+                "I'm **Proca**, your dedicated e-GP Manual Assistant — I live and breathe government procurement procedures! "
+                "If you have any questions about the **e-GP portal, tenders, APP, workflows, or account setup**, "
+                "I'm your go-to assistant.\n\n"
+                "What procurement topic can I help you with? 🏛️"
             )
 
         # 3. Guideline 4: If context does not contain enough information
         if not context or "No relevant context" in context or "No manual index" in context:
             return (
-                "I could not find information regarding this in the current e-GP manuals. "
-                "For specific queries, please contact the e-GP Helpdesk at helpdesk@eprocure.gov.bd or call +880-960-4224224."
+                "Hmm, I looked through the e-GP manual but couldn't find anything specific about that. 🤔\n\n"
+                "For this query, I'd recommend reaching out to the **e-GP Helpdesk** directly — "
+                "they'll be able to give you the most accurate answer:\n\n"
+                "📧 **Email:** helpdesk@eprocure.gov.bd\n"
+                "📞 **Phone:** +880-960-4224224\n\n"
+                "Is there anything else I can help you find in the e-GP manual? 😊"
             )
 
         # Mode 1: Local Transformers

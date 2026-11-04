@@ -84,10 +84,15 @@ if "messages" not in st.session_state:
         {
             "role": "assistant",
             "content": (
-                "👋 **Welcome! I am your official e-GP Manual Assistant.**\n\n"
-                "I can answer your questions grounded in the official "
-                "**e-GP Procuring Entity User Manual (543 pages)**.\n\n"
-                "Ask any question or pick a shortcut from the sidebar."
+                "Hey there! 👋 I'm **Proca**, your friendly e-GP Manual Assistant.\n\n"
+                "I've read the entire **e-GP Procuring Entity User Manual (543 pages)** so you don't have to! "
+                "Ask me anything about:\n\n"
+                "- 🔑 Account setup & login\n"
+                "- 📋 Annual Procurement Plan (APP)\n"
+                "- 📢 Tender creation & evaluation\n"
+                "- 🔄 Workflow approvals\n"
+                "- 📑 Contract management\n\n"
+                "Or pick a quick question from the sidebar to get started! 😊"
             ),
             "sources": []
         }
