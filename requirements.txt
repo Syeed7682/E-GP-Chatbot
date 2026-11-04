@@ -7,7 +7,7 @@ pypdf>=4.0.0
 faiss-cpu>=1.8.0
 huggingface_hub>=0.20.0
 requests>=2.31.0
-streamlit>=1.30.0
+streamlit>=1.35.0
 
 # Optional: Local Transformers & GPU packages for Qwen2.5-VL-72B-Instruct
 # transformers>=4.45.0
