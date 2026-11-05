@@ -1,0 +1,6 @@
+{
+  "name": "e-GP Manual Chatbot - Multimodal RAG & Offline Sync",
+  "description": "Official Electronic Government Procurement (e-GP) Multimodal RAG Chatbot with 543-page Procuring Entity manual, portal visual troubleshooting, and resilient offline-first data synchronization.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --color-primary-blue: #0B4F8A;
+    --color-dark-navy: #12304A;
+    --color-bg-light: #F3F6F9;
+    --color-border-gray: #D5DEE7;
+    --color-text-slate: #334155;
+    --color-bangla-green: #16834A;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', 'Noto Sans Bengali', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #F3F6F9;
+    color: #334155;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Public-service government typography & clean border utilities */
+.govt-header-bg {
+  background-color: #12304A;
+}
+
+.govt-primary-btn {
+  background-color: #0B4F8A;
+  color: #ffffff;
+  transition: background-color 150ms ease-in-out;
+}
+
+.govt-primary-btn:hover {
+  background-color: #083c6b;
+}
+
+.govt-green-accent {
+  background-color: #16834A;
+}
+
+.govt-border {
+  border-color: #D5DEE7;
+}
+
+/* Subtle clean scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F3F6F9;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
