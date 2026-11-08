@@ -36,6 +36,7 @@ export interface ChatSourceCitation {
   score: number;
   snippet: string;
   screen_reference?: string;
+  image_path?: string | null;
 }
 
 export interface ChatMessage {

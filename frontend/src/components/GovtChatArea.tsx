@@ -151,21 +151,37 @@ const FormattedGovtText: React.FC<{ text: string; onOpenScreenModal?: (screenId:
 };
 
 const ManualAnswerImage: React.FC<{ sources: ChatSourceCitation[] }> = ({ sources }) => {
-  const pages = Array.from(new Set([
-    ...sources.filter((source) => source.screen_reference).map((source) => source.page),
-    ...sources.map((source) => source.page)
-  ]));
+  const imageSources = Array.from(
+    new Map(
+      [
+        ...sources.filter((source) => source.screen_reference),
+        ...sources
+      ].map((source) => [source.page, source])
+    ).values()
+  );
   const [pageIndex, setPageIndex] = useState(0);
-  const page = pages[pageIndex];
+  const source = imageSources[pageIndex];
 
-  if (!page) return null;
+  if (!source) {
+    return (
+      <p role="status" className="mt-2 text-xs text-amber-700">
+        Manual page image unavailable. Check the public backend URL and ensure the manual PDF is installed on the backend.
+      </p>
+    );
+  }
 
   return (
     <img
-      src={`${API_BASE}/api/manual/page/${page}/image`}
-      alt=""
+      src={
+        source.image_path
+          ? /^https?:\/\//i.test(source.image_path)
+            ? source.image_path
+            : `${API_BASE}${source.image_path.startsWith('/') ? '' : '/'}${source.image_path}`
+          : `${API_BASE}/api/manual/page/${source.page}/image`
+      }
+      alt={`Official e-GP Manual, page ${source.page}`}
       className="mt-2 max-h-80 max-w-full rounded-lg object-contain"
-      onError={() => setPageIndex((index) => index + 1)}
+      onError={() => setPageIndex((index) => Math.min(index + 1, imageSources.length))}
     />
   );
 };
@@ -248,17 +264,8 @@ export const GovtChatArea: React.FC<GovtChatAreaProps> = ({
     <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-white/25 text-slate-800">
       {/* Messages Stream */}
       <div className="min-h-0 flex-1 overflow-y-auto bg-transparent p-4 md:p-6 space-y-4">
-        {messages.map((msg, messageIndex) => {
+        {messages.map((msg) => {
           const isUser = msg.sender === 'user';
-          const previouslyReferencedPages = new Set(
-            messages
-              .slice(0, messageIndex)
-              .filter((previous) => previous.sender === 'assistant')
-              .flatMap((previous) => previous.sources?.map((source) => source.page) ?? [])
-          );
-          const newImageSources = msg.sources?.filter(
-            (source) => !previouslyReferencedPages.has(source.page)
-          ) ?? [];
 
           return (
             <div
@@ -294,7 +301,7 @@ export const GovtChatArea: React.FC<GovtChatAreaProps> = ({
 
                 {!isUser && msg.sources && msg.sources.length > 0 && (
                   <>
-                    <ManualAnswerImage key={`${msg.id}-manual-image`} sources={newImageSources} />
+                    <ManualAnswerImage key={`${msg.id}-manual-image`} sources={msg.sources} />
                     <ManualReferences sources={msg.sources} />
                   </>
                 )}

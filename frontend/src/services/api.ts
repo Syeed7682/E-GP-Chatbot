@@ -2,8 +2,8 @@ import { ChatApiResponse, ChatSourceCitation, ManualChunk } from '../types/egp';
 import { generateOfflineAnswer, retrieveTopKChunks } from '../utils/offlineVectorEngine';
 import { getLocalChunks } from '../utils/indexedDBStorage';
 
-// Base API URL from environment variable, falling back to window location origin or relative path
-export const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+// Production deployments need the separately hosted API; local development may use Vite's proxy.
+export const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/+$/, '');
 
 export interface BackendHealthResponse {
   status: string;
@@ -64,10 +64,14 @@ export async function fetchBackendChunks(): Promise<ManualChunk[]> {
 }
 
 /**
- * Sends chat query to the FastAPI backend with offline-first fallback
+ * Sends chat queries to FastAPI; offline fallback is limited to development.
  */
 export async function sendChatQuery(params: SendChatParams): Promise<ChatApiResponse> {
   const { question, previous_question, image_base64, image_mime, image_name, top_k = 3, use_alt_model = false } = params;
+
+  if (import.meta.env.PROD && !API_BASE) {
+    throw new Error('The assistant backend is not configured for this site. Set VITE_API_BASE_URL in Netlify to your public FastAPI backend URL, then redeploy.');
+  }
 
   try {
     const response = await fetch(`${API_BASE}/api/chat`, {
@@ -87,18 +91,31 @@ export async function sendChatQuery(params: SendChatParams): Promise<ChatApiResp
       })
     });
 
-    if (response.ok) {
-      const data = await response.json();
-      return {
-        question: data.question || question,
-        answer: data.answer,
-        sources: data.sources || [],
-        portal_screens: data.portal_screens || [],
-        model_used: data.model_used || 'FastAPI Multimodal RAG Backend',
-        was_offline: false
-      };
+    if (!response.ok) {
+      throw new Error(`The assistant backend returned HTTP ${response.status}. Check the backend URL and service logs.`);
     }
+
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.toLowerCase().includes('application/json')) {
+      throw new Error('The configured API URL did not return JSON. Set VITE_API_BASE_URL to the FastAPI backend origin, not the Netlify site URL, then redeploy.');
+    }
+
+    const data = await response.json();
+    return {
+      question: data.question || question,
+      answer: data.answer,
+      sources: data.sources || [],
+      portal_screens: data.portal_screens || [],
+      model_used: data.model_used || 'FastAPI Multimodal RAG Backend',
+      was_offline: false
+    };
   } catch (err) {
+    if (import.meta.env.PROD) {
+      if (err instanceof Error && (err.message.startsWith('The assistant backend') || err.message.startsWith('The configured API URL'))) {
+        throw err;
+      }
+      throw new Error('Could not reach the assistant backend. Check that VITE_API_BASE_URL is the public FastAPI URL, the backend is running, and its CORS_ORIGINS includes this Netlify site.');
+    }
     console.warn('Backend unavailable, falling back to local offline RAG engine:', err);
   }
 

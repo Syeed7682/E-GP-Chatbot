@@ -68,5 +68,6 @@ API requests go directly from the browser to the configured FastAPI origin; they
 ## Operational checks and limitations
 
 - FastAPI `/docs` is useful for diagnostics but should be restricted or disabled if required by the deployment.
-- The frontend can fall back to local retrieval if the backend is unavailable. This does not provide hosted model inference or server-only PDF functions.
+- During local development, the frontend can fall back to local retrieval if the backend is unavailable. This does not provide hosted model inference or server-only PDF functions.
+- In production, chat requests fail visibly instead of silently returning a lower-quality offline answer when the API is missing or unreachable.
 - Re-run `npm run build` and the backend test suite before release. A successful static build does not test backend model credentials, data availability, CORS, or provider availability.
