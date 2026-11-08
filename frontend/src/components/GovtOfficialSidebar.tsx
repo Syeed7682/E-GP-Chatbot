@@ -1,17 +1,18 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Plus,
   HelpCircle,
-  BookOpen,
-  AlertTriangle,
-  Info,
   Trash2,
-  CheckCircle2,
   Search,
-  ExternalLink,
-  ChevronRight
+  ChevronRight,
+  Download,
 } from 'lucide-react';
 import { SyncState } from '../types/egp';
+import { API_BASE } from '../services/api';
+import {
+  MANUAL_QUESTION_SUGGESTIONS,
+  searchManualQuestionSuggestions,
+} from '../utils/manualQuestionSuggestions';
 
 interface GovtOfficialSidebarProps {
   syncState: SyncState;
@@ -30,120 +31,118 @@ export const GovtOfficialSidebar: React.FC<GovtOfficialSidebarProps> = ({
   language,
   onOpenSyncModal
 }) => {
-  const suggestedQuestions = [
-    {
-      en: 'How do I log in to the e-GP portal?',
-      bn: 'কীভাবে ই-জিপি পোর্টালে লগইন করবেন?'
-    },
-    {
-      en: 'How can I create a Procuring Entity account?',
-      bn: 'কীভাবে ক্রয়কারী সত্তা (PE) অ্যাকাউন্ট তৈরি করবেন?'
-    },
-    {
-      en: 'How do I find an e-GP procedure in the manual?',
-      bn: 'ম্যানুয়ালে ই-জিপি পদ্ধতি কীভাবে খুঁজে পাবেন?'
-    },
-    {
-      en: 'What should I do if I encounter a portal error?',
-      bn: 'পোর্টালে ত্রুটি (Error) দেখা দিলে কী করণীয়?'
-    },
-    {
-      en: 'How to delete a tender?',
-      bn: 'ড্রাফট টেন্ডার কীভাবে বাতিল বা মুছে ফেলবেন?'
-    }
-  ];
+  const [suggestionQuery, setSuggestionQuery] = useState('');
+  const [submittedQuery, setSubmittedQuery] = useState('');
+  const matchingSuggestions = useMemo(
+    () => searchManualQuestionSuggestions(submittedQuery),
+    [submittedQuery],
+  );
+  const visibleSuggestions = submittedQuery
+    ? matchingSuggestions.slice(0, 30)
+    : MANUAL_QUESTION_SUGGESTIONS.slice(0, 12);
+  const totalVisibleCount = submittedQuery
+    ? matchingSuggestions.length
+    : MANUAL_QUESTION_SUGGESTIONS.length;
 
   return (
-    <aside className="w-full md:w-80 bg-white border-r border-[#D5DEE7] p-4 flex flex-col gap-4 text-xs select-none shrink-0 overflow-y-auto">
+    <aside className="hidden min-h-0 md:flex md:w-80 bg-white/30 backdrop-blur-lg border-r border-white/60 p-4 flex-col gap-4 text-xs select-none shrink-0 overflow-y-auto font-sans">
       {/* 1. New Chat Action */}
       <button
         onClick={onNewChat}
-        className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-[#0B4F8A] hover:bg-[#083c6b] text-white rounded-md font-semibold text-xs shadow-xs transition-colors cursor-pointer"
+        className="w-full flex items-center justify-center gap-2 py-2.5 px-3 bg-gradient-to-r from-[#0B4F8A] to-[#12304A] hover:from-[#083c6b] hover:to-[#0f2438] text-white rounded-lg font-semibold text-xs shadow-sm transition-all cursor-pointer hover:scale-101 active:scale-99"
         aria-label="Start a new chat session"
       >
         <Plus className="w-4 h-4" />
-        <span>{language === 'en' ? 'New Chat' : 'নতুন কথোপকথন'}</span>
+        <span>{language === 'en' ? 'New Consultation' : 'নতুন কথোপকথন'}</span>
       </button>
 
       {/* 2. Suggested Questions */}
-      <div className="border border-[#D5DEE7] rounded-md bg-[#F3F6F9] p-3 space-y-2">
-        <div className="flex items-center gap-1.5 font-bold text-[#12304A] border-b border-[#D5DEE7] pb-1.5">
-          <Search className="w-3.5 h-3.5 text-[#0B4F8A]" />
-          <span>{language === 'en' ? 'Suggested Questions' : 'প্রস্তাবিত প্রশ্নাবলী'}</span>
+      <div className="border border-white/70 rounded-xl bg-white/40 backdrop-blur-md p-3.5 space-y-2.5 shadow-2xs">
+        <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+          <div className="flex items-center gap-1.5 font-bold text-[#0F172A]">
+            <Search className="w-3.5 h-3.5 text-[#0B4F8A]" />
+            <span>{language === 'en' ? 'Questions from the Manual' : 'ম্যানুয়াল থেকে প্রশ্ন'}</span>
+          </div>
+          <span className="text-[10px] font-mono font-bold text-slate-500 bg-slate-200/60 px-1.5 py-0.2 rounded">
+            {language === 'en' ? `${MANUAL_QUESTION_SUGGESTIONS.length} questions` : `${MANUAL_QUESTION_SUGGESTIONS.length}টি প্রশ্ন`}
+          </span>
         </div>
 
-        <div className="space-y-1.5 pt-0.5">
-          {suggestedQuestions.map((q, idx) => {
-            const label = language === 'en' ? q.en : q.bn;
+        <form
+          className="flex gap-1.5"
+          onSubmit={(event) => {
+            event.preventDefault();
+            setSubmittedQuery(suggestionQuery.trim());
+          }}
+        >
+          <input
+            type="search"
+            value={suggestionQuery}
+            onChange={(event) => setSuggestionQuery(event.target.value)}
+            placeholder={language === 'en' ? 'Search by word or question...' : 'শব্দ বা প্রশ্ন দিয়ে খুঁজুন...'}
+            aria-label="Search suggested manual questions"
+            className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white/80 px-2.5 py-2 text-[11px] text-slate-800 outline-none placeholder:text-slate-400 focus:border-[#0B4F8A] focus:ring-2 focus:ring-blue-500/20"
+          />
+          <button
+            type="submit"
+            className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-[#0B4F8A] px-2.5 py-2 text-[11px] font-semibold text-white transition-colors hover:bg-[#083c6b]"
+          >
+            <Search className="h-3.5 w-3.5" />
+            <span>{language === 'en' ? 'Search' : 'খুঁজুন'}</span>
+          </button>
+        </form>
+
+        <p className="text-[10px] text-slate-500">
+          {submittedQuery
+            ? language === 'en'
+              ? `${totalVisibleCount} matching suggestions${totalVisibleCount > 30 ? ' · showing first 30' : ''}`
+              : `${totalVisibleCount}টি মিলেছে${totalVisibleCount > 30 ? ' · প্রথম ৩০টি দেখানো হচ্ছে' : ''}`
+            : language === 'en'
+              ? `Browse ${MANUAL_QUESTION_SUGGESTIONS.length} topics from the manual`
+              : `ম্যানুয়ালের ${MANUAL_QUESTION_SUGGESTIONS.length}টি বিষয় দেখুন`}
+        </p>
+
+        <div className="max-h-64 space-y-1.5 overflow-y-auto pt-0.5 pr-1">
+          {visibleSuggestions.map((suggestion) => {
             return (
               <button
-                key={idx}
-                onClick={() => onSelectSuggestedQuestion(q.en)}
-                className="w-full text-left p-2 rounded bg-white hover:bg-blue-50 border border-[#D5DEE7] hover:border-[#0B4F8A] text-[#334155] hover:text-[#0B4F8A] font-medium transition-all flex items-start gap-1.5 cursor-pointer leading-snug"
+                key={`${suggestion.page}-${suggestion.question}`}
+                onClick={() => onSelectSuggestedQuestion(suggestion.question)}
+                className="w-full text-left p-2.5 rounded-lg bg-white hover:bg-blue-50/70 border border-slate-200 hover:border-[#0B4F8A] text-slate-700 hover:text-[#0B4F8A] font-medium transition-all flex items-start gap-2 cursor-pointer leading-snug shadow-2xs hover:scale-101"
               >
                 <ChevronRight className="w-3.5 h-3.5 text-[#0B4F8A] shrink-0 mt-0.5" />
-                <span>{label}</span>
+                <span className="text-[11.5px]">
+                  {suggestion.question}
+                  <span className="ml-1 block pt-0.5 text-[10px] font-normal text-slate-400">
+                    Manual page {suggestion.page}
+                  </span>
+                </span>
               </button>
             );
           })}
+          {submittedQuery && matchingSuggestions.length === 0 && (
+            <p className="rounded-lg bg-white/70 p-3 text-[11px] leading-relaxed text-slate-500">
+              {language === 'en'
+                ? 'No matching manual topics. Try a shorter keyword or a different phrase.'
+                : 'ম্যানুয়ালে মেলেনি। ছোট শব্দ বা অন্য বাক্যাংশ দিয়ে খুঁজুন।'}
+            </p>
+          )}
         </div>
       </div>
 
-      {/* 3. Supported Manual Card */}
-      <div className="border border-[#D5DEE7] rounded-md bg-white p-3 space-y-1.5">
-        <div className="flex items-center gap-1.5 font-bold text-[#12304A] border-b border-[#D5DEE7] pb-1.5">
-          <BookOpen className="w-3.5 h-3.5 text-[#16834A]" />
-          <span>{language === 'en' ? 'Supported Manual' : 'অনুমোদিত ম্যানুয়াল'}</span>
-        </div>
+      <a
+        href={`${API_BASE}/api/manual/download`}
+        className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#0B4F8A]/20 bg-white/70 px-3 py-2.5 text-xs font-semibold text-[#0B4F8A] shadow-2xs transition-colors hover:border-[#0B4F8A] hover:bg-blue-50"
+      >
+        <Download className="h-4 w-4" />
+        <span>{language === 'en' ? 'Download Full Manual' : 'সম্পূর্ণ ম্যানুয়াল ডাউনলোড'}</span>
+      </a>
 
-        <p className="text-[11px] text-[#334155] font-semibold leading-snug">
-          e-GP System User Manual - Procuring Entity User
-        </p>
-        <div className="text-[11px] text-slate-500 space-y-0.5 pt-1">
-          <div className="flex items-center justify-between">
-            <span>Edition:</span>
-            <span className="font-medium text-slate-800">1 February 2026</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span>Total Pages:</span>
-            <span className="font-medium text-slate-800">543 Pages</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span>Status:</span>
-            <span className="font-semibold text-[#16834A]">Fully Verified ✓</span>
-          </div>
-        </div>
-      </div>
-
-      {/* 4. About This Assistant */}
-      <div className="border border-[#D5DEE7] rounded-md bg-white p-3 space-y-1.5">
-        <div className="flex items-center gap-1.5 font-bold text-[#12304A]">
-          <Info className="w-3.5 h-3.5 text-[#0B4F8A]" />
-          <span>{language === 'en' ? 'About This Assistant' : 'সহায়িকা সম্পর্কে'}</span>
-        </div>
-        <p className="text-[11px] text-[#334155] leading-relaxed">
-          {language === 'en'
-            ? 'Designed for Procuring Entity (PE) officers to rapidly look up statutory procedures, workflow routing rules, and portal diagnostic resolutions under PPR.'
-            : 'পিপিআর বিধিমালার আওতায় ক্রয়কারী সত্তার (PE) কর্মকর্তাদের প্রশাসনিক প্রক্রিয়া ও পোর্টালে কাজের নির্দেশিকা সহজে খুঁজে পেতে প্রস্তুতকৃত।'}
-        </p>
-      </div>
-
-      {/* 5. Important Notice (Exact Requirement) */}
-      <div className="border border-amber-300 bg-amber-50 rounded-md p-3 space-y-1">
-        <div className="flex items-center gap-1.5 font-bold text-amber-900 text-xs">
-          <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" />
-          <span>{language === 'en' ? 'Important Notice' : 'জরুরি বিজ্ঞপ্তি'}</span>
-        </div>
-        <p className="text-[11px] text-amber-900 leading-relaxed">
-          “This assistant provides informational guidance based on the available e-GP manual. It does not submit tenders, make payments, or perform actions on the e-GP portal.”
-        </p>
-      </div>
-
-      {/* 6. Clear Conversation Action */}
-      <div className="mt-auto pt-2 border-t border-[#D5DEE7]">
+      {/* Clear Conversation Action */}
+      <div className="mt-auto pt-2 border-t border-slate-200">
         <button
           onClick={onClearConversation}
-          className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 rounded bg-gray-100 hover:bg-red-50 text-slate-600 hover:text-red-700 border border-[#D5DEE7] hover:border-red-300 font-medium text-xs transition-colors cursor-pointer"
+          className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-slate-50 hover:bg-red-50 text-slate-600 hover:text-red-700 border border-slate-200 hover:border-red-300 font-medium text-xs transition-colors cursor-pointer"
         >
           <Trash2 className="w-3.5 h-3.5" />
           <span>{language === 'en' ? 'Clear Conversation' : 'কথোপকথন মুছুন'}</span>

@@ -6,7 +6,12 @@ from typing import List, Dict, Any
 from fastapi import APIRouter, HTTPException, Query
 from app.schemas.chat import ChatRequest, ChatResponse, SourceDocument, HealthResponse
 from app.services.retrieval_service import retrieval_service
-from app.services.llm_service import llm_service, LLM_MODEL
+from app.services.llm_service import (
+    llm_service,
+    LLM_MODEL,
+    is_procedure_steps_request,
+    is_vague_steps_request,
+)
 from app.services.embedding_service import EMBEDDING_MODEL
 from app.services.faiss_service import faiss_service
 from app.services.vision_service import vision_service
@@ -23,7 +28,8 @@ async def ask_question(request: ChatRequest) -> ChatResponse:
     """
     raw_question = request.question.strip() if request.question else ""
     question = sanitize_user_query(raw_question)
-    
+    previous_question = sanitize_user_query(request.previous_question or "")[:500]
+
     img_data = sanitize_image_base64(request.image_base64 or request.image)
 
     if not question and not img_data:
@@ -34,12 +40,34 @@ async def ask_question(request: ChatRequest) -> ChatResponse:
     if img_data:
         ocr_text = vision_service.extract_text_from_base64(img_data)
 
-    # 2. Precision Hybrid Retrieval
-    effective_query = f"{question} {ocr_text}".strip() or "e-GP portal procedure"
-    context, raw_sources = retrieval_service.retrieve(effective_query, top_k=request.top_k or 5, image=img_data)
+    # Resolve short follow-ups against the immediately preceding user question.
+    answer_question = question
+    has_followup_topic = bool(previous_question and not is_vague_steps_request(previous_question))
+    if not img_data and is_vague_steps_request(question) and has_followup_topic:
+        answer_question = f"Provide concise numbered steps for: {previous_question}"
 
-    # 3. Generate Answer via Qwen / Grounded Engine
-    answer = llm_service.generate_answer(question or "Portal Screenshot Analysis", context, image=img_data)
+    # 2. Precision Hybrid Retrieval
+    if not img_data and is_vague_steps_request(question) and not has_followup_topic:
+        context, raw_sources = "No relevant context found in manuals.", []
+    else:
+        effective_query = f"{answer_question} {ocr_text}".strip() or "e-GP portal procedure"
+        context, raw_sources = retrieval_service.retrieve(
+            effective_query,
+            top_k=request.top_k or 5,
+            image=img_data,
+            include_page_context=is_procedure_steps_request(answer_question),
+        )
+
+    # 3. Generate Answer: Auto-shift to Vision Engine if an image is provided
+    answer = llm_service.generate_answer(
+        answer_question or "Portal Screenshot Analysis",
+        context,
+        image=img_data,
+        use_alt_model=request.use_alt_model,
+        image_mime=request.image_mime or "image/png",
+    )
+    if not answer or not answer.strip():
+        answer = llm_service._offline_answer_generator(answer_question, context)
 
     # 4. Format Sources with Screenshot URLs
     sources = []
@@ -67,12 +95,18 @@ async def ask_question(request: ChatRequest) -> ChatResponse:
             )
         )
 
+    # Determine which model label to show
+    model_label = f"{LLM_MODEL} (e-GP Grounded)"
+    if request.use_alt_model:
+        from app.services.llm_service import ALT_VL_MODEL
+        model_label = f"{ALT_VL_MODEL} (Optional Liquid AI)"
+
     return ChatResponse(
         question=question or "Portal Screenshot Diagnostic",
         answer=answer,
         sources=sources,
         portal_screens=list(portal_screens),
-        model_used=f"{LLM_MODEL} (e-GP Grounded)",
+        model_used=model_label,
         was_offline=False
     )
 
@@ -90,7 +124,7 @@ async def health_check() -> HealthResponse:
         llm_model=LLM_MODEL,
         embedding_model=EMBEDDING_MODEL,
         hf_configured=bool(llm_service.token),
-        gemini_configured=bool(llm_service._mode != "offline_fallback")
+        gemini_configured=False
     )
 
 @router.get("/chunks", summary="Inspect indexed manual chunks")

@@ -2,6 +2,11 @@
                     e-GP MANUAL CHATBOT - ARCHITECTURAL THINKING
 ================================================================================
 
+HISTORICAL NOTE: This is an older design record and may describe planned or
+superseded models, interfaces, and data. It is not the current project guide.
+For current setup, architecture, status, and APIs, see README.md and the
+documentation files in documents/INDEX.md.
+
 This document details the engineering thought process, architectural rationale,
 and design decisions made while building the e-GP Manual Chatbot RAG system.
 

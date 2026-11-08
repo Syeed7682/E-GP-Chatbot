@@ -1,7 +1,7 @@
-import React from 'react';
-import { X, ExternalLink, ShieldAlert, Monitor, CheckCircle, ArrowRight } from 'lucide-react';
-import { OFFICIAL_PORTAL_SCREENS } from '../data/manualChunks';
-import { PortalScreen } from '../types/egp';
+import React, { useEffect, useState } from 'react';
+import { X, Monitor, ImageOff } from 'lucide-react';
+import { API_BASE } from '../services/api';
+import { findManualPageForScreen, findPortalScreen } from '../utils/manualScreenReferences';
 
 interface PortalScreenModalProps {
   screenId: string | null;
@@ -12,14 +12,24 @@ export const PortalScreenModal: React.FC<PortalScreenModalProps> = ({
   screenId,
   onClose
 }) => {
+  const page = screenId ? findManualPageForScreen(screenId) : undefined;
+  const screen = screenId ? findPortalScreen(screenId) : undefined;
+  const imageUrl = page ? `${API_BASE}/api/manual/page/${page}/image` : null;
+  const [imageStatus, setImageStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
+
+  useEffect(() => {
+    setImageStatus('loading');
+  }, [imageUrl]);
+
+  const imageTitle = screen?.title ?? `Manual screenshot for ${screenId}`;
+
   if (!screenId) return null;
-  const screen: PortalScreen | undefined = OFFICIAL_PORTAL_SCREENS[screenId];
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 select-none">
-      <div className="bg-[#0f171e] border border-slate-700 rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 bg-slate-950/35 backdrop-blur-md flex items-center justify-center p-4 select-none">
+      <div className="bg-[#0f171e]/75 backdrop-blur-2xl border border-white/20 rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="bg-[#091016] px-5 py-3.5 border-b border-slate-800 flex items-center justify-between">
+        <div className="bg-white/[0.04] px-5 py-3.5 border-b border-white/10 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-blue-600/20 border border-blue-500/40 text-blue-400 flex items-center justify-center">
               <Monitor className="w-4 h-4" />
@@ -29,12 +39,10 @@ export const PortalScreenModal: React.FC<PortalScreenModalProps> = ({
                 <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800">
                   {screenId}
                 </span>
-                <h3 className="text-sm font-bold text-white">
-                  {screen ? screen.title : 'Official e-GP Portal Screen Reference'}
-                </h3>
+                <h3 className="text-sm font-bold text-white">{imageTitle}</h3>
               </div>
               <p className="text-[11px] text-slate-400">
-                Official e-GP Procuring Entity Manual • Page {screen?.page || '56'}
+                Official e-GP Procuring Entity Manual • Page {page ?? 'not found'}
               </p>
             </div>
           </div>
@@ -47,85 +55,36 @@ export const PortalScreenModal: React.FC<PortalScreenModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto space-y-4 text-xs">
-          {screen ? (
+        <div className="p-4 overflow-y-auto min-h-64 flex items-center justify-center bg-slate-950/25">
+          {imageUrl ? (
             <>
-              {/* Description */}
-              <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5 text-slate-300">
-                <p className="leading-relaxed">{screen.description}</p>
-                <div className="mt-2 flex items-center gap-4 text-[11px] text-slate-400 border-t border-slate-800 pt-2">
-                  <span>Module: <strong className="text-slate-200">{screen.module}</strong></span>
-                  <span>Source: <strong className="text-slate-200">PE User Manual 2026</strong></span>
-                </div>
-              </div>
-
-              {/* Realistic Portal UI Mockup Container */}
-              <div className="border border-emerald-900/60 rounded-xl bg-[#08120d] p-4 text-slate-200 shadow-inner">
-                {/* Simulated Portal Top Nav */}
-                <div className="border-b border-emerald-950 pb-2 mb-3 flex items-center justify-between text-[11px]">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                    <span className="font-bold text-emerald-400">eprocure.gov.bd</span>
-                    <span className="text-slate-500">/</span>
-                    <span className="text-slate-300 font-mono text-[10px]">{screen.screen_id}</span>
-                  </div>
-                  <span className="text-emerald-500/80 text-[10px] font-mono">Secured SSL • PKI Token Active</span>
-                </div>
-
-                {/* Simulated Form Fields */}
-                <div className="space-y-2 bg-[#050c08] p-3 rounded-lg border border-emerald-950">
-                  <span className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">
-                    Interface Data Parameters
-                  </span>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-1">
-                    {screen.fields.map((f, i) => (
-                      <div key={i} className="bg-[#0b1710] p-2 rounded border border-emerald-900/50 flex items-center justify-between">
-                        <span className="text-slate-300 font-mono text-[11px]">{f}</span>
-                        <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Simulated Action Buttons */}
-                <div className="mt-4 flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-emerald-950">
-                  {screen.action_buttons.map((btn, i) => (
-                    <button
-                      key={i}
-                      className={`px-3 py-1.5 rounded text-xs font-semibold shadow-sm transition-all ${
-                        btn.toLowerCase().includes('delete') || btn.toLowerCase().includes('reject')
-                          ? 'bg-red-900/60 hover:bg-red-800 text-red-200 border border-red-700/60'
-                          : btn.toLowerCase().includes('approve') || btn.toLowerCase().includes('login')
-                          ? 'bg-emerald-700 hover:bg-emerald-600 text-white border border-emerald-500'
-                          : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
-                      }`}
-                    >
-                      {btn}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Warning or Statutory Note */}
-              {screen.warning_text && (
-                <div className="bg-amber-950/40 border border-amber-800/60 rounded-xl p-3 flex items-start gap-2.5 text-amber-200/90 text-xs">
-                  <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-semibold text-amber-300 block mb-0.5">Statutory Procurement Warning:</span>
-                    <p>{screen.warning_text}</p>
-                  </div>
+              {imageStatus === 'loading' && (
+                <p className="text-sm text-slate-400">Loading the original manual page image…</p>
+              )}
+              {imageStatus === 'error' && (
+                <div className="flex flex-col items-center gap-2 text-center text-slate-400">
+                  <ImageOff className="w-8 h-8" />
+                  <p>The original screenshot for page {page} is not available from the image service.</p>
                 </div>
               )}
+              <img
+                src={imageUrl}
+                alt={`${screenId} from e-GP manual, page ${page}`}
+                className={`max-h-[65vh] max-w-full object-contain ${imageStatus === 'loaded' ? 'block' : 'hidden'}`}
+                onLoad={() => setImageStatus('loaded')}
+                onError={() => setImageStatus('error')}
+              />
             </>
           ) : (
-            <div className="py-8 text-center text-slate-400">
-              <p>Portal screen reference details: {screenId}</p>
+            <div className="flex flex-col items-center gap-2 text-center text-slate-400">
+              <ImageOff className="w-8 h-8" />
+              <p>This screen reference could not be matched to a page in the manual.</p>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="bg-[#091016] px-5 py-3 border-t border-slate-800 flex items-center justify-between">
+        <div className="bg-white/[0.04] px-5 py-3 border-t border-white/10 flex items-center justify-between">
           <span className="text-[11px] text-slate-400">
             Referenced in e-GP System User Manual (Procuring Entity User)
           </span>

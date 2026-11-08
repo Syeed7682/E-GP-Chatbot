@@ -42,7 +42,9 @@ class EmbeddingService:
         """Initializes the active embedding provider based on environment."""
         # 1. Check if local multimodal/sentence-transformers model is available
         try:
-            from sentence_transformers import SentenceTransformer
+            import importlib
+            st_mod = importlib.import_module("sentence_transformers")
+            SentenceTransformer = getattr(st_mod, "SentenceTransformer")
             print(f"[embedding_service] Loading local model '{self.model_name}'...")
             self._local_model = SentenceTransformer(self.model_name)
             self._mode = "local"

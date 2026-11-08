@@ -1,161 +1,107 @@
-# Bangladesh e-GP Official Manual Assistant
+# e-GP Manual Assistant
 
-An enterprise-grade **Multimodal RAG (Retrieval-Augmented Generation) + Offline-First Synchronization System** for the official **543-page Bangladesh e-GP (electronic Government Procurement) Procuring Entity User Manual**.
+A React and FastAPI application for asking questions about the Bangladesh e-GP Procuring Entity User Manual. The interface supports manual-based question suggestions, screenshot questions, source references, and downloading the full manual PDF.
 
-Built in accordance with the Public Procurement Act (PPA 2006) and Public Procurement Rules (PPR 2008), this system answers queries with strict statutory grounding, page citations, portal screenshot diagnostics, and offline fallback.
+The application is a project assistant, not an official procurement authority. Answers depend on the indexed manual and configured AI provider; verify decisions against the applicable rules and official guidance.
 
----
+## What is implemented
 
-## 🏛️ System Architecture
+- React 19, Vite, Tailwind CSS, and an Express development server.
+- FastAPI chat, manual, health, and synchronization endpoints.
+- A local 543-page PDF, processed chunks, FAISS index, and metadata.
+- Dense retrieval combined with keyword scoring in the active backend chat path. Separate hybrid-retriever and reranker modules exist but are not part of that path.
+- Qwen/Qwen2.5-VL-3B-Instruct as the default hosted model; Liquid AI is an optional, explicitly selected alternative.
+- Screenshot upload, OCR/vision processing, manual source citations, and page-image rendering.
+- Local browser retrieval and IndexedDB storage for offline use. Offline responses may differ from backend responses.
+- A searchable suggestion list built from the bundled manual data and a full-manual PDF download link.
 
-```
-User Query (Text + optional portal screenshot)
-                 │
-                 ▼
-     Multimodal Query Processor
-      (OCR + Visual Layout Analysis)
-                 │
-         ┌───────┴───────┐
-         ▼               ▼
-   Text Embedding   Visual Understanding
-  (BGE-M3 1024-dim)   (OCR / Qwen2.5-VL)
-         │               │
-         └───────┬───────┘
-                 ▼
-     Hybrid Retrieval Engine
-   (FAISS IndexFlatIP + BM25)
-                 │
-                 ▼
-      BGE Cross-Encoder Reranker
-  (Filters TOC pages 1–5, boosts exact procedures)
-                 │
-                 ▼
-     Grounded Context Builder
-(Official manual passages + page citations + screens)
-                 │
-                 ▼
-        LLM Inference Engine
-(Qwen2.5-72B-Instruct / Gemini / Zero-Crash Synthesizer)
-                 │
-                 ▼
-     e-GP Assistant Response
-(Actionable steps + Page citations + Portal screen guidance)
-                 │
-                 ▼
-   Offline Synchronization Layer
- (IndexedDB + Local vector cache + Reconciliation queue)
-```
+See [Project Architecture](documents/PROJECT_ARCHITECTURE.md) for active request paths and known limitations.
+For publishing the static frontend on Netlify and connecting a separately hosted FastAPI backend, follow the [Deployment Guide](documents/DEPLOYMENT_GUIDE.md).
 
----
+## Requirements
 
-## 📁 Directory Structure
+- Node.js and npm.
+- Python with pip, and the packages in `backend/requirements.txt`.
+- The manual PDF and FAISS data files. The PDF is not tracked by Git; place the authorized manual at `data/raw/egp_manual.pdf`.
+- An optional Hugging Face token for hosted model inference. Without a configured provider, the backend can use its local/extractive fallback where available.
 
-```
-E:\E-gp Project manual\
-│
-├── frontend/
-│   ├── public/
-│   │   ├── assets/
-│   │   ├── logo/
-│   │   └── manual-preview/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── chat/             # ChatWindow, ChatMessage, ChatInput, SourceCitation
-│   │   │   ├── manual/           # ManualViewer, PageNavigator, ScreenshotViewer
-│   │   │   ├── offline/          # OfflineIndicator, SyncManager, SyncInspector
-│   │   │   └── layout/           # Header, Sidebar, Dashboard
-│   │   ├── services/             # api.ts, chatService.ts, retrievalService.ts, syncService.ts
-│   │   ├── data/                 # manualChunks.ts, portalScreens.ts, allManualChunks.json
-│   │   ├── utils/                # indexedDB.ts, offlineVectorEngine.ts, encryption.ts, syncQueue.ts
-│   │   ├── types/                # egp.ts
-│   │   ├── App.tsx               # Primary application component
-│   │   └── main.tsx              # React DOM entry point
-│   ├── index.html
-│   ├── vite.config.ts            # Vite config with /api proxy to FastAPI
-│   ├── package.json
-│   ├── tsconfig.json
-│   ├── server.ts                 # Full-stack Node proxy & fallback engine
-│   └── netlify.toml              # Netlify client deployment config
-│
-├── backend/
-│   ├── app/
-│   │   ├── api/                  # chat.py, health.py, manual.py, sync.py
-│   │   ├── services/             # embedding_service.py, vector_store.py, hybrid_retriever.py,
-│   │   │                         # reranker.py, vision_service.py, llm_service.py,
-│   │   │                         # citation_service.py, pdf_loader.py, chunker.py
-│   │   ├── prompts/              # system_prompt.py, system_prompt.txt
-│   │   ├── schemas/              # chat.py, manual.py
-│   │   ├── core/                 # config.py, security.py
-│   │   └── main.py               # FastAPI application entry point
-│   ├── scripts/                  # ingest_manual.py, extract_images.py, build_index.py, validate_chunks.py
-│   ├── tests/                    # test_retrieval.py, test_chat.py, test_citations.py, test_offline.py
-│   └── requirements.txt
-│
-├── ai_models/
-│   ├── __init__.py
-│   ├── models.py
-│   └── model_config.py
-│
-├── data/
-│   ├── raw/                      # e-GP System User Manual (543 pages)
-│   ├── processed/                # chunks.json (1,188 chunks)
-│   ├── extracted_images/         # page_images/ (pages 1 to 543)
-│   ├── embeddings/
-│   └── faiss_index/              # index.faiss & metadata.json
-│
-├── documents/
-│   ├── INDEX.md
-│   ├── PROJECT_ARCHITECTURE.md
-│   ├── thinking_process.txt
-│   ├── havedone.txt
-│   └── API_DOCUMENTATION.md
-│
-├── .venv/
-├── .env
-├── .env.example
-├── .gitignore
-├── run.bat                       # One-click Windows launcher
-├── run.sh                        # One-click Unix launcher
-└── README.md
-```
+## Setup
 
----
+From the project root:
 
-## 🚀 Quick Start
-
-### Option 1: One-Click Full Stack Launcher
-On Windows, double-click:
-```cmd
-run.bat
-```
-Select **`[1]`** to launch both the FastAPI Python Backend (`http://127.0.0.1:8000`) and React Frontend (`http://localhost:3000`).
-
-### Option 2: Run Separately
-
-#### 1. FastAPI Backend:
 ```powershell
-cd backend
-..\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+if (!(Test-Path .env)) { Copy-Item .env.example .env }
+python -m pip install -r backend/requirements.txt
+Set-Location frontend
+npm install
 ```
-API Documentation available at: `http://127.0.0.1:8000/docs`
 
-#### 2. React Frontend:
+Set `HF_TOKEN` in the root `.env` to enable hosted Hugging Face inference. Keep credentials server-side; do not put provider tokens in frontend `VITE_*` variables or commit `.env`.
+
+The primary model defaults to `Qwen/Qwen2.5-VL-3B-Instruct`. The optional alternate defaults to `LiquidAI/LFM2.5-VL-1.6B` and is used only when explicitly selected. Backend data paths and model options are documented in [`.env.example`](.env.example) and `backend/app/core/config.py`.
+
+## Run locally
+
+### Windows full stack
+
+Run `run.bat` from the project root and choose the full-stack option. The backend runs at `http://127.0.0.1:8000`; the frontend runs at `http://localhost:3000`.
+
+### Start services separately
+
+Backend, from the project root:
+
 ```powershell
-cd frontend
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000 --reload
+```
+
+If using a different Python executable, replace `.\.venv\Scripts\python.exe` with `python`.
+
+Frontend, in a separate terminal:
+
+```powershell
+Set-Location frontend
 npm run dev
 ```
-Open `http://localhost:3000` in your web browser.
 
----
+The frontend development server proxies `/api` requests to `http://127.0.0.1:8000`. Start FastAPI for backend chat, PDF download, and PDF-rendered manual page images. The frontend also contains local fallback behavior when the backend cannot be reached.
 
-## 🧪 Verification & Automated Tests
+The interactive API reference is available at `http://127.0.0.1:8000/docs`.
 
-Run the Python verification test suites:
+## Build and tests
+
 ```powershell
-.\.venv\Scripts\python.exe backend/tests/test_retrieval.py
-.\.venv\Scripts\python.exe backend/tests/test_offline.py
+Set-Location frontend
+npm run build
+npm run lint
 ```
-Both tests verify:
-1. **Debarment / Suspension** correctly retrieves statutory Chapter 7 (Pages 342–348, Rule 127).
-2. **Tender Deletion** correctly retrieves Chapter 4 Cancellation Process (Page 178 / 191) with Table of Contents permanently excluded.
-3. Offline synthesis executes zero-crash responses when disconnected.
+
+`npm run lint` runs the TypeScript compiler (`tsc --noEmit`). Backend tests use pytest:
+
+```powershell
+python -m pytest backend/tests -q
+```
+
+The test command requires pytest to be installed in the selected Python environment. Build/test status can change as the project evolves; consult the current command output rather than assuming the checks pass.
+
+## Data and generated files
+
+```text
+data/
+  raw/egp_manual.pdf             # local source manual; not tracked
+  processed/chunks.json          # processed manual text
+  faiss_index/index.faiss        # vector index
+  faiss_index/metadata.json      # vector-to-chunk metadata
+  extracted_images/              # optional extracted page images
+frontend/src/data/
+  allManualChunks.json           # bundled source for local UI/offline features
+```
+
+Current audit counts are documented in [Project Architecture](documents/PROJECT_ARCHITECTURE.md). Verify the PDF, chunks, index, and metadata together before rebuilding or replacing generated data.
+
+## Documentation
+
+- [Project documentation index](documents/INDEX.md)
+- [Current architecture and limitations](documents/PROJECT_ARCHITECTURE.md)
+- [Implementation plan and validation checklist](documents/PROJECT_PLAN.md)
+- [API endpoints and payloads](documents/API_DOCUMENTATION.md)
+- [Netlify and backend deployment](documents/DEPLOYMENT_GUIDE.md)

@@ -16,8 +16,9 @@ class Settings:
     
     # LLM Settings
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "").strip()
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-flash-latest").strip()
     HF_TOKEN: str = os.getenv("HF_TOKEN", "").strip()
-    LLM_MODEL: str = os.getenv("LLM_MODEL", "Qwen/Qwen2.5-72B-Instruct").strip()
+    LLM_MODEL: str = os.getenv("LLM_MODEL", "Qwen/Qwen2.5-VL-3B-Instruct").strip()
     USE_LOCAL_LLM: bool = os.getenv("USE_LOCAL_LLM", "false").lower() in ("true", "1", "yes")
     
     # Embedding Settings
@@ -31,6 +32,14 @@ class Settings:
     BACKEND_HOST: str = os.getenv("BACKEND_HOST", "127.0.0.1").strip()
     BACKEND_PORT: int = int(os.getenv("BACKEND_PORT", "8000"))
     FRONTEND_PORT: int = int(os.getenv("FRONTEND_PORT", "3000"))
+    CORS_ORIGINS: list[str] = [
+        origin.strip().rstrip("/")
+        for origin in os.getenv(
+            "CORS_ORIGINS",
+            "http://localhost:3000,http://127.0.0.1:3000",
+        ).split(",")
+        if origin.strip()
+    ]
     
     # Directory Paths
     PROJECT_ROOT: Path = ROOT_DIR
@@ -41,4 +50,3 @@ class Settings:
     EXTRACTED_IMAGES_DIR: Path = ROOT_DIR / "data/extracted_images"
 
 settings = Settings()
-

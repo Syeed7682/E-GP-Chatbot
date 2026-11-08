@@ -1,8 +1,10 @@
 import express from 'express';
 import http from 'http';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
-import { GoogleGenAI } from '@google/genai';
 import { HfInference } from '@huggingface/inference';
 import Tesseract from 'tesseract.js';
 import { INITIAL_MANUAL_CHUNKS, SERVER_DATASET_VERSION, SERVER_DATASET_HASH } from './src/data/manualChunks.ts';
@@ -13,6 +15,8 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const EXTRACTED_IMAGES_DIR = path.join(PROJECT_ROOT, 'data', 'extracted_images');
 
 app.use(express.json({ limit: '50mb' }));
 
@@ -24,15 +28,7 @@ let serverDatasetHash = SERVER_DATASET_HASH;
 // System Prompt for e-GP Procurement Entity RAG
 const EGP_SYSTEM_PROMPT = `You are Proca, the official e-GP (electronic Government Procurement) Manual AI Assistant for Procuring Entity (PE) users, established by the Central Procurement Technical Unit (CPTU) and Ministry of Planning.
 
-CRITICAL INSTRUCTIONS:
-1. Base all answers strictly on the provided e-GP manual context chunks (Procuring Entity User Manual 543 pages).
-2. Always provide actionable, step-by-step numbered instructions.
-3. Explicitly cite the source document and page number(s) in this format:
-   📖 Source: e-GP System User Manual (Procuring Entity User 1 February 2026), Page [X]
-4. When relevant, reference official portal screens (e.g. Screen - Q10.4, Screen - D6, Screen - AUTH-01) with:
-   📷 Refer to portal screens: [Screen Names]
-5. If the user provides a portal screenshot or error code, analyze it precisely, diagnose the underlying rule or token requirement, and guide the user on how to fix it.
-6. Maintain a helpful, polite, and authoritative civil service tone.`;
+Answer using only the provided e-GP manual context and any uploaded screenshot. Never invent procurement procedures, rules, or deadlines. Start with a direct answer in one short, natural paragraph; use a short numbered list only when sequential steps are needed. Keep it concise, correct obvious OCR line-break or split-word errors when clear, and do not copy chunk headings or extraction artifacts. Do not include page numbers, citations, chunk IDs, source labels, or a separate screen-reference list in the answer; the application displays references separately. Mention a screen or menu in the answer only when needed to explain an action. For screenshots, describe only visible details and relevant supported manual guidance. If the context is insufficient, say so briefly.`;
 
 // 1. Health Endpoints (FastAPI compatibility)
 app.get(['/api/health', '/api/chat/health'], (req, res) => {
@@ -43,7 +39,7 @@ app.get(['/api/health', '/api/chat/health'], (req, res) => {
     verified_chunks: 1188,
     version: serverCurrentVersion,
     hf_configured: Boolean(process.env.HF_TOKEN || process.env.HUGGINGFACE_TOKEN),
-    gemini_configured: Boolean(process.env.GEMINI_API_KEY)
+    gemini_configured: false
   });
 });
 
@@ -52,6 +48,64 @@ app.get('/api/chat/chunks', (req, res) => {
     total_chunks: INITIAL_MANUAL_CHUNKS.length,
     chunks: INITIAL_MANUAL_CHUNKS
   });
+});
+
+app.get('/api/manual/page/:page_num/image', async (req, res, next) => {
+  const page = Number(req.params.page_num);
+  if (!Number.isInteger(page) || page < 1 || page > 543) {
+    return res.status(404).json({ error: 'Manual page must be between 1 and 543.' });
+  }
+
+  const candidates = [
+    `page_${page}.jpg`,
+    `page_${page}.png`,
+    `page_${page}_img_0.jpg`,
+    `page_${page}_img_0.png`
+  ];
+
+  for (const filename of candidates) {
+    try {
+      const image = await readFile(path.join(EXTRACTED_IMAGES_DIR, filename));
+      const mediaType = image[0] === 0xff && image[1] === 0xd8
+        ? 'image/jpeg'
+        : image[0] === 0x89 && image[1] === 0x50 && image[2] === 0x4e && image[3] === 0x47
+          ? 'image/png'
+          : null;
+
+      if (!mediaType) {
+        return res.status(415).json({ error: `Unsupported image format for manual page ${page}.` });
+      }
+
+      res.type(mediaType);
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      return res.send(image);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        return next(error);
+      }
+    }
+  }
+
+  try {
+    const fastApiUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8000';
+    const response = await fetch(`${fastApiUrl}/api/manual/page/${page}/image`);
+    if (!response.ok) {
+      return res.status(response.status).json({ error: `Could not retrieve manual page ${page} image.` });
+    }
+
+    const mediaType = response.headers.get('content-type')?.split(';')[0];
+    if (mediaType !== 'image/jpeg' && mediaType !== 'image/png') {
+      return res.status(502).json({ error: `Backend returned an unsupported image format for manual page ${page}.` });
+    }
+
+    const image = Buffer.from(await response.arrayBuffer());
+    res.type(mediaType);
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.send(image);
+  } catch (error) {
+    console.error(`Could not retrieve rendered manual page ${page} image from FastAPI:`, error);
+    return res.status(503).json({ error: 'Manual page rendering is unavailable because the FastAPI backend could not be reached.' });
+  }
 });
 
 // 2. Sync Version Endpoint
@@ -115,11 +169,13 @@ app.post('/api/sync/push', (req, res) => {
 
 // 5. Chat Endpoint (Multimodal RAG with FastAPI proxy, Hugging Face Qwen, Gemini, or Grounded Fallback)
 app.post('/api/chat', async (req, res) => {
-  const { question, image_base64, image_mime = 'image/png', image_name, top_k = 3 } = req.body;
+  const { question, image_base64, image_mime = 'image/png', image_name, top_k = 3, use_alt_model = false } = req.body;
 
   if (!question && !image_base64) {
     return res.status(400).json({ error: 'Question or image is required' });
   }
+
+  const shouldRouteToVision = use_alt_model;
 
   // 0. Prioritize FastAPI Python backend (port 8000) if active
   try {
@@ -132,9 +188,11 @@ app.post('/api/chat', async (req, res) => {
         image_base64: image_base64 || null,
         image: image_base64 || null,
         image_name: image_name || null,
-        top_k
+        image_mime: image_mime || 'image/png',
+        top_k,
+        use_alt_model: shouldRouteToVision
       }),
-      signal: AbortSignal.timeout(4000)
+      signal: AbortSignal.timeout(60000)
     });
     if (pyRes.ok) {
       const pyData = await pyRes.json();
@@ -180,26 +238,39 @@ app.post('/api/chat', async (req, res) => {
 
   const portalScreens = Array.from(new Set(retrieved.flatMap(r => r.chunk.screen_references)));
 
-  // Try calling Hugging Face if HF_TOKEN is present
+  // Use Qwen by default; Liquid AI is selected only through the explicit alternate-model option.
   const hfToken = process.env.HF_TOKEN || process.env.HUGGINGFACE_TOKEN;
   if (hfToken) {
     try {
       const hf = new HfInference(hfToken);
       const promptText = `USER QUESTION: ${question || 'Analyze this portal screenshot and explain the required e-GP procedure or error fix.'}
 ${ocrExtractedText ? `EXTRACTED PORTAL TEXT: ${ocrExtractedText}\n` : ''}
-RELEVANT OFFICIAL e-GP PE MANUAL CONTEXT:
+RELEVANT OFFICIAL e-GP PE MANUAL CONTEXT (use as evidence; do not copy OCR artifacts or metadata):
 ${retrievedContextText}
 
-Respond clearly following the official e-GP rules. Include step-by-step guide, screen references, and source page citation.`;
+Write a concise, direct answer in a natural conversational style. Prefer one short paragraph; use numbered steps only if the user needs a sequence of actions. Do not include page numbers, citations, chunk headings, source labels, or a separate screen list in the answer. Those references are displayed separately.`;
 
-      const modelToUse = process.env.LLM_MODEL || 'Qwen/Qwen2.5-72B-Instruct';
+      const modelToUse = use_alt_model
+        ? process.env.ALT_VL_MODEL || 'LiquidAI/LFM2.5-VL-1.6B'
+        : process.env.LLM_MODEL || 'Qwen/Qwen2.5-VL-3B-Instruct';
+      const imageDataUrl = image_base64
+        ? image_base64.startsWith('data:')
+          ? image_base64
+          : `data:${image_mime || 'image/png'};base64,${image_base64}`
+        : null;
+      const userContent = imageDataUrl
+        ? [
+            { type: 'text' as const, text: promptText },
+            { type: 'image_url' as const, image_url: { url: imageDataUrl } }
+          ]
+        : promptText;
       const response = await hf.chatCompletion({
         model: modelToUse,
         messages: [
           { role: 'system', content: EGP_SYSTEM_PROMPT },
-          { role: 'user', content: promptText }
+          { role: 'user', content: userContent }
         ],
-        max_tokens: 1024
+        max_tokens: 512
       });
 
       const answer = response.choices?.[0]?.message?.content || '';
@@ -209,68 +280,12 @@ Respond clearly following the official e-GP rules. Include step-by-step guide, s
           answer,
           sources,
           portal_screens: portalScreens,
-          model_used: 'e-GP PE Manual Grounded',
+          model_used: `${modelToUse} (via Hugging Face)`,
           was_offline: false
         });
       }
     } catch (hfErr: any) {
       console.warn('Hugging Face call notice (using grounded local engine):', hfErr.message);
-    }
-  }
-
-  // Try calling Gemini if API key is present
-  if (process.env.GEMINI_API_KEY) {
-    try {
-      const ai = new GoogleGenAI({
-        apiKey: process.env.GEMINI_API_KEY,
-        httpOptions: {
-          headers: {
-            'User-Agent': 'aistudio-build'
-          }
-        }
-      });
-
-      const parts: any[] = [];
-
-      if (image_base64) {
-        const cleanBase64 = image_base64.replace(/^data:image\/[a-z]+;base64,/, '');
-        parts.push({
-          inlineData: {
-            mimeType: image_mime,
-            data: cleanBase64
-          }
-        });
-      }
-
-      const promptText = `USER QUESTION: ${question || 'Analyze this portal screenshot and explain the required e-GP procedure or error fix.'}
-${ocrExtractedText ? `EXTRACTED PORTAL TEXT: ${ocrExtractedText}\n` : ''}
-RELEVANT OFFICIAL e-GP PE MANUAL CONTEXT:
-${retrievedContextText}
-
-Respond clearly following the system instructions. Include step-by-step guide, screen references, and source page citation.`;
-
-      parts.push({ text: promptText });
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents: { parts },
-        config: {
-          systemInstruction: EGP_SYSTEM_PROMPT
-        }
-      });
-
-      const answer = response.text || '';
-
-      return res.json({
-        question: question || 'Portal Screenshot Diagnostic',
-        answer,
-        sources,
-        portal_screens: portalScreens,
-        model_used: 'e-GP PE Manual Grounded',
-        was_offline: false
-      });
-    } catch (err: any) {
-      console.warn('Gemini API call failed or rate-limited, falling back to deterministic local RAG engine:', err.message);
     }
   }
 

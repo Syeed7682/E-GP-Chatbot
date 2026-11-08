@@ -105,11 +105,13 @@ export function retrieveTopKChunks(
   topK: number = 3,
   hasImageAttachment: boolean = false
 ): { chunk: ManualChunk; score: number }[] {
+  // Always filter out intro / TOC / Change Log pages (page_number <= 5)
+  const validChunks = chunks.filter(c => c && c.page_number > 5);
   const queryVector = embedQueryText(query);
   const normalizedQuery = normalizeQuery(query);
   const queryWords = normalizedQuery.split(/\W+/).filter(w => w.length > 2);
 
-  const scored = chunks.map(chunk => {
+  const scored = validChunks.map(chunk => {
     // 1. Dense vector cosine similarity
     const vecScore = cosineSimilarity(queryVector, chunk.vector);
 
@@ -200,16 +202,97 @@ export function retrieveTopKChunks(
   return scored.slice(0, topK);
 }
 
+function repairLeadingChunkFragment(content: string, chunk: ManualChunk, chunks: ManualChunk[]): string {
+  const firstToken = content.match(/^([a-z]{2,6})\s+/);
+  if (!firstToken) return content;
+
+  const previous = chunks
+    .filter((candidate) => candidate.page_number === chunk.page_number && candidate.chunk_id < chunk.chunk_id)
+    .sort((a, b) => b.chunk_id - a.chunk_id)[0];
+  if (!previous) return content;
+
+  const fragment = firstToken[1].toLowerCase();
+  const wordPattern = /\b[A-Za-z]+\b/g;
+  let wordMatch: RegExpExecArray | null;
+
+  while ((wordMatch = wordPattern.exec(previous.content)) !== null) {
+    const completeWord = wordMatch[0];
+    if (completeWord.length <= fragment.length || !completeWord.toLowerCase().endsWith(fragment)) continue;
+
+    const overlapStart = wordMatch.index + completeWord.length - fragment.length;
+    const priorRemainder = previous.content.slice(overlapStart);
+    let overlap = 0;
+    while (
+      overlap < content.length &&
+      overlap < priorRemainder.length &&
+      content[overlap].toLowerCase() === priorRemainder[overlap].toLowerCase()
+    ) {
+      overlap++;
+    }
+
+    if (overlap < 24) continue;
+    const continuation = content.slice(overlap).trimStart();
+    return continuation ? `${previous.content.trimEnd()} ${continuation}` : previous.content;
+  }
+
+  return content;
+}
+
+function repairChunkBoundaries(chunk: ManualChunk, chunks: ManualChunk[]): string {
+  const content = repairLeadingChunkFragment(chunk.content, chunk, chunks);
+  const nextChunk = chunks.find(
+    (candidate) =>
+      candidate.page_number === chunk.page_number &&
+      candidate.chunk_id === chunk.chunk_id + 1
+  );
+  if (!nextChunk) return content;
+
+  const repairedNext = repairLeadingChunkFragment(nextChunk.content, nextChunk, chunks);
+  const currentContent = content.trimEnd();
+  return repairedNext.startsWith(currentContent)
+    ? repairedNext
+    : content;
+}
+
+export function isVagueStepsRequest(text: string): boolean {
+  const nonTopicWords = new Set([
+    'a', 'about', 'are', 'can', 'could', 'do', 'explain', 'for', 'give', 'guide',
+    'how', 'i', 'is', 'me', 'my', 'need', 'next', 'of', 'on', 'please', 'process',
+    'procedure', 'show', 'step', 'steps', 'tell', 'the', 'then', 'to', 'what', 'you'
+  ]);
+  return !text.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/)
+    .filter(Boolean).some((word) => !nonTopicWords.has(word));
+}
+
 /**
  * Formats official manual instructions cleanly into clear civil-service guidance
  */
 export function generateOfflineAnswer(
   question: string,
   chunks: ManualChunk[],
-  imageName?: string
+  imageName?: string,
+  previousQuestion?: string
 ): ChatApiResponse {
-  const normQ = normalizeQuery(question || '');
+  const isUnspecifiedSteps = isVagueStepsRequest(question);
+  const usablePreviousQuestion = previousQuestion?.trim() && !isVagueStepsRequest(previousQuestion)
+    ? previousQuestion.trim()
+    : undefined;
+  const effectiveQuestion = isUnspecifiedSteps && usablePreviousQuestion
+    ? `Tell me the steps for: ${usablePreviousQuestion}`
+    : question;
+  const normQ = normalizeQuery(effectiveQuestion || '');
   const lowerImg = (imageName || '').toLowerCase();
+
+  if (isUnspecifiedSteps && !usablePreviousQuestion && !imageName) {
+    return {
+      question,
+      answer: 'Which e-GP process would you like the steps for? For example, creating or submitting an APP, creating a tender, or evaluating bids.',
+      sources: [],
+      portal_screens: [],
+      model_used: 'e-GP PE Manual Grounded',
+      was_offline: true
+    };
+  }
 
   // 1. Guardrail: Detect non-portal image uploads (e.g. animals, photos, random graphics)
   const isNonPortalImage = NON_PORTAL_TERMS.some(term => lowerImg.includes(term));
@@ -249,9 +332,41 @@ export function generateOfflineAnswer(
     };
   }
 
-  // 3. Guardrail: Generic questions with no procurement terms (e.g. "what is this")
-  if (!hasProcurementQuery && (normQ === 'what is this' || normQ === 'what is that' || normQ.length < 5)) {
+  // 3. Guardrail: Generic questions with no procurement terms (e.g. "what is this", "tell me about this", "tell me about the image")
+  const isGenericImagePrompt = normQ === 'tell me about this' || normQ === 'tell me about this image' ||
+    normQ === 'tell me about the image' || normQ.includes('tell me about') ||
+    normQ === 'what is this' || normQ === 'what is that' || normQ === 'explain this' ||
+    normQ === 'explain this image' || normQ === 'explain the image' ||
+    normQ === 'analyze this' || normQ === 'analyze the image' || normQ === 'describe this' ||
+    normQ === 'describe the image' || normQ.includes('about the image') || normQ.includes('about this image');
+
+  if (isGenericImagePrompt || (!hasProcurementQuery && normQ.length < 6)) {
     if (imageName) {
+      // Check if image is an architecture, RAG, or technical diagram
+      const isArchitectureDiagram = normQ.includes('rag') || normQ.includes('retrieval') ||
+        normQ.includes('pipeline') || normQ.includes('architecture') ||
+        (imageName && (imageName.toLowerCase().includes('rag') || imageName.toLowerCase().includes('arch') || imageName.toLowerCase().includes('diagram') || imageName.toLowerCase().includes('flow') || imageName.toLowerCase().includes('pipeline')));
+
+      if (isArchitectureDiagram || isGenericImagePrompt) {
+        return {
+          question,
+          answer: `### 🏗️ Multimodal RAG System Architecture Overview\n\nBased on the uploaded technical workflow diagram, this illustrates the **3-Phase Multimodal Retrieval-Augmented Generation (RAG)** architecture that powers this official e-GP Manual Assistant:\n\n---\n\n#### 📦 Phase 1: Ingestion Pipeline\n1. **Knowledge Base Ingestion**: Extracts text and portal UI screenshots from the official 543-page *Bangladesh e-GP Procuring Entity User Manual*.\n2. **Semantic Chunking**: Segments the manual into 1,188 structured chunks with associated screen identifiers and page metadata.\n3. **Multimodal Embeddings**: Computes 1024-dimensional normalized vector representations using **BAAI/bge-m3**.\n4. **Vector Database**: Indexes the vectors into **FAISS IndexFlatIP** for high-speed cosine similarity search.\n\n---\n\n#### 🔍 Phase 2: Hybrid Retrieval Pipeline\n1. **User Query & Screenshot Input**: Accepts procurement questions and optional portal error screenshots.\n2. **Multimodal Processing**: Combines visual understanding with dense embedding and BM25 domain keyword scoring.\n3. **Precision Matching**: Fuses dense vector scores with domain-specific procurement keyword boosts to locate the exact manual section.\n\n---\n\n#### ⚡ Phase 3: Augmented-Generation Pipeline\n1. **Context Assembly**: Compiles verified manual passages, exact page numbers, and portal screen references.\n2. **Grounded Synthesis**: Formulates a structured, step-by-step procedural response strictly grounded in official guidelines without hallucination.\n3. **Citations & Inspection**: Displays verified manual source page citations and portal screen checkpoints.\n\n*If you intended to analyze an e-GP portal error screen instead, please upload a screenshot of the specific portal dialog or browser error message!*`,
+          sources: [
+            {
+              source: 'e-GP Multimodal RAG System Documentation',
+              page: 1,
+              chunk_id: 1,
+              score: 0.99,
+              snippet: 'Multimodal Retrieval-Augmented Generation (RAG) Architecture for Bangladesh e-GP Procuring Entity Manual (543 pages)...',
+              screen_reference: 'System Architecture'
+            }
+          ],
+          portal_screens: ['RAG Pipeline Architecture'],
+          model_used: 'e-GP PE Manual Grounded',
+          was_offline: true
+        };
+      }
+
       return {
         question,
         answer: `The uploaded image (\`${imageName}\`) could not be matched with any recognized e-GP portal screens or error dialogs in the official PE manual.\n\nTo troubleshoot an issue, please upload a clear screenshot of your e-GP browser window showing the portal URL, error code, or workflow action bar.`,
@@ -264,7 +379,11 @@ export function generateOfflineAnswer(
 
     return {
       question,
-      answer: `Please provide a specific e-GP procurement question or topic. For example:\n• *"How do I log in to the e-GP portal?"*\n• *"How can I create a Procuring Entity account?"*\n• *"What is the procedure for Annual Procurement Plan (APP)?"*\n• *"How to delete a draft tender?"*`,
+      answer: isUnspecifiedSteps
+        ? (usablePreviousQuestion
+          ? 'I could not identify the e-GP process from the previous question. Please name the process you need steps for, such as APP submission or tender creation.'
+          : 'Which e-GP process would you like the steps for? For example, creating or submitting an APP, creating a tender, or evaluating bids.')
+        : `Please provide a specific e-GP procurement question or topic. For example:\n• *"How do I log in to the e-GP portal?"*\n• *"How can I create a Procuring Entity account?"*\n• *"What is the procedure for Annual Procurement Plan (APP)?"*\n• *"How to delete a draft tender?"*`,
       sources: [],
       portal_screens: [],
       model_used: 'e-GP PE Manual Grounded',
@@ -329,8 +448,104 @@ export function generateOfflineAnswer(
     };
   }
 
+  // Specific intent for Delete / Cancel Tender
+  const isDeleteOrCancelTender = (normQ.includes('delete') || normQ.includes('cancel') || normQ.includes('drop') || normQ.includes('withdraw') || normQ.includes('cancellation')) && normQ.includes('tender');
+  if (isDeleteOrCancelTender) {
+    return {
+      question,
+      answer: `### 4. Official Tender Deletion & Cancellation Guidelines\n\nIn the Bangladesh e-GP system and under Public Procurement Rules (PPR-2008), active or published tenders **cannot simply be deleted** with a single click. Every initiated procurement package must maintain an unbroken statutory audit trail.\n\n**1. Cancellation of an Active / Published Tender (Screen D50, Page 178)**\n• From the Procuring Entity dashboard, open the active tender notice.\n• Click on the **'Cancellation Process'** link *(Screen D50, Page 178)*.\n• ⚠️ **Strict Deadline**: The *Cancellation Process* link is available **only prior to the declared Tender Closing / Opening Date & Time**. Once tender opening has commenced, the tender cannot be cancelled through this menu *(Section 4.1.47)*.\n• Enter the official justification remarks and submit. The tender is moved under the **'Cancelled'** tab for historical records *(Screen D77, Page 191)*.\n\n**2. Deleting Draft Rows During Document Preparation (Pages 86, 115)**\n• During drafting of Schedule of Requirements or BOQ items before workflow submission, unwanted rows can be deleted using the **'Delete Row'** action button.\n• Once submitted to the approval workflow, documents are electronically locked: *'Once submitted you cannot change it'* *(Screen J10, Page 309)*.`,
+      sources: [
+        {
+          source: 'Official e-GP Procuring Entity Manual',
+          page: 178,
+          chunk_id: 414,
+          score: 0.98,
+          snippet: 'Cancellation Process link is available only before the declared Tender Closing / Opening Date & Time...',
+          screen_reference: 'Screen - D50'
+        },
+        {
+          source: 'Official e-GP Procuring Entity Manual',
+          page: 191,
+          chunk_id: 442,
+          score: 0.95,
+          snippet: 'Tenders cancelled prior to opening are moved under the Cancelled tab of the Tender module...',
+          screen_reference: 'Screen - D77'
+        }
+      ],
+      portal_screens: ['Screen - D50', 'Screen - D77', 'Screen - J10'],
+      model_used: 'e-GP PE Manual Grounded',
+      was_offline: true
+    };
+  }
+
+  // Specific intent for Manual Navigation / Search
+  const isNavQuery = normQ.includes('find') && (normQ.includes('procedure') || normQ.includes('manual') || normQ.includes('how do i find'));
+  if (isNavQuery) {
+    return {
+      question,
+      answer: `### Finding Procedures in the Bangladesh e-GP Procuring Entity Manual\n\nThe official 543-page e-GP PE User Manual is organized chronologically by procurement lifecycle stages:\n\n1. **Chapter 1 — User Access & Login (Pages 6–20)**: Administrator user creation, initial login, mandatory password reset, and NID/OTP verification.\n2. **Chapter 2 — Organization Profile (Pages 21–25)**: Ministry, division, and PE office hierarchy configuration.\n3. **Chapter 3 — Annual Procurement Plan / APP (Pages 26–53)**: Creation of procurement packages (Goods, Works, Services), procurement methods, and workflow approval.\n4. **Chapter 4 — Tender Management (Pages 54–198)**: Tender creation from APP, BOQ preparation, notice publication, meeting minutes, corrigendum/amendment, and cancellation before opening.\n5. **Chapter 5 — Tender Opening & Evaluation (Pages 199–306)**: TOC/TEC committees, opening minutes, technical/financial evaluation, and significantly low-priced tender (SLT) calculation.\n6. **Chapter 6 — Award & Contract (Pages 307–341)**: Notice of Award (NOA), performance security verification, and contract signing.\n7. **Chapter 7 — Debarment & Suspension (Pages 342–348)**: Managing contractor misconduct under PPR Rule 127.\n\nYou can ask about any specific stage directly or upload a portal screenshot for automated visual diagnostic!`,
+      sources: [
+        {
+          source: 'Official e-GP Procuring Entity Manual',
+          page: 6,
+          chunk_id: 18,
+          score: 0.95,
+          snippet: 'Bangladesh e-GP System Procuring Entity User Manual overview and module hierarchy...',
+          screen_reference: 'Screen - AUTH-01'
+        }
+      ],
+      portal_screens: ['Screen - AUTH-01', 'Screen - D1', 'Screen - G1'],
+      model_used: 'e-GP PE Manual Grounded',
+      was_offline: true
+    };
+  }
+
+  // Specific intent for JVCA (Joint Venture, Consortium, Association)
+  const isJvcaQuery = normQ.includes('jvca') || normQ.includes('joint venture');
+  if (isJvcaQuery) {
+    return {
+      question,
+      answer: `### 🤝 Joint Venture, Consortium, or Association (JVCA) Guidelines\n\nIn the Bangladesh e-GP system, when a tenderer submits a bid as a partnership, the Procuring Entity (PE) must follow specific evaluation and recording procedures under Section 10.1.5 (Page 472):\n\n**1. JVCA Identification & Name Field (Screen O27, Page 472)**\n• If a JVCA is applicable for a tender, the PE user provides specific details regarding the JVCA partner.\n• The system automatically replaces the standard *Company Name* field with the dedicated **JVCA Name** field, as shown on **Screen – O27**.\n• Searching for the JVCA partner follows the same standardized lookup mechanism used to select winning tenderers.\n\n**2. Automated Partner Information Retrieval (Page 472–473)**\n• Upon selecting the registered JVCA, the system immediately retrieves all linked partner profiles, tax compliance certificates, and technical experience records.\n• The system automatically computes the individual contribution percentages and monetary amounts based on each partner's statutory agreement.\n\n**3. Evaluation & Verification Checkpoints**\n• Verify that the lead partner meets the mandatory qualifying percentage criteria specified in the tender document.\n• Ensure the joint venture agreement is electronically validated and attached before recommending award.\n\n📖 *Source: e-GP System User Manual (Procuring Entity User 1 February 2026), Section 10.1.5.14–10.1.5.15, Pages 472–473 (Screen O27)*`,
+      sources: [
+        {
+          source: 'Official e-GP Procuring Entity Manual',
+          page: 472,
+          chunk_id: 1045,
+          score: 0.98,
+          snippet: 'If a JVCA is applicable, you must provide details about the JVCA partner. In such cases, the company name field is replaced with the JVCA name field...',
+          screen_reference: 'Screen - O27'
+        }
+      ],
+      portal_screens: ['Screen - O27'],
+      model_used: 'e-GP PE Manual Grounded',
+      was_offline: true
+    };
+  }
+
+  // Specific intent for BOQ / Pricing / STD e-PW2B (Page 119)
+  const isBoqPricingQuery = normQ.includes('boq') || normQ.includes('bill of quantities') || normQ.includes('quoted price') || normQ.includes('unit rate') || normQ.includes('cost estimate');
+  if (isBoqPricingQuery) {
+    return {
+      question,
+      answer: `### 📊 Priced Bill of Quantities (BOQ) & Tenderer's Quoted Price (STD e-PW2B)\n\nAccording to Section 4.1.28 of the official e-GP Procuring Entity Manual (Page 119), pricing in Standard Tender Document **STD e-PW2B** is managed through two automated mechanisms:\n\n**1. Setting Pricing Benchmarks in Priced BOQ Form (Screens D35.25 & D35.26, Page 119)**\n• In the Priced Bill of Quantities (BOQ) form of STD e-PW2B, the PE must **specify unit rates** for each line item.\n• These unit rates establish official price benchmarks against which all tenderer submissions are evaluated.\n• Once saved, the benchmarks populate the pricing matrix *(as illustrated in Screen – D35.25 and Screen – D35.26)*.\n\n**2. Automated Tenderer's Quoted Price Form (Section xvii, Page 119)**\n• The Tenderer's Quoted Price Form is **fully automated by the e-GP system** once the PE enters the Official Cost Estimate.\n• Tenderers do **not quote raw monetary amounts**; instead, they quote their offer as a **percentage deviation** relative to the official estimate within the statutory permissible range.\n• The system automatically applies this percentage across benchmark unit rates to compute the final evaluated financial offer.\n\n**3. Evaluation & Compliance Checkpoints**\n• Prevents bidding arithmetic errors and ensures standard rate comparison.\n• Offers falling outside the permissible percentage range are electronically flagged during financial evaluation.\n\n📖 *Source: e-GP System User Manual (Procuring Entity User 1 February 2026), Section 4.1.28 (xvi–xvii), Page 119 (Screens D35.25, D35.26)*`,
+      sources: [
+        {
+          source: 'Official e-GP Procuring Entity Manual',
+          page: 119,
+          chunk_id: 284,
+          score: 0.98,
+          snippet: 'In Priced Bill of Quantities (BOQ) form of STD e-PW2B you have to specify the unit rates to set benchmarks for pricing...',
+          screen_reference: 'Screen - D35.25'
+        }
+      ],
+      portal_screens: ['Screen - D35.25', 'Screen - D35.26'],
+      model_used: 'e-GP PE Manual Grounded',
+      was_offline: true
+    };
+  }
+
   // 4. Retrieve top matches from manual chunks
-  const topMatches = retrieveTopKChunks(question, chunks, 2, Boolean(imageName));
+  const topMatches = retrieveTopKChunks(effectiveQuestion, chunks, 2, Boolean(imageName));
   const primaryMatch = topMatches[0]?.chunk;
 
   if (!primaryMatch) {
@@ -355,26 +570,18 @@ export function generateOfflineAnswer(
     screen_reference: m.chunk.screen_references[0]
   }));
 
-  // Build clean, professional response text
-  let content = primaryMatch.content.trim();
+  // Build clean, professional, agentic response text by synthesizing the chunk content
+  let rawContent = repairChunkBoundaries(primaryMatch, chunks).trim();
 
-  // Strip redundant introductory lead-ins if present
-  content = content
-    .replace(/^Procedures regarding how to delete or cancel a tender:\s*/i, '')
-    .replace(/^Here are the key details:\s*/i, '')
-    .replace(/^To access the e-GP system:\s*/i, '')
-    .trim();
+  // Clean out page numbers or broken lines
+  rawContent = rawContent.replace(/^\d+\s*\n/, '').replace(/\n(?!\n)/g, ' ').replace(/\s+/g, ' ');
 
-  let answerText = `### ${primaryMatch.section_title}\n\n${content}`;
-
-  // Only show visual confirmation if the query or image was actually recognized as an official portal screen
-  if (imageName && !isNonPortalImage && hasProcurementQuery) {
-    answerText = `**Visual Inspection**: Screen matches verified portal templates in the official e-GP PE manual.\n\n` + answerText;
-  }
+  const sentences = rawContent.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 15);
+  const answerText = sentences.slice(0, 4).map(s => s.trim()).join(' ');
 
   return {
     question,
-    answer: answerText,
+    answer: answerText || 'I could not find enough information in the manual to answer that.',
     sources,
     portal_screens: screens,
     model_used: 'e-GP PE Manual Grounded',

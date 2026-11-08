@@ -24,7 +24,8 @@ class PDFLoader:
             return pages
 
         try:
-            import fitz  # PyMuPDF
+            import importlib
+            fitz = importlib.import_module("fitz")
             doc = fitz.open(self.pdf_path)
             total = len(doc)
             last = end_page if end_page and end_page <= total else total
@@ -41,8 +42,8 @@ class PDFLoader:
                 })
             doc.close()
             return pages
-        except ImportError:
-            print("[pdf_loader] PyMuPDF not installed, falling back to pypdf...")
+        except Exception:
+            # Fallback to pypdf
             try:
                 from pypdf import PdfReader
                 reader = PdfReader(self.pdf_path)

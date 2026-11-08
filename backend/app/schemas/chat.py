@@ -8,10 +8,13 @@ from pydantic import BaseModel, Field
 class ChatRequest(BaseModel):
     """Payload for submitting a chat query."""
     question: str = Field(..., description="User query text", min_length=1)
+    previous_question: Optional[str] = Field(None, description="Previous user question for resolving a short follow-up")
     image: Optional[str] = Field(None, description="Base64 encoded screenshot or image URL")
     image_base64: Optional[str] = Field(None, description="Alias for image base64")
     image_name: Optional[str] = Field(None, description="Optional uploaded image filename")
+    image_mime: Optional[str] = Field("image/png", description="MIME type of the uploaded image")
     top_k: Optional[int] = Field(5, description="Number of manual chunks to retrieve", ge=1, le=20)
+    use_alt_model: bool = Field(False, description="Use the optional Liquid AI vision-language model instead of Qwen")
 
 class SourceDocument(BaseModel):
     """Source manual passage reference citation."""
@@ -29,7 +32,7 @@ class ChatResponse(BaseModel):
     answer: str
     sources: List[SourceDocument] = []
     portal_screens: List[str] = []
-    model_used: str = "Qwen2.5-72B-Instruct (Grounded)"
+    model_used: str = "Qwen/Qwen2.5-VL-3B-Instruct (Grounded)"
     was_offline: bool = False
 
 class HealthResponse(BaseModel):
@@ -41,5 +44,4 @@ class HealthResponse(BaseModel):
     llm_model: str
     embedding_model: str
     hf_configured: bool = False
-    gemini_configured: bool = False
-
+    gemini_configured: bool = Field(False, description="Legacy compatibility field; Gemini is not used by the active chat pipeline")

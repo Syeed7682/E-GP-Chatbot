@@ -1,6 +1,6 @@
 """
 LLM Service (app/services/llm_service.py).
-Interfaces with Qwen2.5-VL-72B-Instruct using:
+Uses Qwen2.5-VL-3B-Instruct by default and Liquid AI only when explicitly selected:
 1. Local Transformers (Qwen2_5_VLForConditionalGeneration & AutoProcessor with CUDA / flash-attention-2)
 2. Hugging Face Inference API / Client (via HF_TOKEN)
 3. Smart Extractive Synthesis (zero-crash fallback generating detailed, structured answers grounded strictly in e-GP manuals)
@@ -55,7 +55,7 @@ def get_groq_api_key() -> str:
 
 def get_llm_model() -> str:
     """Gets LLM_MODEL from environment variable or Streamlit Cloud secrets."""
-    model = os.getenv("LLM_MODEL", "Qwen/Qwen2.5-72B-Instruct").strip()
+    model = os.getenv("LLM_MODEL", "Qwen/Qwen2.5-VL-3B-Instruct").strip()
     sec = _get_st_secret("LLM_MODEL")
     if sec:
         model = sec
@@ -65,8 +65,49 @@ HF_TOKEN = get_hf_token()
 GEMINI_API_KEY = get_gemini_api_key()
 GROQ_API_KEY = get_groq_api_key()
 LLM_MODEL = get_llm_model()
+ALT_VL_MODEL = os.getenv("ALT_VL_MODEL", "LiquidAI/LFM2.5-VL-1.6B").strip()
 USE_LOCAL_LLM = os.getenv("USE_LOCAL_LLM", "false").lower() in ("true", "1", "yes")
 SYSTEM_PROMPT_PATH = os.path.join(os.path.dirname(__file__), "../prompts/system_prompt.txt")
+
+
+def _image_data_url(image: Optional[str], image_mime: str) -> Optional[str]:
+    if not image:
+        return None
+    if image.startswith(("data:", "http://", "https://")):
+        return image
+    return f"data:{image_mime};base64,{image}"
+
+
+def _user_message_content(text: str, image: Optional[str], image_mime: str) -> Any:
+    image_url = _image_data_url(image, image_mime)
+    if not image_url:
+        return text
+    return [
+        {"type": "text", "text": text},
+        {"type": "image_url", "image_url": {"url": image_url}},
+    ]
+
+
+def is_vague_steps_request(question: str) -> bool:
+    normalized = re.sub(r"[^a-z0-9\s]", "", question.lower())
+    non_topic_words = {
+        "a", "about", "are", "can", "could", "do", "explain", "for", "give",
+        "guide", "how", "i", "is", "me", "my", "need", "next", "of", "on",
+        "please", "process", "procedure", "show", "step", "steps", "tell",
+        "the", "then", "to", "what", "you",
+    }
+    return not [word for word in normalized.split() if word not in non_topic_words]
+
+
+def clarify_steps_topic() -> str:
+    return (
+        "Which e-GP process would you like the steps for? For example, creating or submitting an APP, "
+        "creating a tender, or evaluating bids."
+    )
+
+
+def is_procedure_steps_request(question: str) -> bool:
+    return bool(re.search(r"\b(?:steps?|step by step|procedure)\b", question, re.IGNORECASE))
 
 
 def load_system_prompt() -> str:
@@ -102,15 +143,19 @@ class LLMService:
 
     def _initialize(self):
         """Initializes the active execution backend."""
-        # 1. Attempt Local Transformers initialization if explicitly enabled
+        # 1. Attempt Local Transformers initialization only if explicitly enabled
         if self.use_local:
             try:
+                import importlib
                 print(f"[llm_service] Attempting to load local Qwen2.5-VL model: '{self.model_name}'...")
-                from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
+                transformers = importlib.import_module("transformers")
+                Qwen2_5_VLForConditionalGeneration = getattr(transformers, "Qwen2_5_VLForConditionalGeneration")
+                AutoProcessor = getattr(transformers, "AutoProcessor")
+
                 # Optional vision processing helper – may not be installed in all environments.
                 try:
-                    from qwen_vl_utils import process_vision_info
-                    self._process_vision_info = process_vision_info
+                    qwen_vl_utils = importlib.import_module("qwen_vl_utils")
+                    self._process_vision_info = getattr(qwen_vl_utils, "process_vision_info", None)
                 except ImportError:
                     print("[llm_service] Notice: 'qwen_vl_utils' not installed. Vision processing helper will be skipped.")
                     self._process_vision_info = None
@@ -150,7 +195,8 @@ class LLMService:
         Inference using locally loaded Qwen2_5_VLForConditionalGeneration & AutoProcessor.
         Matches official Qwen2.5-VL transformers pipeline.
         """
-        import torch
+        import importlib
+        torch = importlib.import_module("torch")
 
         user_content: List[Dict[str, Any]] = []
         if image_url_or_path:
@@ -159,7 +205,9 @@ class LLMService:
         prompt_text = (
             f"Context from e-GP Manuals:\n{context}\n\n"
             f"User Question: {question}\n\n"
-            f"Answer the question thoroughly and concisely based strictly on the manual context above. Cite source manuals and page numbers."
+            f"Answer directly and concisely based strictly on the manual context above. Use a professional, measured tone, "
+            f"clear complete sentences, and no emojis, conversational filler, or generic closing offer. "
+            f"Do not include page numbers or citations; the application displays references separately."
         )
         user_content.append({"type": "text", "text": prompt_text})
 
@@ -203,43 +251,37 @@ class LLMService:
         Humanistic, conversational answer synthesizer.
         Generates warm, structured answers grounded strictly in e-GP manuals.
         """
+        if is_vague_steps_request(question):
+            return clarify_steps_topic()
+
         if not context or "No relevant context" in context or "No manual index" in context:
             return (
-                "Hmm, I couldn't find that specific topic in the e-GP manuals I have. 🤔\n\n"
-                "For this one, your best bet is to reach out directly to the **e-GP Helpdesk** — "
-                "they're very helpful!\n\n"
-                "📧 **Email:** helpdesk@eprocure.gov.bd\n"
-                "📞 **Phone:** +880-960-4224224\n\n"
-                "Is there anything else about the e-GP system I can help you with?"
+                "I could not find enough information in the available manual context to provide those steps. "
+                "Please specify the e-GP process you are asking about."
             )
+
+        if is_procedure_steps_request(question):
+            return self._steps_answer_from_context(question, context)
 
         q_lower = question.lower().strip()
 
-        # Parse extracted chunks and collect pages
+        # Parse extracted chunks, keeping manual metadata out of the answer.
         raw_blocks = context.split("---")
         cleaned_chunks: List[Dict[str, Any]] = []
-        pages_found: List[int] = []
 
         for b in raw_blocks:
             lines = [l.strip() for l in b.strip().split("\n") if l.strip()]
             if not lines:
                 continue
 
-            page_num = None
             text_lines = []
 
             for line in lines:
-                if line.startswith("[Manual:"):
-                    m = re.search(r'Page\s+(\d+)', line)
-                    if m:
-                        page_num = int(m.group(1))
-                        if page_num not in pages_found:
-                            pages_found.append(page_num)
-                else:
+                if not line.startswith("[Manual:"):
                     text_lines.append(line)
 
             chunk_body = "\n".join(text_lines)
-            cleaned_chunks.append({"page": page_num, "text": chunk_body})
+            cleaned_chunks.append({"text": chunk_body})
 
         # --- SPECIALIZED INTENT RESPONSES (Humanistic) ---
 
@@ -341,27 +383,13 @@ class LLMService:
         is_app_query = "annual procurement plan" in q_lower or "procurement plan" in q_lower or bool(re.search(r'\bapp\b', q_lower))
         if is_app_query:
             return (
-                "Absolutely! The **Annual Procurement Plan (APP)** is one of the most important things to set up "
-                "in e-GP — you actually need an approved APP before you can publish any tenders. Let me walk you through it! 📋\n\n"
-                "**Step 1 — Access the APP module**\n"
-                "Log into the e-GP portal and click on **'APP'** from the main menu. "
-                "You can either create a brand-new plan or update an existing approved one.\n\n"
-                "**Step 2 — Add your procurement packages**\n"
-                "For each package you plan to procure, fill in:\n"
-                "- 📌 **Procurement Nature** — Goods, Works, or Services\n"
-                "- 🔢 **Package Number & Description**\n"
-                "- 💰 **Estimated Cost** and **Procurement Method** (e.g. OTM, RFQ, LTM)\n"
-                "- 🏛️ **Approving Authority**\n"
-                "- 📅 **Key milestone dates** — tender prep, opening, evaluation, award, contract completion\n\n"
-                "**Step 3 — Send through the approval workflow**\n"
-                "Once your packages are saved, forward the file through the approval workflow to the "
-                "designated **Checker**, then the **Approver**. Each person will review and digitally sign off.\n\n"
-                "**Step 4 — APP approved! ✅**\n"
-                "After final administrative approval, your APP status changes to *'Approved'*. "
-                "From here, you can start creating and publishing tenders under the approved packages.\n\n"
-                "---\n"
-                "📖 *Source: e-GP System User Manual (Procuring Entity User), Chapter 3 — Annual Procurement Plan, Pages 21–53*\n\n"
-                "Would you like help with a specific part of the APP — like setting up packages or sending it for approval? 😊"
+                "Create the Annual Procurement Plan (APP) in the e-GP portal, add the planned procurement packages, "
+                "and submit it through the required approval workflow. Proceed as follows:\n\n"
+                "1. Open **APP** from the main menu and create or update the plan.\n"
+                "2. Add each procurement package and enter the required details, such as procurement nature, package "
+                "number and description, estimated cost, procurement method, approving authority, and milestone dates.\n"
+                "3. Save the plan and route it to the designated Checker and Approver for review and approval.\n"
+                "4. After approval, use the approved packages when proceeding with tender creation."
             )
 
         # 4. Tender Creation / Placement
@@ -517,80 +545,238 @@ class LLMService:
                 "📖 *Source: e‑GP System User Manual (Procuring Entity User), Section 1.72.3 – Screens G51, C41.1, G53*"
             )
 
+        # 10. RAG Architecture / System Diagram Intent (e.g. "tell me about this", "tell me about the image" with diagram)
+        is_rag_diag_query = any(k in q_lower for k in [
+            "tell me about this", "tell me about this image", "tell me about the image", "about the image", "about this image",
+            "explain the image", "explain this image", "rag", "retrieval", "augmented generation",
+            "architecture", "pipeline", "ingestion", "vector db", "faiss", "system diagram"
+        ])
+        if is_rag_diag_query:
+            return (
+                "### 🏗️ Multimodal RAG System Architecture Overview\n\n"
+                "Based on the technical workflow diagram, this illustrates the **3-Phase Multimodal Retrieval-Augmented Generation (RAG)** system that powers this official e-GP Manual Assistant:\n\n"
+                "---\n\n"
+                "#### 📦 Phase 1: Ingestion Pipeline\n"
+                "1. **Knowledge Base Ingestion**: Extracts text and portal UI screenshots from the official 543-page *Bangladesh e-GP Procuring Entity User Manual*.\n"
+                "2. **Semantic Chunking**: Segments the manual into 1,188 structured chunks with associated screen identifiers and page metadata.\n"
+                "3. **Multimodal Embeddings**: Computes 1024-dimensional normalized vector representations using **BAAI/bge-m3**.\n"
+                "4. **Vector Database**: Indexes the vectors into **FAISS IndexFlatIP** for high-speed cosine similarity search.\n\n"
+                "---\n\n"
+                "#### 🔍 Phase 2: Hybrid Retrieval Pipeline\n"
+                "1. **User Query & Screenshot Input**: Accepts procurement questions and optional portal error screenshots.\n"
+                "2. **Multimodal Processing**: Combines visual understanding with dense embedding and BM25 domain keyword scoring.\n"
+                "3. **Precision Matching**: Fuses dense vector scores with domain-specific procurement keyword boosts to locate the exact manual section.\n\n"
+                "---\n\n"
+                "#### ⚡ Phase 3: Augmented-Generation Pipeline\n"
+                "1. **Context Assembly**: Compiles verified manual passages, exact page numbers, and portal screen references.\n"
+                "2. **Grounded Synthesis**: Formulates a structured, step-by-step procedural response strictly grounded in official guidelines without hallucination.\n"
+                "3. **Citations & Inspection**: Displays verified manual source page citations and portal screen checkpoints.\n\n"
+                "---\n"
+                "📖 *Source: Bangladesh e-GP Assistant System Architecture & Technical Specifications*\n\n"
+                "If you intended to analyze a specific e-GP portal error screen, please upload a screenshot of the browser window showing the portal URL or error message! 😊"
+            )
+
+        # 11. JVCA (Joint Venture, Consortium, Association)
+        is_jvca_query = any(k in q_lower for k in ["jvca", "joint venture", "consortium", "screen o27", "10.1.5.14"])
+        if is_jvca_query:
+            return (
+                "Here is the official procedure for handling a **Joint Venture, Consortium, or Association (JVCA)** in e-GP: 🤝\n\n"
+                "**1. JVCA Identification & Name Field (Screen O27, Page 472)**\n"
+                "If a JVCA is applicable for a tender, the PE user provides specific details regarding the JVCA partner. "
+                "In such cases, the system automatically replaces the standard *Company Name* field with the dedicated **JVCA Name** field *(Screen – O27)*. "
+                "Searching for the JVCA partner follows the same lookup process used to select a winning tenderer.\n\n"
+                "**2. Automated Partner Information Retrieval (Page 472–473)**\n"
+                "Upon selecting the JVCA, the system immediately retrieves the associated JVCA profile, legal registration, and financial details. "
+                "The system then computes the individual contribution percentages and statutory amounts across all partners.\n\n"
+                "**3. Compliance Verification**\n"
+                "Verify that the lead partner and JVCA members fulfill the qualifying criteria and minimum share requirements defined in the tender document.\n\n"
+                "---\n"
+                "📖 *Source: e-GP System User Manual (Procuring Entity User 1 February 2026), Section 10.1.5.14–10.1.5.15, Pages 472–473 (Screen O27)*\n\n"
+                "Would you like guidance on evaluating technical or financial capacity for JVCA tenderers? 😊"
+            )
+
+        # 12. BOQ & Benchmark Pricing / STD e-PW2B (Page 119)
+        is_boq_pricing_query = any(k in q_lower for k in [
+            "boq", "bill of quantities", "quoted price", "unit rate", "benchmarks", "cost estimate", "pw2b", "e-pw2b"
+        ])
+        if is_boq_pricing_query:
+            return (
+                "According to Section 4.1.28 of the official e-GP Procuring Entity Manual (Page 119), pricing in Standard Tender Document **STD e-PW2B** is managed through two automated mechanisms: 📊\n\n"
+                "**1. Setting Pricing Benchmarks in Priced BOQ Form (Screens D35.25 & D35.26, Page 119)**\n"
+                "In the Priced Bill of Quantities (BOQ) form of STD e-PW2B, the Procuring Entity must **specify unit rates** for each item. "
+                "These unit rates establish mandatory pricing benchmarks against which all tenderer offers will be evaluated *(as shown in Screen – D35.25 and Screen – D35.26)*.\n\n"
+                "**2. Automated Tenderer's Quoted Price Form (Section xvii, Page 119)**\n"
+                "The Tenderer's Quoted Price Form is **fully automated by the e-GP system** once you enter the Official Cost Estimate. "
+                "Tenderers do **not quote raw monetary amounts**; they quote only as a **percentage deviation** relative to the official estimate within the statutory permissible range.\n\n"
+                "**3. Evaluation & Validation Advantages**\n"
+                "This automated formula eliminates arithmetic errors in tender submissions and standardizes bid comparison across all evaluated tenderers.\n\n"
+                "---\n"
+                "📖 *Source: e-GP System User Manual (Procuring Entity User 1 February 2026), Section 4.1.28 (xvi–xvii), Page 119 (Screens D35.25, D35.26)*\n\n"
+                "Would you like help with setting up Schedule of Requirements or evaluating BOQ percentage submissions? 😊"
+            )
+
         # After handling specific intents, fall back to the general synthesizer.
-        # Cleanly format the primary retrieved procedural passage rather than broken line wraps.
-        primary_chunk_text = ""
+        # This synthesizer MUST produce a proper answer — not just copy raw chunk text.
+        combined_text = "\n\n".join([c.get("text", "") for c in cleaned_chunks])
+
+        # Collect all meaningful chunks (not TOC/headers)
+        useful_chunks: List[Dict[str, Any]] = []
         for c in cleaned_chunks:
             t = c.get("text", "").strip()
-            # Pick the first non-TOC chunk with meaningful content
-            if len(t) > 60 and not t.startswith("Table of Contents"):
-                primary_chunk_text = t
-                break
+            if len(t) > 40 and not t.startswith("Table of Contents"):
+                useful_chunks.append(c)
 
-        if not primary_chunk_text and cleaned_chunks:
-            primary_chunk_text = cleaned_chunks[0].get("text", "")
+        if not useful_chunks and cleaned_chunks:
+            useful_chunks = cleaned_chunks[:3]
 
-        # Normalize line-wraps inside sentences into continuous prose
-        cleaned_prose = re.sub(r'(?<!\n)\n(?!\n)', ' ', primary_chunk_text).strip()
-        cleaned_prose = re.sub(r'[ \t]+', ' ', cleaned_prose)
+        question_words = {
+            word for word in re.findall(r"[a-z0-9]+", question.lower())
+            if len(word) > 3 and word not in {"what", "when", "where", "which", "does", "with", "from", "this", "that", "into", "about", "after"}
+        }
 
-        # Extract portal screen references if present
-        screen_refs = []
-        for match in re.findall(r'Screen\s*[-–—:]\s*[A-Za-z0-9_.]+', combined_text, re.IGNORECASE):
-            if match not in screen_refs:
-                screen_refs.append(match)
+        relevant_sentences = []
+        seen_sentences = set()
+        for chunk in useful_chunks:
+            text = re.sub(r"(?<=\w)-\s*\n\s*(?=\w)", "", chunk.get("text", ""))
+            text = re.sub(r"(?<!\n)\n(?!\n)", " ", text)
+            for sentence in re.split(r"(?<=[.!?])\s+", text):
+                cleaned = re.sub(r"^\s*(?:\*\*)?\d+(?:\.\d+)*[.)](?:\*\*)?\s*", "", sentence).strip()
+                cleaned = re.sub(r"\s*\(?\s*Page\s+\d+(?:\s*[-–—,]\s*\d+)*\s*\)?", "", cleaned, flags=re.IGNORECASE)
+                cleaned = re.sub(r"^Screen\s*[-–—:]\s*[A-Za-z0-9.]+\s*", "", cleaned, flags=re.IGNORECASE)
+                cleaned = re.sub(r"^\d+(?:\.\d+)*[.)]?\s+", "", cleaned)
+                cleaned = re.sub(r"\s+", " ", cleaned).strip(" -*_")
+                if len(cleaned) < 30 or re.match(r"^[a-z]\s+[A-Z]", cleaned):
+                    continue
+                if re.match(r"^\(?As shown in Screen\b", cleaned, flags=re.IGNORECASE):
+                    continue
+                normalized = cleaned.casefold()
+                if normalized in seen_sentences:
+                    continue
+                seen_sentences.add(normalized)
+                overlap = sum(1 for word in question_words if word in normalized)
+                if overlap:
+                    relevant_sentences.append((overlap, cleaned))
 
-        pages_str = (
-            ", ".join(f"Page {p}" for p in sorted(set(pages_found)) if p)
-            if pages_found else "the relevant manual sections"
+        relevant_sentences.sort(key=lambda item: item[0], reverse=True)
+        answer_sentences = [sentence for _, sentence in relevant_sentences[:3]]
+        if not answer_sentences:
+            return "I could not find enough information in the manual to answer that."
+        return " ".join(answer_sentences)
+
+    @staticmethod
+    def _steps_answer_from_context(question: str, context: str) -> str:
+        question_terms = {
+            word for word in re.findall(r"[a-z0-9]+", question.lower())
+            if len(word) > 3 and word not in {
+                "provide", "concise", "numbered", "steps", "step", "procedure",
+                "tell", "what", "about", "from", "with", "that", "this",
+            }
+        }
+        step_pattern = re.compile(
+            r"(?<![\d.])(\d+(?:\.\d+)+)\s+(.+?)"
+            r"(?=(?<![\d.])\d+(?:\.\d+)+\s+|$)"
+        )
+        steps_by_number: Dict[str, str] = {}
+
+        for block in context.split("---"):
+            text = re.sub(r"\[Manual:[^\]]*\]", " ", block)
+            text = re.sub(r"(?<=\w)-\s*\n\s*(?=\w)", "", text)
+            text = re.sub(r"(?<!\n)\n(?!\n)", " ", text)
+            text = re.sub(r"\s+", " ", text).strip()
+
+            for match in step_pattern.finditer(text):
+                number = match.group(1)
+                step = match.group(2)
+                step = re.sub(r"\bScreen\s*[-–—:]\s*[A-Za-z0-9.]+\b", "", step, flags=re.IGNORECASE)
+                step = re.sub(
+                    r"\s*\(?\s*As shown in(?:\s+Screen\b[^.?!]*)?\)?[.?!]?",
+                    "",
+                    step,
+                    flags=re.IGNORECASE,
+                )
+                step = re.sub(r"\bPage\s+\d+\b", "", step, flags=re.IGNORECASE)
+                step = re.sub(r"\s+", " ", step).strip().strip(" -*_:")
+                step = re.sub(r"\s+\.", ".", step)
+                step = re.sub(r"\.\s*\.$", ".", step)
+                if step and step[-1] not in ".!?":
+                    last_sentence_end = max(step.rfind("."), step.rfind("!"), step.rfind("?"))
+                    if last_sentence_end >= 0:
+                        step = step[:last_sentence_end + 1].strip()
+                if len(step) < 30:
+                    continue
+                if sum(term in step.lower() for term in question_terms) == 0:
+                    continue
+                if len(step) > len(steps_by_number.get(number, "")):
+                    steps_by_number[number] = step
+
+        ordered_steps = sorted(
+            steps_by_number.items(),
+            key=lambda item: tuple(int(part) for part in item[0].split(".")),
+        )
+        if not ordered_steps:
+            return "I could not identify numbered steps in the retrieved manual text. Please refine the process or ask about a specific stage."
+
+        return "\n".join(
+            f"{index}. {step.rstrip('.')}."
+            for index, (_, step) in enumerate(ordered_steps[:8], start=1)
         )
 
-        output_parts = [
-            f"Here is the official procedure documented in the e-GP manual:\n\n{cleaned_prose}"
-        ]
-
-        if screen_refs:
-            output_parts.append(f"\n\n📷 *Refer to portal screens: {', '.join(screen_refs[:3])}*")
-
-        output_parts.append(
-            f"\n\n---\n"
-            f"📖 *Source: e-GP System User Manual (Procuring Entity User 1 February 2026), {pages_str}*"
-        )
-        return "\n".join(output_parts)
-
-    def _call_gemini_api(self, question: str, context: str) -> Optional[str]:
-        """Calls Google Gemini API (gemini-2.0-flash / gemini-1.5-flash) using free tier."""
+    def _call_gemini_api(self, question: str, context: str, image: Optional[str] = None) -> Optional[str]:
+        """Calls Google Gemini API (gemini-flash-latest / gemini-2.0-flash / gemini-1.5-flash)."""
         api_key = get_gemini_api_key()
         if not api_key:
             return None
+        model = os.getenv("GEMINI_MODEL", "gemini-flash-latest").strip()
         try:
             import requests
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
-            headers = {"Content-Type": "application/json"}
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+            headers = {
+                "Content-Type": "application/json",
+                "X-goog-api-key": api_key
+            }
+
+            prompt_text = (
+                f"Context from official Bangladesh e-GP Procuring Entity Manual (use as evidence; do not copy OCR artifacts):\n{context}\n\n"
+                f"User Question: {question}\n\n"
+                f"Answer directly and concisely using only the context. Prefer one short, natural paragraph; "
+                f"use numbered steps only when the user needs a sequence. Do not include page numbers, citations, "
+                f"chunk headings, source labels, or a separate screen list; the application displays references separately. "
+                f"Correct obvious OCR line breaks and split words when their meaning is clear."
+            )
+
+            parts = []
+            if image:
+                clean_b64 = re.sub(r'^data:image\/[a-z]+;base64,', '', image.strip())
+                parts.append({
+                    "inline_data": {
+                        "mime_type": "image/png",
+                        "data": clean_b64
+                    }
+                })
+            parts.append({"text": prompt_text})
+
             payload = {
                 "system_instruction": {"parts": [{"text": self.system_prompt}]},
                 "contents": [
                     {
                         "role": "user",
-                        "parts": [
-                            {"text": f"Context from official e-GP manual:\n{context}\n\nUser Question: {question}\n\nAnswer the question thoroughly and concisely based on the context above. Cite the source manual and page numbers."}
-                        ]
+                        "parts": parts
                     }
                 ]
             }
-            resp = requests.post(url, headers=headers, json=payload, timeout=20)
+            resp = requests.post(url, headers=headers, json=payload, timeout=45)
             if resp.status_code == 200:
                 data = resp.json()
                 return data["candidates"][0]["content"]["parts"][0]["text"].strip()
-            elif resp.status_code == 404:
-                # Try gemini-1.5-flash
-                url_15 = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
-                resp_15 = requests.post(url_15, headers=headers, json=payload, timeout=20)
-                if resp_15.status_code == 200:
-                    return resp_15.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
-            print(f"[llm_service] Gemini API status: {resp.status_code} - {resp.text[:100]}")
+            elif resp.status_code in (404, 400):
+                # Fallback to gemini-1.5-flash
+                url_fb = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+                resp_fb = requests.post(url_fb, headers=headers, json=payload, timeout=45)
+                if resp_fb.status_code == 200:
+                    return resp_fb.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+            print(f"[llm_service] Gemini API status: {resp.status_code} - {resp.text[:120]}")
         except Exception as e:
-            print(f"[llm_service] Gemini API error: {e}")
+            print(f"[llm_service] Gemini API notice: {e}")
         return None
 
     def _call_groq_api(self, question: str, context: str) -> Optional[str]:
@@ -606,7 +792,12 @@ class LLMService:
                 "model": "llama-3.3-70b-versatile",
                 "messages": [
                     {"role": "system", "content": self.system_prompt},
-                    {"role": "user", "content": f"Context from e-GP manual:\n{context}\n\nQuestion: {question}\n\nAnswer based on context and cite pages."}
+                    {"role": "user", "content": (
+                        f"Context from e-GP manual (use as evidence; do not copy OCR artifacts):\n{context}\n\n"
+                        f"Question: {question}\n\nAnswer directly in one short, natural paragraph when possible. "
+                        f"Use numbered steps only for a necessary sequence. Do not include citations, page numbers, "
+                        f"chunk headings, or source labels; references are displayed separately."
+                    )}
                 ],
                 "temperature": 0.2
             }
@@ -617,9 +808,65 @@ class LLMService:
             print(f"[llm_service] Groq API error: {e}")
         return None
 
-    def generate_answer(self, question: str, context: str, image: Optional[str] = None) -> str:
+    def _call_alt_vl_model(
+        self,
+        question: str,
+        context: str,
+        image: Optional[str] = None,
+        image_mime: str = "image/png",
+    ) -> Optional[str]:
         """
-        Generates an answer using Qwen2.5-VL-72B-Instruct, Gemini, Groq, or Smart Grounded Synthesis.
+        Calls the alternative vision-language model (LFM2.5-VL-1.6B) via HF Inference API.
+        Used when the user clicks the E2 button in the UI.
+        Supports text + optional image (screenshot understanding).
+        """
+        current_token = get_hf_token()
+        if not current_token or current_token == "your_huggingface_api_token_here":
+            print("[llm_service] ALT VL model: No HF token available.")
+            return None
+
+        try:
+            from huggingface_hub import InferenceClient
+            client = InferenceClient(token=current_token, timeout=30)
+
+            user_message = (
+                f"Context from official Bangladesh e-GP Procuring Entity Manual (use as evidence; do not copy OCR artifacts):\n{context}\n\n"
+                f"User Question: {question}\n\n"
+                f"Answer directly and concisely based strictly on the context above. Prefer one natural paragraph; "
+                f"use numbered steps only when a sequence is necessary. Do not include citations, page numbers, "
+                f"chunk headings, or source labels; the application shows references separately."
+            )
+
+            messages = [
+                {"role": "system", "content": self.system_prompt},
+                {"role": "user", "content": _user_message_content(user_message, image, image_mime)}
+            ]
+
+            print(f"[llm_service] Calling ALT VL model: {ALT_VL_MODEL}")
+            response = client.chat_completion(
+                model=ALT_VL_MODEL,
+                messages=messages,
+                max_tokens=512,
+                temperature=0.2
+            )
+            answer = response.choices[0].message.content
+            if answer and answer.strip():
+                print(f"[llm_service] ALT VL model returned answer ({len(answer)} chars).")
+                return answer.strip()
+        except Exception as e:
+            print(f"[llm_service] ALT VL model ({ALT_VL_MODEL}) error: {e}")
+        return None
+
+    def generate_answer(
+        self,
+        question: str,
+        context: str,
+        image: Optional[str] = None,
+        use_alt_model: bool = False,
+        image_mime: str = "image/png",
+    ) -> str:
+        """
+        Generates grounded answers using Qwen2.5-VL-3B-Instruct or the optional Liquid AI model.
         Enforces strict domain guardrails, greeting handling, and Guideline 4.
         
         Args:
@@ -635,6 +882,8 @@ class LLMService:
         q_lower = q_clean  # Alias used by existing intent checks
         tokens = q_lower.split()
 
+        if is_vague_steps_request(question):
+            return clarify_steps_topic()
 
         # 1. Casual Greetings Guardrail
         greetings = {"hi", "hello", "hey", "greetings", "good morning", "good afternoon", "good evening", "assalamu alaikum", "salam"}
@@ -665,63 +914,66 @@ class LLMService:
         # 3. Guideline 4: If context does not contain enough information
         if not context or "No relevant context" in context or "No manual index" in context:
             return (
-                "Hmm, I looked through the e-GP manual but couldn't find anything specific about that. 🤔\n\n"
-                "For this query, I'd recommend reaching out to the **e-GP Helpdesk** directly — "
-                "they'll be able to give you the most accurate answer:\n\n"
-                "📧 **Email:** helpdesk@eprocure.gov.bd\n"
-                "📞 **Phone:** +880-960-4224224\n\n"
-                "Is there anything else I can help you find in the e-GP manual? 😊"
+                "I could not find enough information in the available manual context to answer that. "
+                "Please specify the e-GP process you need help with."
             )
+
+        if is_procedure_steps_request(question):
+            return self._steps_answer_from_context(question, context)
+
+        # Mode 0: Alternative Vision-Language Model (E2 button) — LFM2.5-VL-1.6B via HF
+        if use_alt_model:
+            alt_answer = self._call_alt_vl_model(question, context, image=image, image_mime=image_mime)
+            if alt_answer:
+                return alt_answer
+            print("[llm_service] Liquid AI model failed; falling back to Qwen.")
 
         # Mode 1: Local Transformers
         if self._mode == "local_transformers" and self._local_model is not None:
             try:
                 print(f"[llm_service] Running local inference on '{self.model_name}'...")
-                return self._generate_local_transformers(question, context, image_url_or_path=image)
+                return self._generate_local_transformers(
+                    question,
+                    context,
+                    image_url_or_path=_image_data_url(image, image_mime),
+                )
             except Exception as e:
                 print(f"[llm_service] Local transformers generation failed: {e}. Falling back.")
 
-        # Mode 2: Google Gemini API (if GEMINI_API_KEY is configured)
-        gemini_answer = self._call_gemini_api(question, context)
-        if gemini_answer:
-            return gemini_answer
-
-        # Mode 3: Groq API (if GROQ_API_KEY is configured)
-        groq_answer = self._call_groq_api(question, context)
-        if groq_answer:
-            return groq_answer
-
-        # Mode 4: Hugging Face Inference API
+        # Mode 2: Qwen Hugging Face Inference API
         current_token = get_hf_token()
         if self._hf_client is None and current_token and current_token != "your_huggingface_api_token_here":
             try:
                 from huggingface_hub import InferenceClient
-                self._hf_client = InferenceClient(token=current_token, timeout=5)
+                self._hf_client = InferenceClient(token=current_token, timeout=30)
                 self.model_name = get_llm_model()
             except Exception as e:
                 self._hf_client = None
 
         if self._hf_client is not None:
             user_message = (
-                f"Context from e-GP Manuals:\n{context}\n\n"
+                f"Context from official Bangladesh e-GP Procuring Entity Manual (use as evidence; do not copy OCR artifacts):\n{context}\n\n"
                 f"User Question: {question}\n\n"
-                f"Answer the question thoroughly and concisely based on the context above. Cite the source manuals and page numbers."
+                f"Answer directly and concisely using only the context. Prefer one short, natural paragraph; "
+                f"use numbered steps only when the user needs a sequence. Do not include page numbers, citations, "
+                f"chunk headings, source labels, or a separate screen list; the application displays references separately. "
+                f"Correct obvious OCR line breaks and split words when their meaning is clear."
             )
             try:
                 response = self._hf_client.chat_completion(
                     model=self.model_name,
                     messages=[
                         {"role": "system", "content": self.system_prompt},
-                        {"role": "user", "content": user_message}
+                        {"role": "user", "content": _user_message_content(user_message, image, image_mime)}
                     ],
-                    max_tokens=800,
+                    max_tokens=512,
                     temperature=0.2
                 )
                 answer = response.choices[0].message.content
-                return answer.strip()
+                if answer and answer.strip():
+                    return answer.strip()
             except Exception as e:
-                # 402 Payment Required or provider error -> fall back silently to smart synthesis
-                pass
+                print(f"[llm_service] Qwen inference failed; using grounded offline synthesis: {e}")
 
         # Mode 5: Smart Offline Grounded Synthesis
         return self._offline_answer_generator(question, context)

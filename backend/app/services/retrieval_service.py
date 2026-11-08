@@ -27,7 +27,8 @@ STOPWORDS = {
     'make', 'do', 'get', 'set', 'take', 'put', 'say', 'see', 'know', 'think', 'want', 'use',
     'find', 'like', 'need', 'help', 'hi', 'hello', 'hey', 'joke', 'jokes', 'funny', 'story',
     'stories', 'game', 'song', 'poem', 'write', 'sing',
-    'user', 'users', 'pe', 'manual', 'manuals', 'portal', 'system', 'way'
+    'user', 'users', 'pe', 'manual', 'manuals', 'portal', 'system', 'way',
+    'image', 'images', 'pic', 'picture', 'pictures', 'screenshot', 'screenshots', 'photo', 'photos'
 }
 
 # Domain-specific synonym expansions for Bangladesh e-GP terminology
@@ -69,8 +70,59 @@ DOMAIN_SYNONYMS = {
     'security': ['tender security', 'proposal security', 'bank guarantee'],
 }
 
+AUTHENTICATION_TERMS = re.compile(
+    r"\b(?:login|log\s+in|sign\s+in|password|username|user\s+id|email\s+id|"
+    r"captcha|verification\s+screen|national\s+id)\b",
+    re.IGNORECASE,
+)
+
 
 class RetrievalService:
+    def _repair_leading_chunk_fragment(self, chunk: Dict[str, Any]) -> str:
+        text = chunk.get("text", "")
+        first_token = re.match(r"^([a-z]{2,6})\s+", text)
+        if not first_token:
+            return text
+
+        page = chunk.get("page")
+        chunk_id = chunk.get("chunk_id")
+        previous_chunks = [
+            previous for previous in self.faiss_service.metadata
+            if previous.get("page") == page
+            and isinstance(previous.get("chunk_id"), int)
+            and isinstance(chunk_id, int)
+            and previous["chunk_id"] < chunk_id
+        ]
+        if not previous_chunks:
+            return text
+
+        previous = max(previous_chunks, key=lambda item: item["chunk_id"])
+        previous_text = previous.get("text", "")
+        fragment = first_token.group(1)
+
+        for word in re.finditer(r"\b[A-Za-z]+\b", previous_text):
+            complete_word = word.group(0)
+            if len(complete_word) <= len(fragment) or not complete_word.lower().endswith(fragment):
+                continue
+
+            overlap_start = word.end() - len(fragment)
+            prior_remainder = previous_text[overlap_start:]
+            overlap = 0
+            while (
+                overlap < len(text)
+                and overlap < len(prior_remainder)
+                and text[overlap].lower() == prior_remainder[overlap].lower()
+            ):
+                overlap += 1
+
+            if overlap < 24:
+                continue
+
+            continuation = text[overlap:].lstrip()
+            return f"{previous_text.rstrip()} {continuation}".strip() if continuation else previous_text
+
+        return text
+
     def __init__(self, emb_service=embedding_service, f_service=faiss_service):
         self.embedding_service = emb_service
         self.faiss_service = f_service
@@ -85,11 +137,15 @@ class RetrievalService:
             return self.faiss_service.load()
         return True
 
+    @staticmethod
+    def _normalize_login_terms(text: str) -> str:
+        return re.sub(r"\b(?:log|sign)\s+in\b", "login", text, flags=re.IGNORECASE)
+
     def _keyword_rank(self, question: str, chunks: List[Dict], top_k: int = 10) -> List[Tuple[float, Dict]]:
         """
         Ranks chunks using domain-aware keyword matching, phrase boosting, and title matching.
         """
-        q_lower = question.lower()
+        q_lower = self._normalize_login_terms(question.lower())
         raw_words = [w for w in re.findall(r'\w+', q_lower) if w not in STOPWORDS]
         if not raw_words:
             return []
@@ -114,6 +170,8 @@ class RetrievalService:
         )
         is_workflow_intent = "approved workflow" in q_lower or "workflow" in q_lower or "checker" in q_lower or "approver" in q_lower
         is_app_intent = "annual procurement plan" in q_lower or "procurement plan" in q_lower or bool(re.search(r'\bapp\b', q_lower))
+        is_login_procedure = bool(re.search(r"\b(?:login|log in|sign in)\b", q_lower))
+        is_authentication_intent = is_login_procedure or bool(re.search(r"\b(?:password|captcha)\b", q_lower))
 
         is_create_tender_intent = (
             (("tender" in q_lower or "proposal" in q_lower) and any(w in q_lower for w in ["create", "place", "new", "prepare", "publish", "float", "issue", "start"]))
@@ -157,17 +215,24 @@ class RetrievalService:
         ])
 
         for c in chunks:
-            text = c.get("text", "").lower()
+            raw_text = c.get("text", "").lower()
+            text = self._normalize_login_terms(raw_text)
             page = c.get("page", 0)
             score = 0.0
 
             # Permanent exclusion of Table of Contents / Change Log / Preface (Pages 1 to 5)
             if page <= 5:
                 continue
+            if is_login_procedure and page not in (6, 7, 8):
+                continue
+            if is_authentication_intent and not AUTHENTICATION_TERMS.search(raw_text):
+                continue
 
             # Direct intent grounding
             if is_debarment_intent and page in (342, 343, 344, 345, 346, 347, 348):
                 score += 40.0
+            if is_login_procedure and page in (6, 7, 8):
+                score += 22.0
             if is_account_intent:
                 if page in (6, 7, 8):
                     score += 18.0
@@ -225,7 +290,7 @@ class RetrievalService:
                 is_account_intent, is_workflow_intent, is_app_intent,
                 is_create_tender_intent, is_delete_tender_intent,
                 is_corrigendum_intent, is_retender_intent, is_eval_intent, is_security_intent,
-                is_debarment_intent
+                is_debarment_intent, is_authentication_intent
             ])
 
             if term_coverage < 0.5 and not matched_phrase and not any_intent_grounded:
@@ -252,7 +317,13 @@ class RetrievalService:
         scored.sort(key=lambda x: x[0], reverse=True)
         return scored[:top_k]
 
-    def retrieve(self, question: str, top_k: int = 3, image: Optional[Any] = None) -> Tuple[str, List[Dict]]:
+    def retrieve(
+        self,
+        question: str,
+        top_k: int = 3,
+        image: Optional[Any] = None,
+        include_page_context: bool = False,
+    ) -> Tuple[str, List[Dict]]:
         """
         Retrieves top_k most relevant chunks using hybrid FAISS dense search + keyword matching.
         
@@ -260,6 +331,7 @@ class RetrievalService:
             question: The user's text query.
             top_k: Number of relevant chunks to retrieve.
             image: Optional query image for multimodal search.
+            include_page_context: Include the remaining chunks from retrieved pages.
             
         Returns:
             Tuple of:
@@ -280,7 +352,25 @@ class RetrievalService:
         else:
             query_vec = self.embedding_service.embed_text(question)
 
-        faiss_results = self.faiss_service.search(query_vec, top_k=max(top_k * 2, 8))
+        raw_faiss = self.faiss_service.search(query_vec, top_k=max(top_k * 3, 12))
+        # Filter out pages <= 5 (Table of contents, Change log, cover)
+        faiss_results = [r for r in raw_faiss if r.get("chunk", {}).get("page", 0) > 5]
+        normalized_question = self._normalize_login_terms(question)
+        is_login_procedure = bool(
+            re.search(r"\b(?:login|log\s+in|sign\s+in)\b", normalized_question, re.IGNORECASE)
+        )
+        is_authentication_query = is_login_procedure or bool(
+            re.search(r"\b(?:password|captcha)\b", normalized_question, re.IGNORECASE)
+        )
+        if is_authentication_query:
+            faiss_results = [
+                result for result in faiss_results
+                if AUTHENTICATION_TERMS.search(result.get("chunk", {}).get("text", ""))
+                and (
+                    not is_login_procedure
+                    or result.get("chunk", {}).get("page") in (6, 7, 8)
+                )
+            ]
 
         # 2. Domain Keyword Retrieval (when text query is present)
         kw_results = []
@@ -330,19 +420,51 @@ class RetrievalService:
 
         # Sort and take top_k
         ranked = sorted(combined_scores.values(), key=lambda x: x["score"], reverse=True)
-        top_matches = ranked[:top_k]
+        if is_login_procedure:
+            page_matches = []
+            seen_pages = set()
+            for item in ranked:
+                page = item["chunk"].get("page")
+                if page not in seen_pages:
+                    seen_pages.add(page)
+                    page_matches.append(item)
+                if len(page_matches) == top_k:
+                    break
+            top_matches = page_matches
+        else:
+            top_matches = ranked[:top_k]
+
+        context_matches = top_matches
+        if include_page_context:
+            page_scores = {
+                item["chunk"].get("page"): item["score"]
+                for item in top_matches
+            }
+            selected_pages = set(page_scores)
+            page_chunks = [
+                {"chunk": chunk, "score": page_scores[chunk.get("page")]}
+                for chunk in self.faiss_service.metadata
+                if chunk.get("page") in selected_pages
+            ]
+            context_matches = sorted(
+                page_chunks,
+                key=lambda item: (
+                    item["chunk"].get("page", 0),
+                    item["chunk"].get("chunk_id", 0),
+                ),
+            )
 
         # 4. Format context string and source items
         context_parts = []
         sources = []
 
-        for item in top_matches:
+        for item in context_matches:
             score = item["score"]
             chunk = item["chunk"]
             source = chunk.get("source", "unknown")
             page = chunk.get("page", 1)
             chunk_id = chunk.get("chunk_id", 0)
-            text = chunk.get("text", "")
+            text = self._repair_leading_chunk_fragment(chunk)
             image_path = chunk.get("image_path")
 
             # Clean header for synthesis
@@ -350,10 +472,16 @@ class RetrievalService:
             chunk_header = f"[Manual: {source} | Page {page}{img_tag} | Relevance: {score:.2f}]"
             context_parts.append(f"{chunk_header}\n{text}")
 
+        for item in top_matches:
+            score = item["score"]
+            chunk = item["chunk"]
+            source = chunk.get("source", "unknown")
+            text = self._repair_leading_chunk_fragment(chunk)
+            image_path = chunk.get("image_path")
             sources.append({
                 "source": source,
-                "page": page,
-                "chunk_id": chunk_id,
+                "page": chunk.get("page", 1),
+                "chunk_id": chunk.get("chunk_id", 0),
                 "score": round(score, 2),
                 "snippet": text[:250] + ("..." if len(text) > 250 else ""),
                 "image_path": image_path

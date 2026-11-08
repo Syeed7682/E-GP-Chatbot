@@ -52,6 +52,11 @@ def split_text_with_overlap(text: str, chunk_size: int = 500, chunk_overlap: int
         start = end - chunk_overlap
         if start < 0 or start >= text_length or (chunks and start <= (end - chunk_size)):
             start = end
+        elif start > 0 and not text[start - 1].isspace() and not text[start].isspace():
+            while start < text_length and not text[start].isspace():
+                start += 1
+            while start < text_length and text[start].isspace():
+                start += 1
 
     return chunks
 

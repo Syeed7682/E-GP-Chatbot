@@ -3,7 +3,7 @@ import { generateOfflineAnswer, retrieveTopKChunks } from '../utils/offlineVecto
 import { getLocalChunks } from '../utils/indexedDBStorage';
 
 // Base API URL from environment variable, falling back to window location origin or relative path
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+export const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 
 export interface BackendHealthResponse {
   status: string;
@@ -15,9 +15,12 @@ export interface BackendHealthResponse {
 
 export interface SendChatParams {
   question: string;
+  previous_question?: string;
   image_base64?: string | null;
+  image_mime?: string;
   image_name?: string;
   top_k?: number;
+  use_alt_model?: boolean;
 }
 
 /**
@@ -64,7 +67,7 @@ export async function fetchBackendChunks(): Promise<ManualChunk[]> {
  * Sends chat query to the FastAPI backend with offline-first fallback
  */
 export async function sendChatQuery(params: SendChatParams): Promise<ChatApiResponse> {
-  const { question, image_base64, image_name, top_k = 3 } = params;
+  const { question, previous_question, image_base64, image_mime, image_name, top_k = 3, use_alt_model = false } = params;
 
   try {
     const response = await fetch(`${API_BASE}/api/chat`, {
@@ -74,10 +77,13 @@ export async function sendChatQuery(params: SendChatParams): Promise<ChatApiResp
       },
       body: JSON.stringify({
         question,
+        previous_question,
         top_k,
         image: image_base64 || null,
         image_base64: image_base64 || null,
-        image_name: image_name || null
+        image_mime: image_mime || 'image/png',
+        image_name: image_name || null,
+        use_alt_model
       })
     });
 
@@ -98,6 +104,6 @@ export async function sendChatQuery(params: SendChatParams): Promise<ChatApiResp
 
   // Graceful offline fallback
   const localChunks = await getLocalChunks();
-  const offlineResult = generateOfflineAnswer(question, localChunks, image_name);
+  const offlineResult = generateOfflineAnswer(question, localChunks, image_name, previous_question);
   return offlineResult;
 }

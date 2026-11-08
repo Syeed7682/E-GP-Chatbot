@@ -1,305 +1,90 @@
-# 📋 e-GP Manual Chatbot (Multimodal RAG System)
+# e-GP Manual Assistant — Current Architecture
 
-A simple, modular, and beginner-friendly **Multimodal Retrieval-Augmented Generation (RAG)** chatbot designed to answer questions from the official **e-GP (electronic Government Procurement)** Procuring Entity manuals and statutory guidelines.
+This document records the implementation found during the 2026-11-08 project audit. It describes current code paths, not the desired final-state pipeline. See [PROJECT_PLAN.md](./PROJECT_PLAN.md) for milestones and acceptance criteria.
 
-Powered by **FastAPI**, **FAISS**, **BAAI/bge-visualized-m3 (Text + Image Multimodal Embeddings)**, **Qwen2.5-VL-72B-Instruct**, and an interactive **Streamlit** dashboard.
+## System overview
 
----
+```text
+React 19 / Vite UI
+  ├─ Express server.ts (development/full-stack API and local fallback)
+  ├─ FastAPI chat proxy when the backend is reachable
+  ├─ screenshot input, browser OCR, and manual citations
+  └─ local retrieval from bundled/IndexedDB chunks when offline
 
-## 🏗️ Architecture & Multimodal RAG Workflow
+FastAPI
+  ├─ POST /api/chat
+  │    ├─ optional backend OCR for uploaded images
+  │    ├─ retrieval_service: FAISS + weighted keyword fusion
+  │    ├─ LLM service: HF/local/offline fallback
+  │    └─ source/page citation response
+  ├─ /api/manual/*: page chunks, page image, keyword search, PDF download
+  └─ /api/sync/*: client chunk sync and mutation endpoints
 
-The system implements the complete 3-phase **Retrieval-Augmented Generation (RAG)** pipeline:
-
-```mermaid
-flowchart TD
-    %% Phase 1: Ingestion
-    subgraph Ingestion [" 📦 Phase 1: Ingestion Pipeline "]
-        direction LR
-        KB[("🗄️ External Knowledge Base<br/>Official e-GP Manual (543 pages)")]
-        DOCS["📄 Document Chunks<br/>Text Chunks & Screenshot Links"]
-        EMB_MODEL_INGEST["🧠 Embedding Model<br/>BAAI/bge-m3 (1024-dim)"]
-        VECTOR_DB[("💾 Vector DB<br/>FAISS IndexFlatIP")]
-
-        KB -- "1. Chunking" --> DOCS
-        DOCS -- "2. Embed docs" --> EMB_MODEL_INGEST
-        EMB_MODEL_INGEST -- "3. Indexing" --> VECTOR_DB
-    end
-
-    %% Phase 2: Retrieval
-    subgraph Retrieval [" 🔍 Phase 2: Hybrid Retrieval Pipeline "]
-        direction LR
-        USER_QUERY["👤 User Query<br/>Procurement Question / Screenshot"]
-        EMB_MODEL_QUERY["🧠 Embedding Model<br/>Dense Vector & Keyword Parser"]
-        TOP_K["📑 Top k Similar Docs<br/>Ranked Chunks & Manual Images"]
-
-        USER_QUERY -- "4. Embed query" --> EMB_MODEL_QUERY
-        EMB_MODEL_QUERY -- "5. Semantic search" --> VECTOR_DB
-        VECTOR_DB -- "6. Retrieve top matches" --> TOP_K
-    end
-
-    %% Phase 3: Augmented-generation
-    subgraph AugmentedGeneration [" ⚡ Phase 3: Augmented-Generation Pipeline "]
-        direction LR
-        POST_PROC["⚙️ Post Processing<br/>Chunk Cleaning & Deduplication"]
-        PROMPT["📝 LLM Prompt<br/>System Prompt + Formatted Context"]
-        LLM["🤖 LLM Engine<br/>Qwen2.5-VL-72B / Smart Synthesizer"]
-        OUTPUT["💬 Output Answer<br/>Descriptive Steps & Cited Pages"]
-
-        TOP_K -- "7. Extract context" --> POST_PROC
-        POST_PROC -- "8. Context assembly" --> PROMPT
-        PROMPT -- "9. Augmented prompt" --> LLM
-        USER_QUERY -- "10. User question" --> LLM
-        LLM -- "11. Final response" --> OUTPUT
-    end
-
-    classDef storage fill:#ecfdf5,stroke:#059669,stroke-width:2px,color:#065f46;
-    classDef model fill:#fdf2f8,stroke:#db2777,stroke-width:2px,color:#831843;
-    classDef step fill:#f8fafc,stroke:#3b82f6,stroke-width:2px,color:#0f172a;
-    classDef user fill:#eff6ff,stroke:#2563eb,stroke-width:2.5px,color:#1e40af;
-
-    class KB,VECTOR_DB storage;
-    class EMB_MODEL_INGEST,EMB_MODEL_QUERY,LLM model;
-    class DOCS,TOP_K,POST_PROC,PROMPT,OUTPUT step;
-    class USER_QUERY user;
+Local corpus
+  PDF (543 pages) -> existing processed chunks (1,188)
+                   -> FAISS IndexFlatIP (1,188 x 1,024)
+                   -> metadata.json (1,188 records)
+                   -> frontend bundled chunks (1,170 records)
 ```
 
-### 11-Step Pipeline Breakdown:
-1. **Chunking**: Ingests the 543-page official PDF, extracts screenshots, and creates semantic overlapping chunks (`document_loader.py`, `text_chunker.py`).
-2. **Embed Docs**: Computes 1024-dimensional normalized multimodal embeddings (`embedding_service.py`).
-3. **Indexing**: Builds FAISS `IndexFlatIP` cosine similarity matrix and metadata index (`faiss_service.py`).
-4. **User Query**: Receives procurement question + optional uploaded error screenshot.
-5. **Semantic & Hybrid Search**: Computes dense query vector and runs BM25 domain keyword scoring (`retrieval_service.py`).
-6. **Top-k Similar Docs**: Retrieves the top relevant manual chunks and portal screenshot citations.
-7. **Post-Processing**: Cleans, deduplicates, and extracts page citations and screen references.
-8. **Context Assembly**: Structures clean text passages with source manual metadata.
-9. **LLM Prompt**: Formats system guidelines, domain rules, and context blocks.
-10. **Direct Query**: Feeds user query and visual screenshot tokens into the model context.
-11. **Output Generation**: Produces a descriptive, structured step-by-step procedural answer (`llm_service.py`, `streamlit_app.py`).
+## Application surfaces
 
----
+### Frontend
 
-## 📁 Project Directory Structure
+- `frontend/src/App.tsx` and `frontend/src/components/` implement the chat UI, screenshot selection, previews, page/source citation display, and manual page viewer.
+- `GovtOfficialSidebar.tsx` builds and searches manual-based suggested questions from the bundled corpus, and links to the full-PDF download endpoint. The current suggestion builder produces 189 entries; the count changes when the bundled data changes.
+- `frontend/src/services/api.ts` sends chat requests to `/api/chat`, checks backend health, and falls back to IndexedDB/local retrieval when the request fails.
+- `frontend/server.ts` runs an Express/Vite server. It first proxies chat to FastAPI when reachable; otherwise, it performs local retrieval and can call configured cloud providers.
+- `frontend/src/data/allManualChunks.json` contains 1,170 records. `frontend/src/data/manualChunks.ts` combines bundled records with curated records for frontend features. Check `INITIAL_MANUAL_CHUNKS` directly rather than inferring its count from the JSON file.
 
-```
-egp-chatbot/
-│
-├── data/
-│   ├── raw/
-│   │   └── e-GP System User Manual - Procuring Entity User 1 February 2026.pdf  # 543-page official manual
-│   │
-│   ├── extracted_images/          # High-resolution portal screenshots extracted from manual
-│   │   ├── page_6.jpg
-│   │   ├── page_7.jpg
-│   │   └── ...
-│   │
-│   ├── processed/
-│   │   └── chunks.json            # 786 structured chunks with text & screenshot links
-│   │
-│   └── faiss_index/
-│       ├── index.faiss            # FAISS binary vector index (1024-dim)
-│       └── metadata.json          # Chunk metadata mapping (page, source, snippet, image)
-│
-├── app/
-│   ├── main.py                    # FastAPI application entrypoint with CORS & lifespan
-│   ├── models.py                  # Centralized AI models registry & Pydantic schemas
-│   │
-│   ├── api/
-│   │   └── chat.py                # REST endpoints: POST /api/chat, GET /api/chat/health
-│   │
-│   ├── services/
-│   │   ├── document_loader.py     # Extracts PDF text & screenshots with pypdf
-│   │   ├── text_chunker.py        # Semantic text chunker with overlap & screenshot links
-│   │   ├── embedding_service.py   # Multimodal BGE-Visualized-M3 embedder (Text + Image)
-│   │   ├── faiss_service.py       # FAISS IndexFlatIP (cosine similarity) manager
-│   │   ├── retrieval_service.py   # Query embedder & top-k multimodal chunk retriever
-│   │   └── llm_service.py         # Qwen2.5-VL-72B-Instruct (Local GPU or Cloud API)
-│   │
-│   ├── prompts/
-│   │   └── system_prompt.txt      # System prompt enforcing strict citation of pages
-│   │
-│   └── schemas/
-│       └── chat_schema.py         # Backward-compatible schema re-exporter
-│
-├── scripts/
-│   ├── ingest_documents.py        # Ingests PDF manual & extracts screenshots -> chunks.json
-│   └── build_faiss_index.py       # Computes multimodal embeddings -> index.faiss
-│
-├── frontend/
-│   └── streamlit_app.py           # Web chat interface with screenshot citations & image upload
-│
-├── tests/
-│   ├── test_retrieval.py          # Unit tests for text, image, and FAISS retrieval
-│   └── test_chat.py               # Integration tests for FastAPI endpoints
-│
-├── models.py                      # Root-level forwarder for 'import models'
-├── .env                           # Active environment configuration
-├── .env.example                   # Template environment variables
-├── .gitignore                     # Git ignored files & directories
-├── requirements.txt               # Project dependencies
-├── havedone.txt                   # Itemized implementation log & verification
-├── thinking_process.txt           # Detailed engineering thought process & design choices
-└── README.md                      # Complete project documentation
-```
+### FastAPI backend
 
----
+- `backend/app/main.py` registers chat, health, manual, and sync routers under `/api`.
+- `backend/app/api/chat.py` is the active backend chat entry point. It sanitizes question/image input, runs optional OCR, calls `retrieval_service.retrieve`, invokes the LLM service, and returns page citations.
+- `backend/app/services/retrieval_service.py` embeds a query, retrieves dense FAISS candidates, ranks keywords with domain expansions, and combines scores using a weighted sum. It excludes pages 1–5 from dense results.
+- `backend/app/services/hybrid_retriever.py` and `reranker.py` implement a separate retriever/reranker path; the active chat route does not call these services. RRF and a BGE reranker are not currently verified in the request path.
+- `backend/app/services/llm_service.py` uses Qwen2.5-VL-3B-Instruct by default, optionally uses Liquid AI when explicitly selected, and falls back to offline extractive synthesis. `vision_service.py` uses available OCR libraries; image data is also sent to the selected vision-language model.
+- `backend/app/api/manual.py` serves page chunks, page images, keyword search, and the complete source PDF at `/api/manual/download`. Page images fall back to rendering the local PDF when no extracted image exists. `citation_service.py` maps citation pages to image endpoints.
 
-## ⚡ Multimodal Capabilities (Text + Image)
+### Document and vector data
 
-1. **Dual-Modality Vector Search**:
-   - Both textual manual instructions and portal UI screenshots are projected into a shared **1024-dimensional** space.
-   - Text queries retrieve matching procedural text **and** corresponding UI screenshots.
-2. **Visual Error Troubleshooting**:
-   - Users can upload a screenshot of an e-GP portal error or form dialog.
-   - The system embeds the uploaded image and retrieves the exact manual section and solution.
-3. **Screenshot Citations in UI**:
-   - Streamlit displays citations with the page number and automatically renders the actual portal screenshot extracted from that page.
+- Local source: `data/raw/egp_manual.pdf` (100,156,678 bytes; 543 pages). The PDF is present in the working tree but is not tracked by Git.
+- Processed corpus: `data/processed/chunks.json` (1,188 records; current schema includes `chunk_id`, `source`, `page`, `text`, `image_path`, and `content_type`).
+- Vector assets: `data/faiss_index/index.faiss` and `data/faiss_index/metadata.json`. The index contains 1,188 vectors at 1,024 dimensions; metadata has 1,188 records covering every page from 1 through 543.
+- These checks establish count and page coverage only. They do not prove embedding provenance, normalization, semantic quality, or citation accuracy.
+- Image assets exist under `data/extracted_images/`. A previous text scan found 10 image-heavy pages with fewer than 40 extracted characters (96, 98, 100, 102, 107, 108, 130, 365, 467, and 485); those pages remain OCR-review candidates. There is no verified OCR-by-page report or structured table output yet.
+- The current backend chunk schema omits `section_title` and `screen_references`; the existing `validate_chunks.py` consequently reports zero screen references. The frontend build script derives headings/screens separately from chunk text.
 
----
+## Ingestion and retrieval scripts
 
-## 🤖 Supported Models
+- `backend/scripts/ingest_documents.py` scans `data/raw/` for PDFs, extracts text with `pypdf`, extracts some embedded images, and chunks text.
+- `backend/scripts/ingest_manual.py` uses `pdf_loader.py`, whose default/alternate filenames do not include the current `egp_manual.pdf`; use the scanning ingestion path only after validating it, or fix the path handling before using that script.
+- `backend/scripts/build_faiss_index.py` is the script that calls `embed_chunks`, builds the FAISS index, and writes metadata. The other `backend/scripts/build_index.py` path should be checked before use because it calls a different service interface.
+- `backend/scripts/validate_chunks.py` reports chunk page coverage and basic term/screen counts, but does not detect low-quality text, OCR gaps, or table integrity.
 
-### Embedding Models (`app/models.py`)
-- **`BAAI/bge-visualized-m3`** *(Default, 1024-dim)*: Multimodal visual embedding model by BAAI.
-- **`google/siglip-base-patch16-224`** *(768-dim)*: Google's SigLIP vision-text model.
-- **`openai/clip-vit-base-patch32`** *(512-dim)*: Universal multimodal baseline.
+## Configuration and runtime
 
-### Large Language Models (`app/models.py`)
-- **`Qwen/Qwen2.5-VL-72B-Instruct`** *(Default Multimodal)*: Flagship vision-language reasoning model.
-- **`Qwen/Qwen2.5-72B-Instruct`**: High-performance text reasoning model.
-- **`meta-llama/Llama-3.3-70B-Instruct`**: Meta's top open-weights 70B model.
+- Backend settings are loaded by `backend/app/core/config.py` from root `.env`; data paths default to `data/raw`, `data/processed/chunks.json`, and `data/faiss_index/`.
+- Backend CORS origins are controlled by `CORS_ORIGINS`; the default permits local development origins. Netlify production and custom-domain origins must be explicitly configured on the backend.
+- The embedding model defaults differ between configuration and the service implementation. Record and validate the model that created the checked-in index before reusing or rebuilding it.
+- `.env.example` is a placeholder template. Put active credentials in the ignored root `.env`; never place them in client-side `VITE_*` variables or commit them.
+- Check the active Python environment and installed optional packages before running PDF rendering or tests. The backend requirements declare PyMuPDF, but an environment may not have installed every dependency.
+- At the 2026-11-08 audit, the frontend production build succeeded with a large-bundle warning; `npm run lint` reported pre-existing TypeScript errors. Re-run checks after code changes for current results.
+- `.gitignore` excludes local environment files, frontend dependencies/build output, and Python virtualenv/cache artifacts. Some bytecode files are already tracked and are not removed by ignore rules.
 
----
+## Known gaps before the target architecture is production-ready
 
-## 🚀 Quickstart Guide
+1. Audit the current 1,188 chunks against the PDF, including empty/low-text pages, headings, tables, OCR, and stable IDs.
+2. Confirm that excluding the introductory/TOC pages from offline frontend retrieval remains acceptable for the manual viewer and synchronization contract.
+3. Confirm embedding model/provider, normalization, and build provenance; evaluate existing retrieval before any index rebuild.
+4. Choose one active retrieval path and measure it. Add BM25/RRF/reranking only as validated changes to the path used by `/api/chat`.
+5. Test screenshot processing, model/provider support, timeouts, rate limits, invalid files, and insufficient-context abstention.
+6. Add reproducible evaluation and deployment documentation.
 
-### 1. Prerequisites
-- Python 3.10+ (tested on Python 3.12)
-- Optional: Hugging Face API Token (for cloud inference)
-- Optional: CUDA GPU (if running Qwen2.5-VL locally via `USE_LOCAL_LLM=true`)
+## API contract pointers
 
-*(Note: The system contains an intelligent offline fallback, allowing it to run immediately on any CPU laptop without API keys or downloads!)*
-
-### 2. Install Dependencies
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Configure Environment Variables
-Copy `.env.example` to `.env`:
-```ini
-# Optional Hugging Face Token for Cloud Inference
-HF_TOKEN=your_huggingface_token_here
-
-# Multimodal Embedding Model
-EMBEDDING_MODEL=BAAI/bge-visualized-m3
-
-# Large Language Model
-LLM_MODEL=Qwen/Qwen2.5-VL-72B-Instruct
-
-# Set to true to load Qwen2.5-VL locally via CUDA transformers
-USE_LOCAL_LLM=false
-
-# Backend API URL for Streamlit
-BACKEND_URL=http://127.0.0.1:8000
-```
-
-### 4. Ingest Manual & Build the Vector Index
-```bash
-# Step 1: Extract 543 pages and portal screenshots
-python scripts/ingest_documents.py
-
-# Step 2: Generate multimodal embeddings and build the FAISS index
-python scripts/build_faiss_index.py
-```
-
-### 5. Launch the Application
-
-#### Option A: 1-Click Launch (Easiest)
-Simply double-click **`run.bat`** on Windows, and the app will open directly in your browser.
-
-#### Option B: Run the Streamlit Web Interface
-Run either command from the project root:
-```bash
-streamlit run streamlit_app.py
-```
-*(or simply: `python streamlit_app.py`)*
-
-The chatbot will open in your browser at [http://localhost:8501](http://localhost:8501).
-
-#### Option C: Run the FastAPI REST Backend (Optional)
-If you wish to test the API directly or access Swagger Docs:
-```bash
-python app/main.py
-```
-*(or: `uvicorn app.main:app --reload --port 8000`)*
-- Swagger Interactive Docs: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-- Health Check: [http://127.0.0.1:8000/api/chat/health](http://127.0.0.1:8000/api/chat/health)
-
----
-
-## 📡 API Endpoints Reference
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/` | API status and documentation links |
-| `GET` | `/api/chat/health` | Vector store status and total indexed chunks |
-| `GET` | `/api/chat/chunks` | Preview loaded chunks and image links |
-| `POST` | `/api/chat` | Send question (with optional image) and receive cited answer |
-
-### Example Request (`POST /api/chat`)
-```json
-{
-  "question": "How does a Procuring Entity user login to the e-GP portal?",
-  "top_k": 3,
-  "image": null
-}
-```
-
-### Example Response
-```json
-{
-  "question": "How does a Procuring Entity user login to the e-GP portal?",
-  "answer": "Based on the official e-GP manual, Procuring Entity (PE) users must navigate to https://eprocure.gov.bd, enter their registered Email ID and Password, and verify their account. [Source: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf, Page 6]",
-  "sources": [
-    {
-      "source": "e-GP System User Manual - Procuring Entity User 1 February 2026.pdf",
-      "page": 6,
-      "chunk_id": 15,
-      "score": 0.88,
-      "snippet": "1. Login to e-GP Portal along with Email Id & Password - Procuring Entity (PE) will be created by e-GP Admin...",
-      "image_path": "data/extracted_images/page_6.jpg"
-    }
-  ]
-}
-```
-
----
-
-## 🧪 Running Automated Tests
-
-Run the full test suite with Python's built-in `unittest`:
-```bash
-python -m unittest discover tests
-```
-
-Output:
-```
-Ran 11 tests in 3.64s - OK
-```
-
-Tests cover:
-- Text cleaning and overlapping chunk generation
-- Text embedding shape and unit L2 normalization
-- Image embedding and joint multimodal fusion
-- FAISS vector creation and nearest-neighbor search
-- FastAPI health, chunk preview, and chat endpoints
-- Multimodal query handling and schema validation
-
----
-
-## 💡 Developer Notes & Architecture Philosophy
-- **No Black-Box Bloat**: Pure, transparent Python. No tangled LangChain or complex framework layers.
-- **Deterministic Offline Fallbacks**: Uses stable CRC32 text projections and spatial perceptual image features to run 100% reliably even offline.
-- **Full Details in Documentation**:
-  - Review **[`havedone.txt`](havedone.txt)** for the complete implementation task log.
-  - Review **[`thinking_process.txt`](thinking_process.txt)** for the full architectural rationale and design decisions.
+- Chat: `POST /api/chat`; health and chunk diagnostics: `/api/chat/health`, `/api/chat/chunks`.
+- Manual viewer/download: `/api/manual/page/{page_num}`, `/api/manual/page/{page_num}/image`, `/api/manual/search`, `/api/manual/download`.
+- Offline synchronization: `/api/sync/*`.
+- Interactive API specification: FastAPI `/docs` when the backend is running.
+- Netlify deployment steps and external backend requirements: [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md).

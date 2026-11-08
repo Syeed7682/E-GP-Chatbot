@@ -2,8 +2,7 @@
 Citation Service (app/services/citation_service.py).
 Extracts and validates statutory page references and maps them to manual screenshot assets.
 """
-import os
-from typing import List, Dict, Any, Optional
+from typing import Optional
 from app.core.config import settings
 
 class CitationService:
@@ -17,8 +16,11 @@ class CitationService:
         """Resolves existing extracted page screenshot from data/extracted_images."""
         candidates = [
             settings.EXTRACTED_IMAGES_DIR / f"page_{page}.jpg",
+            settings.EXTRACTED_IMAGES_DIR / f"page_{page}.png",
             settings.EXTRACTED_IMAGES_DIR / "page_images" / f"page_{page}.jpg",
+            settings.EXTRACTED_IMAGES_DIR / "page_images" / f"page_{page}.png",
             settings.EXTRACTED_IMAGES_DIR / f"page_{page}_img_0.jpg",
+            settings.EXTRACTED_IMAGES_DIR / f"page_{page}_img_0.png",
         ]
         for p in candidates:
             if p.exists():
@@ -26,4 +28,3 @@ class CitationService:
         return None
 
 citation_service = CitationService()
-

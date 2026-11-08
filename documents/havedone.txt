@@ -1,6 +1,10 @@
 ================================================================================
 MILESTONE: ENTERPRISE MULTIMODAL RAG & OFFLINE SYNC ARCHITECTURE ALIGNMENT
 ================================================================================
+
+HISTORICAL NOTE: This is an older implementation log. Its file lists, counts,
+model claims, and completion statements may be outdated. It is not a source of
+current project status. See README.md and documents/INDEX.md for current docs.
 [x] DIRECTORY STRUCTURE STANDARDIZATION:
     - Frontend: Organized into public/ (assets, logo, manual-preview), src/components/ (chat/, manual/, offline/, layout/), src/services/ (api, chatService, retrievalService, syncService), src/data/, src/utils/.
     - Backend: Organized into app/api/ (chat, health, manual, sync), app/services/ (embedding_service, vector_store, hybrid_retriever, reranker, vision_service, llm_service, citation_service, pdf_loader, chunker), app/prompts/, app/schemas/, app/core/ (config, security).

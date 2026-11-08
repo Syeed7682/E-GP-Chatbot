@@ -3,12 +3,12 @@ import { GovtOfficialHeader } from './components/GovtOfficialHeader';
 import { GovtOfficialSidebar } from './components/GovtOfficialSidebar';
 import { GovtChatArea } from './components/GovtChatArea';
 import { UserGuideModal } from './components/UserGuideModal';
-import { AboutModal } from './components/AboutModal';
 import { PortalScreenModal } from './components/PortalScreenModal';
 import { SyncInspectorModal } from './components/SyncInspectorModal';
 import { ChatMessage, SyncState, SyncMutation } from './types/egp';
 import { syncService } from './services/syncService';
 import { checkBackendHealth, sendChatQuery } from './services/api';
+import { isVagueStepsRequest } from './utils/offlineVectorEngine';
 import {
   initOfflineStorage,
   getLocalMessages,
@@ -23,14 +23,16 @@ export default function App() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputQuestion, setInputQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'chat' | 'guide' | 'about'>('chat');
+  const [activeTab, setActiveTab] = useState<'chat' | 'guide'>('chat');
   const [language, setLanguage] = useState<'en' | 'bn'>('en');
   const [backendError, setBackendError] = useState<string | null>(null);
   const [uploadedImage, setUploadedImage] = useState<{ base64: string; name: string; mime: string } | null>(null);
 
+  // Qwen is the default model; Liquid AI is used only when explicitly selected.
+  const [useAltModel, setUseAltModel] = useState(false);
+
   // Modals
   const [isGuideModalOpen, setIsGuideModalOpen] = useState(false);
-  const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
   const [selectedScreenId, setSelectedScreenId] = useState<string | null>(null);
 
@@ -51,7 +53,7 @@ export default function App() {
     conflict_strategy: 'server_wins'
   });
 
-  // Setup app & seed initial state
+  // Setup app and load the saved conversation
   useEffect(() => {
     async function setup() {
       await initOfflineStorage();
@@ -71,61 +73,7 @@ export default function App() {
       // Load saved messages from IndexedDB
       const stored = await getLocalMessages();
       if (stored && stored.length > 0) {
-        setMessages(stored);
-      } else {
-        // Seed initial official example
-        const seedUser: ChatMessage = {
-          id: 'seed-user-1',
-          sender: 'user',
-          text: 'How to delete a tender?',
-          timestamp: Date.now() - 3600000,
-          sync_status: 'synced',
-          local_revision: 1
-        };
-
-        const seedAssistant: ChatMessage = {
-          id: 'seed-asst-1',
-          sender: 'assistant',
-          text: `Based on the official e-GP Procuring Entity User Manual, procedures for deleting or canceling a tender depend on its current status:
-
-1. Draft Status (Unpublished):
-   - Navigate to "Tender" > "My Tenders" > Select the draft tender.
-   - Click "Edit Tender" and scroll to the bottom action bar.
-   - Click the "Delete Draft Tender" button to permanently remove the unissued draft and temporary BOQ tables.
-
-2. Workflow / Published Status:
-   - Once a tender has entered the approval workflow or has been published to the portal, direct deletion is strictly disallowed under Public Procurement Rules (PPR).
-   - If changes are needed, the PE user must initiate an official "Tender Corrigendum / Amendment" or "Cancellation Notice" under PPR Rule 45.
-   - Enter specific cancellation justifications, attach ministerial directives if applicable, and route through the Workflow Approver.
-
-📷 Refer to portal screens: Screen - Q10.4, Screen - D6
-
-📖 Source: e-GP System User Manual (Procuring Entity User 1 February 2026), Page 56, Page 510`,
-          timestamp: Date.now() - 3590000,
-          portal_screens: ['Screen - Q10.4', 'Screen - D6'],
-          sources: [
-            {
-              source: 'e-GP System User Manual - Procuring Entity User 1 February 2026',
-              page: 56,
-              chunk_id: 56,
-              score: 0.95,
-              snippet: 'A tender in Draft status can be deleted by Tender Creator; published tenders require formal Corrigendum notice under PPR.'
-            },
-            {
-              source: 'e-GP System User Manual - Procuring Entity User 1 February 2026',
-              page: 510,
-              chunk_id: 510,
-              score: 0.89,
-              snippet: 'Screen - Q10.4 triggers when tender deletion disallowed after tender notice publication.'
-            }
-          ],
-          sync_status: 'synced',
-          local_revision: 1
-        };
-
-        await saveMessageLocally(seedUser);
-        await saveMessageLocally(seedAssistant);
-        setMessages([seedUser, seedAssistant]);
+        setMessages(stored.filter((message) => !message.id.startsWith('seed-')));
       }
 
       return () => unsubscribe();
@@ -176,11 +124,22 @@ export default function App() {
     setIsLoading(true);
 
     try {
+      const previousQuestion = [...messages]
+        .reverse()
+        .find((message) =>
+          message.sender === 'user' &&
+          message.text.trim() &&
+          !isVagueStepsRequest(message.text)
+        )
+        ?.text;
       const result = await sendChatQuery({
         question: text.trim(),
+        previous_question: previousQuestion,
         image_base64: attached?.base64,
+        image_mime: attached?.mime,
         image_name: attached?.name,
-        top_k: 3
+        top_k: 3,
+        use_alt_model: useAltModel
       });
 
       const assistantMessage: ChatMessage = {
@@ -240,7 +199,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F3F6F9] text-[#334155] font-sans">
+    <div className="flex h-dvh flex-col overflow-hidden bg-[radial-gradient(ellipse_at_top,_#dcecff_0%,_#eef4f7_45%,_#dfe8ef_100%)] text-[#334155] font-sans">
       {/* 1. Government-Style Header */}
       <GovtOfficialHeader
         syncState={syncState}
@@ -248,16 +207,17 @@ export default function App() {
         setActiveTab={(tab) => {
           setActiveTab(tab);
           if (tab === 'guide') setIsGuideModalOpen(true);
-          if (tab === 'about') setIsAboutModalOpen(true);
         }}
         language={language}
         onToggleLanguage={() => setLanguage(prev => prev === 'en' ? 'bn' : 'en')}
         onOpenSyncModal={() => setIsSyncModalOpen(true)}
         onNewChat={handleNewChat}
+        useAltModel={useAltModel}
+        onToggleAltModel={() => setUseAltModel(prev => !prev)}
       />
 
       {/* 2. Main Content Container */}
-      <div className="flex-1 flex flex-col md:flex-row max-w-[1750px] w-full mx-auto overflow-hidden shadow-sm border-x border-[#D5DEE7] bg-white">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row max-w-[1750px] w-full mx-auto shadow-sm border-x border-white/60 bg-white/55 backdrop-blur-xl">
         {/* Navigation / Sidebar Panel */}
         <GovtOfficialSidebar
           syncState={syncState}
@@ -271,13 +231,14 @@ export default function App() {
         {/* Main Chat Interface */}
         <GovtChatArea
           messages={messages}
-          syncState={syncState}
           inputQuestion={inputQuestion}
           setInputQuestion={setInputQuestion}
           onSendMessage={handleSendMessage}
           isLoading={isLoading}
           uploadedImage={uploadedImage}
-          onImageSelected={(img) => setUploadedImage(img)}
+          onImageSelected={(img) => {
+            setUploadedImage(img);
+          }}
           onOpenScreenModal={(screenId) => setSelectedScreenId(screenId)}
           language={language}
           backendError={backendError}
@@ -285,7 +246,6 @@ export default function App() {
             setBackendError(null);
             checkBackendHealth();
           }}
-          onSelectSuggestedQuestion={handleSelectSuggestedQuestion}
         />
       </div>
 
@@ -294,13 +254,6 @@ export default function App() {
         isOpen={isGuideModalOpen}
         onClose={() => setIsGuideModalOpen(false)}
         onSelectQuery={handleSelectSuggestedQuestion}
-        language={language}
-      />
-
-      {/* About Assistant Modal */}
-      <AboutModal
-        isOpen={isAboutModalOpen}
-        onClose={() => setIsAboutModalOpen(false)}
         language={language}
       />
 

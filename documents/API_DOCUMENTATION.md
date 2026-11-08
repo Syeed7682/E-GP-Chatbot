@@ -1,98 +1,85 @@
-# e-GP Manual Assistant API Documentation
+# API Documentation
 
-## Overview
-The e-GP Official Manual Assistant REST API provides endpoints for multimodal Retrieval-Augmented Generation (RAG), statutory manual page browsing, portal screenshot diagnostics, and offline dataset synchronization.
+The FastAPI application exposes chat, manual, health, and synchronization routes under `/api`.
 
-- **Base URL:** `http://127.0.0.1:8000/api`
-- **Specification:** OpenAPI 3.0 / Swagger UI at `http://127.0.0.1:8000/docs`
-- **Grounding Corpus:** Official 543-page Bangladesh e-GP Procuring Entity User Manual (PPA 2006 / PPR 2008).
+- Local base URL: `http://127.0.0.1:8000/api`
+- OpenAPI UI: `http://127.0.0.1:8000/docs`
+- Implementation: `backend/app/api/`
 
----
+The React development server on port 3000 proxies `/api` requests to FastAPI. Hosted frontends must be configured to use the deployed backend URL.
+Set the backend's `CORS_ORIGINS` environment variable to a comma-separated list of exact frontend origins. The default allows local development origins only.
 
-## 1. Chat Endpoints (`/api/chat`)
+### `GET /api/health`
+
+Returns general service status, retrieval-index readiness, chunk count, and configured model names.
+
+## Chat
 
 ### `POST /api/chat`
-Submits a user query and/or portal screenshot for grounded RAG analysis.
 
-#### Request Body
+Ask a question grounded in the e-GP manual, optionally including a screenshot.
+
+Request:
+
 ```json
 {
-  "question": "what is debarment?",
+  "question": "How do I create an Annual Procurement Plan?",
+  "previous_question": null,
   "image_base64": null,
-  "top_k": 5
+  "image_mime": "image/png",
+  "image_name": null,
+  "top_k": 5,
+  "use_alt_model": false
 }
 ```
 
-#### Response (200 OK)
-```json
-{
-  "question": "what is debarment?",
-  "answer": "Under Public Procurement Rules (PPR-2008 Rule 127) and Chapter 7 of the official e-GP manual...",
-  "sources": [
-    {
-      "source": "Official e-GP Procuring Entity Manual",
-      "page": 344,
-      "chunk_id": 791,
-      "score": 0.98,
-      "snippet": "7.1.9 After approving the debarment by HOPE , the debarment details will be...",
-      "screen_reference": "Screen - DEB-01",
-      "image_path": "/api/manual/page/344/image"
-    }
-  ],
-  "portal_screens": ["Screen - DEB-01", "Screen - DEB-02"],
-  "model_used": "Qwen2.5-72B-Instruct (Grounded)",
-  "was_offline": false
-}
-```
+`question` is required by the request schema. `previous_question` supports short follow-ups such as asking for steps. An image may be supplied in `image_base64` or the compatibility field `image`. `top_k` is between 1 and 20. `use_alt_model` selects the optional Liquid AI model; otherwise Qwen is used.
+
+Successful responses contain `question`, `answer`, `sources`, `portal_screens`, `model_used`, and `was_offline`. Each source may include `source`, `page`, `chunk_id`, `score`, `snippet`, `screen_reference`, and `image_path`. Image paths point to the manual page image endpoint. In the FastAPI chat route, `was_offline` is false; local fallback is handled by the frontend/Express paths.
 
 ### `GET /api/chat/health`
-Probes the health of the LLM pipeline and FAISS index.
 
-#### Response (200 OK)
-```json
-{
-  "status": "healthy",
-  "system": "e-GP Official Manual Assistant",
-  "index_loaded": true,
-  "total_chunks": 1188,
-  "llm_model": "Qwen/Qwen2.5-72B-Instruct",
-  "embedding_model": "BAAI/bge-m3",
-  "hf_configured": true,
-  "gemini_configured": false
-}
-```
+Returns whether the FAISS retrieval index is loaded, its available metadata count, model names, and whether a Hugging Face token is configured. This does not guarantee that the hosted provider is currently reachable.
 
----
+### `GET /api/chat/chunks?limit=10`
 
-## 2. Manual Endpoints (`/api/manual`)
+Returns a preview of indexed metadata. `limit` is between 1 and 50.
+
+## Manual
 
 ### `GET /api/manual/page/{page_num}`
-Returns chunks and metadata for a specific page (1 to 543).
+
+Returns page metadata and chunks for a page from 1 to 543, plus whether an image can be served and its URL.
 
 ### `GET /api/manual/page/{page_num}/image`
-Serves the rendered JPEG page screenshot for visual reference.
+
+Serves an extracted page image when one is available. Otherwise, renders that page from the local source PDF as PNG. PDF rendering requires the source file and PyMuPDF.
+
+### `GET /api/manual/download`
+
+Downloads the complete source PDF as an attachment. FastAPI looks in `data/raw/` for the supported manual filenames. Returns `404` when the PDF is unavailable.
 
 ### `GET /api/manual/search?q={query}&limit=10`
-Performs rapid keyword search across all indexed chunks.
 
----
+Performs case-insensitive substring matching against chunk titles and text. `q` must contain at least two characters. This is a simple keyword search, not semantic retrieval.
 
-## 3. Synchronization Endpoints (`/api/sync`)
+## Synchronization
 
 ### `GET /api/sync/version`
-Returns the current server manual version, chunk count, and dataset hash for client cache invalidation.
+
+Returns the server dataset version, a hash, metadata count, and timestamp.
 
 ### `GET /api/sync/chunks`
-Downloads full verified procedural manual chunks for local browser IndexedDB caching.
+
+Returns all currently loaded chunk metadata for client caching.
 
 ### `POST /api/sync/push`
-Reconciles client offline mutations and audit logs.
 
----
+Accepts client mutation records and returns their IDs as processed. The current FastAPI implementation does not persist these records or perform durable conflict resolution; do not treat the success response as an audit-log guarantee.
 
-## 4. Run Scripts
-- **Windows (Full Stack):** Double-click `run.bat`
-- **Linux / Mac:** Run `./run.sh`
-- **Backend Only:** `uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload` (from `backend/`)
-- **Frontend Only:** `npm run dev` (from `frontend/`)
+## Errors and operational notes
 
+- Invalid manual page numbers return `404`.
+- The PDF download endpoint returns `404` if no supported source PDF is present.
+- Model/provider and vector-index readiness are separate concerns. Check provider configuration and server logs when a chat request fails despite a loaded index.
+- Keep Hugging Face and other provider credentials on the server in the root `.env`; never expose them in client-side environment variables.

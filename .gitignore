@@ -1,4 +1,10 @@
 node_modules/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 build/
 dist/
 coverage/
@@ -6,3 +12,4 @@ coverage/
 *.log
 .env*
 !.env.example
+data/raw/*.pdf

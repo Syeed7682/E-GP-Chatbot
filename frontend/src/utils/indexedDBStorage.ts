@@ -2,7 +2,7 @@ import { ManualChunk, ChatMessage, SyncMutation, SyncConflict } from '../types/e
 import { INITIAL_MANUAL_CHUNKS, SERVER_DATASET_VERSION, SERVER_DATASET_HASH } from '../data/manualChunks';
 
 const DB_NAME = 'egp_rag_offline_db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let dbInstance: IDBDatabase | null = null;
 
@@ -17,9 +17,11 @@ async function openDatabase(): Promise<IDBDatabase> {
     request.onupgradeneeded = (e) => {
       const db = (e.target as IDBOpenDBRequest).result;
 
-      if (!db.objectStoreNames.contains('chunks')) {
-        db.createObjectStore('chunks', { keyPath: 'chunk_id' });
+      if (db.objectStoreNames.contains('chunks')) {
+        db.deleteObjectStore('chunks');
       }
+      db.createObjectStore('chunks', { keyPath: 'chunk_id' });
+
       if (!db.objectStoreNames.contains('messages')) {
         db.createObjectStore('messages', { keyPath: 'id' });
       }

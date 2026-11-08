@@ -1,7 +1,7 @@
 """
 Models Definition File (app/models.py).
 Centralizes:
-1. AI Model Configurations & Registry (Multimodal BGE-Visualized-M3, SigLIP, CLIP, Qwen2.5-VL-72B-Instruct).
+1. AI Model Configurations & Registry (BGE-M3, Qwen2.5-VL-3B-Instruct, optional Liquid AI).
 2. Domain Data & API Schemas supporting both Text and Image (DocumentChunk, SourceDocument, ChatRequest, ChatResponse, HealthResponse).
 """
 from enum import Enum
@@ -72,6 +72,22 @@ SUPPORTED_EMBEDDING_MODELS: Dict[str, EmbeddingModelConfig] = {
 
 # Pre-configured Large Language Models Registry
 SUPPORTED_LLM_MODELS: Dict[str, LLMModelConfig] = {
+    "Qwen/Qwen2.5-VL-3B-Instruct": LLMModelConfig(
+        name="Qwen2.5-VL-3B-Instruct (Default Multimodal)",
+        model_id="Qwen/Qwen2.5-VL-3B-Instruct",
+        provider=ModelProvider.HUGGINGFACE,
+        default_temperature=0.2,
+        default_max_tokens=800,
+        description="Default vision-language model for grounded e-GP manual answers and portal screenshots."
+    ),
+    "LiquidAI/LFM2.5-VL-1.6B": LLMModelConfig(
+        name="Liquid AI LFM2.5-VL-1.6B (Optional)",
+        model_id="LiquidAI/LFM2.5-VL-1.6B",
+        provider=ModelProvider.HUGGINGFACE,
+        default_temperature=0.2,
+        default_max_tokens=800,
+        description="Optional vision-language engine, used only when explicitly selected."
+    ),
     "Qwen/Qwen2.5-VL-72B-Instruct": LLMModelConfig(
         name="Qwen2.5-VL-72B-Instruct (Default Multimodal)",
         model_id="Qwen/Qwen2.5-VL-72B-Instruct",
@@ -113,7 +129,7 @@ def get_embedding_config(model_id: str = "BAAI/bge-visualized-m3") -> EmbeddingM
     )
 
 
-def get_llm_config(model_id: str = "Qwen/Qwen2.5-VL-72B-Instruct") -> LLMModelConfig:
+def get_llm_config(model_id: str = "Qwen/Qwen2.5-VL-3B-Instruct") -> LLMModelConfig:
     """Returns the configuration for the requested LLM or a sensible default."""
     return SUPPORTED_LLM_MODELS.get(
         model_id,

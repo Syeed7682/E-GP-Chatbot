@@ -23,7 +23,9 @@ class VisionService:
             
             # Try PaddleOCR if available
             try:
-                from paddleocr import PaddleOCR
+                import importlib
+                paddle_mod = importlib.import_module("paddleocr")
+                PaddleOCR = getattr(paddle_mod, "PaddleOCR")
                 if self._ocr is None:
                     self._ocr = PaddleOCR(use_angle_cls=True, lang='en', show_log=False)
                 result = self._ocr.ocr(img_bytes, cls=True)
@@ -33,17 +35,18 @@ class VisionService:
                         for line in res:
                             lines.append(line[1][0])
                 return "\n".join(lines).strip()
-            except ImportError:
+            except Exception:
                 pass
 
             # Try pytesseract / PIL
             try:
+                import importlib
                 from PIL import Image
-                import pytesseract
+                pytesseract = importlib.import_module("pytesseract")
                 img = Image.open(io.BytesIO(img_bytes))
                 text = pytesseract.image_to_string(img)
                 return text.strip()
-            except ImportError:
+            except Exception:
                 pass
 
         except Exception as e:
