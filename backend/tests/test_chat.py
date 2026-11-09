@@ -4,13 +4,19 @@ Tests chat endpoint responses and grounding.
 """
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
 from fastapi.testclient import TestClient
 from app.main import app
-from app.services.llm_service import _image_data_url, _user_message_content
+from app.services.llm_service import (
+    LLMService,
+    _image_data_url,
+    _user_message_content,
+    load_system_prompt,
+)
 from app.services.llm_service import is_vague_steps_request
 from app.services import retrieval_service as retrieval_service_module
 from app.services import vision_service as vision_service_module
@@ -249,3 +255,36 @@ if __name__ == "__main__":
     test_chat_debarment()
     test_chat_delete_tender()
     print("All chat API tests PASSED!")
+def test_model_prompt_supports_bounded_reasoning_from_related_manual_evidence():
+    class CapturingInferenceClient:
+        messages = None
+
+        def chat_completion(self, **kwargs):
+            self.messages = kwargs["messages"]
+            return SimpleNamespace(
+                choices=[
+                    SimpleNamespace(
+                        message=SimpleNamespace(content="The manual supports this conclusion.")
+                    )
+                ]
+            )
+
+    client = CapturingInferenceClient()
+    service = LLMService.__new__(LLMService)
+    service.system_prompt = load_system_prompt()
+    service.model_name = "test-model"
+    service._hf_client = client
+    service._mode = "hf_api"
+    service._local_model = None
+
+    answer = service.generate_answer(
+        "What matters most during first login?",
+        "For first-time users, the system directs the PE to change the initial password. "
+        "The manual describes this as a measure to enhance portal security.",
+    )
+
+    assert answer == "The manual supports this conclusion."
+    assert "combine relevant passages" in client.messages[0]["content"]
+    assert "label it plainly" in client.messages[0]["content"]
+    assert "synthesizing related passages" in client.messages[1]["content"]
+    assert "enhance portal security" in client.messages[1]["content"]

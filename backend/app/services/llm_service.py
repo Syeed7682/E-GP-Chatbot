@@ -121,7 +121,10 @@ def load_system_prompt() -> str:
 
     return (
         "You are the official assistant for the electronic Government Procurement (e-GP) system. "
-        "Answer questions accurately using only the provided context. Cite source manuals and page numbers."
+        "Ground answers only in the provided manual context. Combine related passages when they clearly support "
+        "the answer, even if their wording differs from the question. Clearly label any inference, identify "
+        "what remains unverified, and do not invent facts or portal behavior. If evidence is insufficient, say so "
+        "rather than guessing. Keep answers concise and do not include citations; the application displays references."
     )
 
 
@@ -205,7 +208,8 @@ class LLMService:
         prompt_text = (
             f"Context from e-GP Manuals:\n{context}\n\n"
             f"User Question: {question}\n\n"
-            f"Answer directly and concisely based strictly on the manual context above. Use a professional, measured tone, "
+            f"Answer directly and concisely from the manual context above, synthesizing related passages even when their wording differs from the question. "
+            f"Clearly label any inference and do not add unsupported facts. Use a professional, measured tone, "
             f"clear complete sentences, and no emojis, conversational filler, or generic closing offer. "
             f"Do not include page numbers or citations; the application displays references separately."
         )
@@ -738,7 +742,8 @@ class LLMService:
             prompt_text = (
                 f"Context from official Bangladesh e-GP Procuring Entity Manual (use as evidence; do not copy OCR artifacts):\n{context}\n\n"
                 f"User Question: {question}\n\n"
-                f"Answer directly and concisely using only the context. Prefer one short, natural paragraph; "
+                f"Answer directly from the context, synthesizing related passages even when their wording differs from the question. "
+                f"Clearly label any inference and do not add unsupported facts. Prefer one short, natural paragraph; "
                 f"use numbered steps only when the user needs a sequence. Do not include page numbers, citations, "
                 f"chunk headings, source labels, or a separate screen list; the application displays references separately. "
                 f"Correct obvious OCR line breaks and split words when their meaning is clear."
@@ -794,7 +799,8 @@ class LLMService:
                     {"role": "system", "content": self.system_prompt},
                     {"role": "user", "content": (
                         f"Context from e-GP manual (use as evidence; do not copy OCR artifacts):\n{context}\n\n"
-                        f"Question: {question}\n\nAnswer directly in one short, natural paragraph when possible. "
+                        f"Question: {question}\n\nAnswer from the manual context, synthesizing relevant related passages even when wording differs. "
+                        f"Clearly label any inference and do not add unsupported facts. Prefer one short paragraph when possible. "
                         f"Use numbered steps only for a necessary sequence. Do not include citations, page numbers, "
                         f"chunk headings, or source labels; references are displayed separately."
                     )}
@@ -832,7 +838,8 @@ class LLMService:
             user_message = (
                 f"Context from official Bangladesh e-GP Procuring Entity Manual (use as evidence; do not copy OCR artifacts):\n{context}\n\n"
                 f"User Question: {question}\n\n"
-                f"Answer directly and concisely based strictly on the context above. Prefer one natural paragraph; "
+                f"Answer directly from the context above, synthesizing related passages even when their wording differs from the question. "
+                f"Clearly label any inference and do not add unsupported facts. Prefer one natural paragraph; "
                 f"use numbered steps only when a sequence is necessary. Do not include citations, page numbers, "
                 f"chunk headings, or source labels; the application shows references separately."
             )
@@ -954,7 +961,8 @@ class LLMService:
             user_message = (
                 f"Context from official Bangladesh e-GP Procuring Entity Manual (use as evidence; do not copy OCR artifacts):\n{context}\n\n"
                 f"User Question: {question}\n\n"
-                f"Answer directly and concisely using only the context. Prefer one short, natural paragraph; "
+                f"Answer directly from the context, synthesizing related passages even when their wording differs from the question. "
+                f"Clearly label any inference and do not add unsupported facts. Prefer one short, natural paragraph; "
                 f"use numbered steps only when the user needs a sequence. Do not include page numbers, citations, "
                 f"chunk headings, source labels, or a separate screen list; the application displays references separately. "
                 f"Correct obvious OCR line breaks and split words when their meaning is clear."
