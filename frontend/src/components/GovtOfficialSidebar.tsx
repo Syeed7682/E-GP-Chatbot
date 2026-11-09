@@ -32,15 +32,15 @@ export const GovtOfficialSidebar: React.FC<GovtOfficialSidebarProps> = ({
   onOpenSyncModal
 }) => {
   const [suggestionQuery, setSuggestionQuery] = useState('');
-  const [submittedQuery, setSubmittedQuery] = useState('');
+  const hasQuery = suggestionQuery.trim().length > 0;
   const matchingSuggestions = useMemo(
-    () => searchManualQuestionSuggestions(submittedQuery),
-    [submittedQuery],
+    () => searchManualQuestionSuggestions(suggestionQuery),
+    [suggestionQuery],
   );
-  const visibleSuggestions = submittedQuery
+  const visibleSuggestions = hasQuery
     ? matchingSuggestions.slice(0, 30)
     : MANUAL_QUESTION_SUGGESTIONS.slice(0, 12);
-  const totalVisibleCount = submittedQuery
+  const totalVisibleCount = hasQuery
     ? matchingSuggestions.length
     : MANUAL_QUESTION_SUGGESTIONS.length;
 
@@ -72,7 +72,7 @@ export const GovtOfficialSidebar: React.FC<GovtOfficialSidebarProps> = ({
           className="flex gap-1.5"
           onSubmit={(event) => {
             event.preventDefault();
-            setSubmittedQuery(suggestionQuery.trim());
+            setSuggestionQuery(suggestionQuery.trim());
           }}
         >
           <input
@@ -92,8 +92,8 @@ export const GovtOfficialSidebar: React.FC<GovtOfficialSidebarProps> = ({
           </button>
         </form>
 
-        <p className="text-[10px] text-slate-500">
-          {submittedQuery
+        <p className="text-[10px] text-slate-500" aria-live="polite">
+          {hasQuery
             ? language === 'en'
               ? `${totalVisibleCount} matching suggestions${totalVisibleCount > 30 ? ' · showing first 30' : ''}`
               : `${totalVisibleCount}টি মিলেছে${totalVisibleCount > 30 ? ' · প্রথম ৩০টি দেখানো হচ্ছে' : ''}`
@@ -120,7 +120,7 @@ export const GovtOfficialSidebar: React.FC<GovtOfficialSidebarProps> = ({
               </button>
             );
           })}
-          {submittedQuery && matchingSuggestions.length === 0 && (
+          {hasQuery && matchingSuggestions.length === 0 && (
             <p className="rounded-lg bg-white/70 p-3 text-[11px] leading-relaxed text-slate-500">
               {language === 'en'
                 ? 'No matching manual topics. Try a shorter keyword or a different phrase.'

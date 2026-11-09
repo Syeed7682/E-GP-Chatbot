@@ -32,7 +32,7 @@ Local corpus
 ### Frontend
 
 - `frontend/src/App.tsx` and `frontend/src/components/` implement the chat UI, screenshot selection, previews, page/source citation display, and manual page viewer.
-- `GovtOfficialSidebar.tsx` builds and searches manual-based suggested questions from the bundled corpus, and links to the full-PDF download endpoint. The current suggestion builder produces 189 entries; the count changes when the bundled data changes.
+- `GovtOfficialSidebar.tsx` builds manual-based questions from meaningful section titles and key terms in the bundled corpus, filters suggestions as the user types, and links to the full-PDF download endpoint. Partial words and small spelling errors are supported; the suggestion count changes when the bundled data changes.
 - `frontend/src/services/api.ts` sends chat requests to `/api/chat`, checks backend health, and falls back to IndexedDB/local retrieval when the request fails.
 - `frontend/server.ts` runs an Express/Vite server. It first proxies chat to FastAPI when reachable; otherwise, it performs local retrieval and can call configured cloud providers.
 - `frontend/src/data/allManualChunks.json` contains 1,170 records. `frontend/src/data/manualChunks.ts` combines bundled records with curated records for frontend features. Check `INITIAL_MANUAL_CHUNKS` directly rather than inferring its count from the JSON file.
