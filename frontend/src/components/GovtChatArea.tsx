@@ -104,6 +104,16 @@ const FormattedGovtText: React.FC<{ text: string; onOpenScreenModal?: (screenId:
       return;
     }
 
+    if (/^Step\s+\d+\s*[—–-]\s*/i.test(trimmed)) {
+      flushList();
+      elements.push(
+        <p key={`step-heading-${idx}`} className="font-semibold text-slate-800">
+          {renderInlineStyles(trimmed)}
+        </p>
+      );
+      return;
+    }
+
     if (trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
       const content = trimmed.substring(2);
       currentList.push(

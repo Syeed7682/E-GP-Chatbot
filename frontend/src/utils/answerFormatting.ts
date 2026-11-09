@@ -14,8 +14,15 @@ export function formatAssistantAnswer(text: string): string {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
-  const hadNumberedItems = lines.some((line) => /^(?:\*\*)?\d+(?:\.\d+)*[.)](?:\*\*)?\s+/.test(line));
-  const cleanedLines = lines
+  const balancedBoldLines = lines.map((line) => {
+    const boldMarkers = line.match(/\*\*/g) || [];
+    if (boldMarkers.length % 2 === 0) return line;
+
+    const unmatchedMarker = line.lastIndexOf('**');
+    return `${line.slice(0, unmatchedMarker)}${line.slice(unmatchedMarker + 2)}`.trim();
+  });
+  const hadNumberedItems = balancedBoldLines.some((line) => /^(?:\*\*)?\d+(?:\.\d+)*[.)](?:\*\*)?\s+/.test(line));
+  const cleanedLines = balancedBoldLines
     .map((line) => line
       .replace(/^Screen\s*[-–—:]\s*[A-Za-z0-9.]+\s+\d+(?:\.\d+)*\s*/i, '')
       .replace(/^Screen\s*[-–—:]\s*[A-Za-z0-9.]+\s*/i, '')
