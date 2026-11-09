@@ -725,7 +725,13 @@ class LLMService:
             for index, (_, step) in enumerate(ordered_steps[:8], start=1)
         )
 
-    def _call_gemini_api(self, question: str, context: str, image: Optional[str] = None) -> Optional[str]:
+    def _call_gemini_api(
+        self,
+        question: str,
+        context: str,
+        image: Optional[str] = None,
+        image_mime: str = "image/png",
+    ) -> Optional[str]:
         """Calls Google Gemini API (gemini-flash-latest / gemini-2.0-flash / gemini-1.5-flash)."""
         api_key = get_gemini_api_key()
         if not api_key:
@@ -751,10 +757,13 @@ class LLMService:
 
             parts = []
             if image:
-                clean_b64 = re.sub(r'^data:image\/[a-z]+;base64,', '', image.strip())
+                clean_b64 = image.strip()
+                mime_match = re.match(r"^data:(image/[\w.+-]+);base64,", clean_b64)
+                mime_type = mime_match.group(1) if mime_match else image_mime
+                clean_b64 = re.sub(r"^data:image/[\w.+-]+;base64,", "", clean_b64)
                 parts.append({
                     "inline_data": {
-                        "mime_type": "image/png",
+                        "mime_type": mime_type,
                         "data": clean_b64
                     }
                 })
@@ -983,7 +992,22 @@ class LLMService:
             except Exception as e:
                 print(f"[llm_service] Qwen inference failed; using grounded offline synthesis: {e}")
 
-        # Mode 5: Smart Offline Grounded Synthesis
+        # Optional hosted fallbacks are used only when their API keys are configured.
+        gemini_answer = self._call_gemini_api(
+            question,
+            context,
+            image=image,
+            image_mime=image_mime,
+        )
+        if gemini_answer:
+            return gemini_answer
+
+        if not image:
+            groq_answer = self._call_groq_api(question, context)
+            if groq_answer:
+                return groq_answer
+
+        # Final fallback: Smart Offline Grounded Synthesis
         return self._offline_answer_generator(question, context)
 
 

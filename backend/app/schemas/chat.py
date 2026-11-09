@@ -44,4 +44,4 @@ class HealthResponse(BaseModel):
     llm_model: str
     embedding_model: str
     hf_configured: bool = False
-    gemini_configured: bool = Field(False, description="Legacy compatibility field; Gemini is not used by the active chat pipeline")
+    gemini_configured: bool = Field(False, description="Whether a Gemini API key is configured as a hosted answer fallback")

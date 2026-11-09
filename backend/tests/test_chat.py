@@ -5,6 +5,7 @@ Tests chat endpoint responses and grounding.
 import sys
 from pathlib import Path
 from types import SimpleNamespace
+import pytest
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
@@ -288,3 +289,93 @@ def test_model_prompt_supports_bounded_reasoning_from_related_manual_evidence():
     assert "label it plainly" in client.messages[0]["content"]
     assert "synthesizing related passages" in client.messages[1]["content"]
     assert "enhance portal security" in client.messages[1]["content"]
+
+
+def test_huggingface_failure_uses_configured_gemini_fallback_for_screenshots():
+    class UnavailableInferenceClient:
+        def chat_completion(self, **kwargs):
+            raise RuntimeError("model is not supported")
+
+    service = LLMService.__new__(LLMService)
+    service.system_prompt = load_system_prompt()
+    service.model_name = "unavailable-model"
+    service._hf_client = UnavailableInferenceClient()
+    service._mode = "hf_api"
+    service._local_model = None
+
+    captured = {}
+
+    def gemini_fallback(question, context, image=None, image_mime="image/png"):
+        captured.update(image=image, image_mime=image_mime)
+        return "Grounded Gemini answer."
+
+    service._call_gemini_api = gemini_fallback
+    service._call_groq_api = lambda *args: pytest.fail("Groq must not receive screenshots")
+
+    answer = service.generate_answer(
+        "What does this screen show?",
+        "The manual describes the PE dashboard.",
+        image="encoded-image",
+        image_mime="image/jpeg",
+    )
+
+    assert answer == "Grounded Gemini answer."
+    assert captured == {"image": "encoded-image", "image_mime": "image/jpeg"}
+
+
+def test_huggingface_failure_uses_groq_fallback_for_text_questions():
+    class UnavailableInferenceClient:
+        def chat_completion(self, **kwargs):
+            raise RuntimeError("model is not supported")
+
+    service = LLMService.__new__(LLMService)
+    service.system_prompt = load_system_prompt()
+    service.model_name = "unavailable-model"
+    service._hf_client = UnavailableInferenceClient()
+    service._mode = "hf_api"
+    service._local_model = None
+    service._call_gemini_api = lambda *args, **kwargs: None
+    service._call_groq_api = lambda question, context: "Grounded Groq answer."
+
+    answer = service.generate_answer(
+        "What does the manual say?",
+        "The manual describes the PE dashboard.",
+    )
+
+    assert answer == "Grounded Groq answer."
+
+
+def test_gemini_screenshot_payload_keeps_the_image_mime_type(monkeypatch):
+    import requests
+
+    captured = {}
+
+    class SuccessfulResponse:
+        status_code = 200
+
+        def json(self):
+            return {
+                "candidates": [
+                    {"content": {"parts": [{"text": "Grounded answer."}]}}
+                ]
+            }
+
+    def fake_post(url, headers, json, timeout):
+        captured["payload"] = json
+        return SuccessfulResponse()
+
+    monkeypatch.setattr("app.services.llm_service.get_gemini_api_key", lambda: "test-key")
+    monkeypatch.setattr(requests, "post", fake_post)
+
+    service = LLMService.__new__(LLMService)
+    service.system_prompt = load_system_prompt()
+
+    answer = service._call_gemini_api(
+        "What does this screen show?",
+        "The manual describes the PE dashboard.",
+        image="data:image/jpeg;base64,encoded",
+    )
+
+    assert answer == "Grounded answer."
+    image_part = captured["payload"]["contents"][0]["parts"][0]["inline_data"]
+    assert image_part == {"mime_type": "image/jpeg", "data": "encoded"}

@@ -9,6 +9,7 @@ from app.services.retrieval_service import retrieval_service
 from app.services.llm_service import (
     llm_service,
     LLM_MODEL,
+    get_gemini_api_key,
     is_procedure_steps_request,
     is_vague_steps_request,
 )
@@ -124,7 +125,7 @@ async def health_check() -> HealthResponse:
         llm_model=LLM_MODEL,
         embedding_model=EMBEDDING_MODEL,
         hf_configured=bool(llm_service.token),
-        gemini_configured=False
+        gemini_configured=bool(get_gemini_api_key())
     )
 
 @router.get("/chunks", summary="Inspect indexed manual chunks")

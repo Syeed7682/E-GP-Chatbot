@@ -28,14 +28,19 @@ Set these backend environment variables in the backend host's secret/configurati
 | Variable | Value |
 |---|---|
 | `HF_TOKEN` | Hugging Face token, if hosted model inference is required |
-| `LLM_MODEL` | `Qwen/Qwen2.5-VL-3B-Instruct` |
+| `LLM_MODEL` | `Qwen/Qwen2.5-VL-3B-Instruct`; choose a model supported by an enabled Hugging Face Inference Provider |
 | `ALT_VL_MODEL` | `LiquidAI/LFM2.5-VL-1.6B` (optional alternative) |
+| `GEMINI_API_KEY` | Optional hosted fallback for text and screenshot answers when Hugging Face inference fails |
+| `GEMINI_MODEL` | Optional Gemini model name; defaults to `gemini-flash-latest` |
+| `GROQ_API_KEY` | Optional text-only fallback when Hugging Face and Gemini are unavailable |
 | `CORS_ORIGINS` | Comma-separated exact Netlify production and custom-domain origins, e.g. `https://example.netlify.app,https://assistant.example.org` |
 | `DATA_RAW_DIR` | Directory containing the manual PDF; defaults to `data/raw` relative to the project root |
 | `FAISS_INDEX_PATH` | FAISS index path; defaults to `data/faiss_index/index.faiss` |
 | `FAISS_METADATA_PATH` | FAISS metadata path; defaults to `data/faiss_index/metadata.json` |
 
 Keep all AI tokens on the backend. Do not configure provider credentials as `VITE_*` variables.
+
+Answer generation tries Hugging Face first, then Gemini when `GEMINI_API_KEY` is configured, then Groq for text-only questions when `GROQ_API_KEY` is configured. If no hosted provider succeeds, the backend uses its manual-grounded offline synthesis. Hugging Face embedding-provider credits are separate from these answer-model credentials; without embedding access, retrieval switches to keyword-only mode.
 
 Before connecting Netlify, verify:
 
