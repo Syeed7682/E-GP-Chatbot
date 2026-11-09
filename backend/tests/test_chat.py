@@ -97,6 +97,22 @@ def test_offline_answer_uses_concise_prose_without_citations_or_boilerplate():
     assert "would you like" not in answer.lower()
     assert not answer.lstrip().startswith(("1.", "**1."))
 
+def test_generic_manual_question_gets_a_grounded_answer():
+    context = (
+        "[Manual: e-GP System User Manual | Page 6 | Relevance: 0.9]\n"
+        "For users logging in for the first time, the system guides the PE to a Change Password screen. "
+        "This is a crucial step aimed at enhancing the overall security of the e-GP Portal."
+    )
+
+    answer = llm_service._offline_answer_generator(
+        "What does the manual say about crucial?",
+        context,
+    )
+
+    assert answer == (
+        "This is a crucial step aimed at enhancing the overall security of the e-GP Portal."
+    )
+
 def test_app_answer_uses_professional_tone():
     answer = llm_service._offline_answer_generator(
         "How do I prepare an Annual Procurement Plan?",

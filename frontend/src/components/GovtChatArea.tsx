@@ -43,10 +43,13 @@ const FormattedGovtText: React.FC<{ text: string; onOpenScreenModal?: (screenId:
   };
 
   const renderInlineStyles = (str: string) => {
-    const parts = str.split(/(\*\*[^*]+\*\*|`[^`]+`|Screen\s*[-–—:]\s*[A-Za-z0-9_.]+)/g);
+    const parts = str.split(/(\*\*[^*]+\*\*|\*[^*\n]+\*|`[^`]+`|Screen\s*[-–—:]\s*[A-Za-z0-9_.]+)/g);
     return parts.map((part, i) => {
       if (part.startsWith('**') && part.endsWith('**')) {
         return <strong key={i} className="font-semibold text-[#0F172A]">{part.slice(2, -2)}</strong>;
+      }
+      if (part.startsWith('*') && part.endsWith('*')) {
+        return <em key={i}>{part.slice(1, -1)}</em>;
       }
       if (part.startsWith('`') && part.endsWith('`')) {
         return <code key={i} className="px-1.5 py-0.5 rounded bg-slate-100 text-[#0B4F8A] font-mono text-[11px] font-medium border border-slate-200">{part.slice(1, -1)}</code>;

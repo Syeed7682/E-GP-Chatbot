@@ -14,15 +14,38 @@ export function formatAssistantAnswer(text: string): string {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
-  const balancedBoldLines = lines.map((line) => {
+  const balancedMarkdownLines = lines.map((line) => {
     const boldMarkers = line.match(/\*\*/g) || [];
-    if (boldMarkers.length % 2 === 0) return line;
+    let balancedLine = line;
 
-    const unmatchedMarker = line.lastIndexOf('**');
-    return `${line.slice(0, unmatchedMarker)}${line.slice(unmatchedMarker + 2)}`.trim();
+    if (boldMarkers.length % 2 !== 0) {
+      const unmatchedBoldMarker = balancedLine.lastIndexOf('**');
+      balancedLine = `${balancedLine.slice(0, unmatchedBoldMarker)}${balancedLine.slice(unmatchedBoldMarker + 2)}`;
+    }
+
+    const singleAsteriskMarkers = balancedLine.replace(/\*\*/g, '').match(/\*/g) || [];
+    if (singleAsteriskMarkers.length % 2 !== 0) {
+      let unmatchedItalicMarker = -1;
+      for (let index = balancedLine.length - 1; index >= 0; index -= 1) {
+        if (
+          balancedLine[index] === '*' &&
+          balancedLine[index - 1] !== '*' &&
+          balancedLine[index + 1] !== '*'
+        ) {
+          unmatchedItalicMarker = index;
+          break;
+        }
+      }
+
+      if (unmatchedItalicMarker >= 0) {
+        balancedLine = `${balancedLine.slice(0, unmatchedItalicMarker)}${balancedLine.slice(unmatchedItalicMarker + 1)}`;
+      }
+    }
+
+    return balancedLine.trim();
   });
-  const hadNumberedItems = balancedBoldLines.some((line) => /^(?:\*\*)?\d+(?:\.\d+)*[.)](?:\*\*)?\s+/.test(line));
-  const cleanedLines = balancedBoldLines
+  const hadNumberedItems = balancedMarkdownLines.some((line) => /^(?:\*\*)?\d+(?:\.\d+)*[.)](?:\*\*)?\s+/.test(line));
+  const cleanedLines = balancedMarkdownLines
     .map((line) => line
       .replace(/^Screen\s*[-–—:]\s*[A-Za-z0-9.]+\s+\d+(?:\.\d+)*\s*/i, '')
       .replace(/^Screen\s*[-–—:]\s*[A-Za-z0-9.]+\s*/i, '')

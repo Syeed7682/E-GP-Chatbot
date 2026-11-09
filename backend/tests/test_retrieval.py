@@ -8,7 +8,27 @@ BACKEND_DIR = Path(__file__).resolve().parent.parent
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
+from app.services.embedding_service import EmbeddingService, embedding_service
 from app.services.retrieval_service import retrieval_service
+
+def test_embedding_provider_failure_disables_semantic_search():
+    class FailedInferenceClient:
+        def feature_extraction(self, *args, **kwargs):
+            raise RuntimeError("inference unavailable")
+
+    service = EmbeddingService.__new__(EmbeddingService)
+    service.model_name = "test-model"
+    service.token = ""
+    service.dimension = 1024
+    service._hf_client = FailedInferenceClient()
+    service._local_model = None
+    service._mode = "hf_api"
+
+    vector = service.embed_text("manual query")
+
+    assert vector.shape == (1024,)
+    assert service.semantic_search_available is False
+    assert service._hf_client is None
 
 def test_retrieval_service_ready():
     ready = retrieval_service.load_index_if_needed()
@@ -31,6 +51,28 @@ def test_debarment_retrieval():
     pages = [s["page"] for s in sources]
     print(f"[PASS] Debarment retrieved pages: {pages}")
     assert any(p in (342, 343, 344, 345, 346, 347, 348) for p in pages)
+
+def test_vague_question_falls_back_to_relevant_keyword_matches(monkeypatch):
+    retrieval_service.load_index_if_needed()
+    monkeypatch.setattr(embedding_service, "_mode", "offline_multimodal_fallback")
+
+    context, sources = retrieval_service.retrieve(
+        "What does the manual say about crucial?",
+        top_k=3,
+    )
+
+    assert [source["page"] for source in sources] == [6]
+    assert "crucial step aimed at enhancing the overall security" in " ".join(context.split())
+    assert "Page 477" not in context
+
+def test_generic_step_word_does_not_match_unrelated_manual_steps(monkeypatch):
+    retrieval_service.load_index_if_needed()
+    monkeypatch.setattr(embedding_service, "_mode", "offline_multimodal_fallback")
+
+    context, sources = retrieval_service.retrieve("What is the crucial step?", top_k=3)
+
+    assert [source["page"] for source in sources] == [6]
+    assert "crucial step aimed at enhancing the overall security" in " ".join(context.split())
 
 def test_login_retrieval_excludes_unrelated_debarment_content():
     retrieval_service.load_index_if_needed()

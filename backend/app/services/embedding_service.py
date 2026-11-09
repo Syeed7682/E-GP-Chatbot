@@ -38,6 +38,18 @@ class EmbeddingService:
         self._mode = "uninitialized"
         self._initialize()
 
+    @property
+    def semantic_search_available(self) -> bool:
+        return self._mode in {"local", "hf_api"}
+
+    def _disable_semantic_provider(self, error: Exception) -> None:
+        self._hf_client = None
+        self._mode = "offline_multimodal_fallback"
+        print(
+            "[embedding_service] Semantic embedding provider is unavailable; "
+            f"using keyword-only retrieval for this process: {error}"
+        )
+
     def _initialize(self):
         """Initializes the active embedding provider based on environment."""
         # 1. Check if local multimodal/sentence-transformers model is available
@@ -161,7 +173,7 @@ class EmbeddingService:
                     emb_arr = emb_arr.mean(axis=0)
                 return self._normalize(emb_arr)
             except Exception as e:
-                print(f"[embedding_service] HF API text feature extraction failed: {e}. Using fallback.")
+                self._disable_semantic_provider(e)
 
         return self._offline_embed_text(text)
 
@@ -192,7 +204,7 @@ class EmbeddingService:
                         emb_arr = emb_arr.mean(axis=0)
                     return self._normalize(emb_arr)
             except Exception as e:
-                print(f"[embedding_service] HF API image feature extraction failed: {e}. Using fallback.")
+                self._disable_semantic_provider(e)
 
         return self._offline_embed_image(image)
 

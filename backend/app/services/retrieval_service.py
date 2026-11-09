@@ -23,7 +23,7 @@ STOPWORDS = {
     'those', 'through', 'to', 'too', 'under', 'until', 'up', 'very', 'was', 'wasn', 'we', 'were',
     'what', 'when', 'where', 'which', 'while', 'who', 'whom', 'why', 'will', 'with', 'would', 'you',
     'your', 'yours', 'yourself', 'yourselves', 'tell', 'give', 'show', 'please', 'proper', 'answer',
-    'details', 'descriptive', 'descriptecd', 'desc', 'information', 'guide', 'steps',
+    'details', 'descriptive', 'descriptecd', 'desc', 'information', 'guide', 'steps', 'step', 'say',
     'make', 'do', 'get', 'set', 'take', 'put', 'say', 'see', 'know', 'think', 'want', 'use',
     'find', 'like', 'need', 'help', 'hi', 'hello', 'hey', 'joke', 'jokes', 'funny', 'story',
     'stories', 'game', 'song', 'poem', 'write', 'sing',
@@ -346,13 +346,20 @@ class RetrievalService:
         if not raw_words and image is None:
             return "No relevant context found in manuals.", []
 
-        # 1. FAISS Dense Retrieval
-        if image is not None:
-            query_vec = self.embedding_service.embed_multimodal(text=question, image=image)
-        else:
-            query_vec = self.embedding_service.embed_text(question)
+        # 1. FAISS Dense Retrieval; offline hash vectors are incompatible with a semantic index.
+        if self.embedding_service.semantic_search_available:
+            if image is not None:
+                query_vec = self.embedding_service.embed_multimodal(text=question, image=image)
+            else:
+                query_vec = self.embedding_service.embed_text(question)
 
-        raw_faiss = self.faiss_service.search(query_vec, top_k=max(top_k * 3, 12))
+            if self.embedding_service.semantic_search_available:
+                raw_faiss = self.faiss_service.search(query_vec, top_k=max(top_k * 3, 12))
+            else:
+                raw_faiss = []
+        else:
+            raw_faiss = []
+
         # Filter out pages <= 5 (Table of contents, Change log, cover)
         faiss_results = [r for r in raw_faiss if r.get("chunk", {}).get("page", 0) > 5]
         normalized_question = self._normalize_login_terms(question)
@@ -381,8 +388,8 @@ class RetrievalService:
         combined_scores: Dict[int, Dict[str, Any]] = {}
 
         # Keywords have 0.70 weight for precise textual grounding; FAISS has 0.30 semantic weight
-        kw_weight = 0.70 if kw_results else 0.0
-        faiss_weight = 0.30 if kw_results else 1.0
+        kw_weight = 1.0 if kw_results and not faiss_results else 0.70 if kw_results else 0.0
+        faiss_weight = 1.0 - kw_weight if kw_results else 1.0
 
         # Normalize and add FAISS scores
         max_faiss = max((item["score"] for item in faiss_results), default=1.0)
