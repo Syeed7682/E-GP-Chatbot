@@ -89,7 +89,7 @@ export const GovtOfficialHeader: React.FC<GovtOfficialHeaderProps> = ({
           </button>
 
           {/* E1 / E2 Model Toggle */}
-          <div className="flex items-center gap-0.5 bg-blue-950/80 p-0.5 rounded-md border border-blue-800/60" title={useAltModel ? 'E2: Multimodal Vision & Document Engine (Active)' : 'E1: Standard Grounded Text Engine'}>
+          <div className="flex items-center gap-0.5 bg-blue-950/80 p-0.5 rounded-md border border-blue-800/60" title={useAltModel ? 'E2: Groq Qwen multimodal vision model (Active)' : 'E1: Groq GPT-OSS grounded text model'}>
             <button
               onClick={!useAltModel ? undefined : onToggleAltModel}
               className={`flex min-h-8 items-center gap-1 px-2 py-1 rounded text-[10.5px] font-semibold transition-all cursor-pointer ${

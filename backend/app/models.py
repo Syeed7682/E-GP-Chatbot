@@ -1,7 +1,7 @@
 """
 Models Definition File (app/models.py).
 Centralizes:
-1. AI Model Configurations & Registry (BGE-M3, Qwen2.5-VL-3B-Instruct, optional Liquid AI).
+1. AI Model Configurations & Registry (BGE-M3 and Groq-hosted answer models).
 2. Domain Data & API Schemas supporting both Text and Image (DocumentChunk, SourceDocument, ChatRequest, ChatResponse, HealthResponse).
 """
 from enum import Enum
@@ -70,47 +70,23 @@ SUPPORTED_EMBEDDING_MODELS: Dict[str, EmbeddingModelConfig] = {
     )
 }
 
-# Pre-configured Large Language Models Registry
+# Pre-configured Groq models using its OpenAI-compatible API.
 SUPPORTED_LLM_MODELS: Dict[str, LLMModelConfig] = {
-    "Qwen/Qwen2.5-VL-3B-Instruct": LLMModelConfig(
-        name="Qwen2.5-VL-3B-Instruct (Default Multimodal)",
-        model_id="Qwen/Qwen2.5-VL-3B-Instruct",
-        provider=ModelProvider.HUGGINGFACE,
+    "openai/gpt-oss-20b": LLMModelConfig(
+        name="GPT-OSS 20B (E1 Text)",
+        model_id="openai/gpt-oss-20b",
+        provider=ModelProvider.OPENAI_COMPATIBLE,
         default_temperature=0.2,
-        default_max_tokens=800,
-        description="Default vision-language model for grounded e-GP manual answers and portal screenshots."
+        default_max_tokens=1024,
+        description="Groq-hosted grounded text answer model."
     ),
-    "LiquidAI/LFM2.5-VL-1.6B": LLMModelConfig(
-        name="Liquid AI LFM2.5-VL-1.6B (Optional)",
-        model_id="LiquidAI/LFM2.5-VL-1.6B",
-        provider=ModelProvider.HUGGINGFACE,
+    "qwen/qwen3.8-27b": LLMModelConfig(
+        name="Qwen 3.8 27B (E2 Vision)",
+        model_id="qwen/qwen3.8-27b",
+        provider=ModelProvider.OPENAI_COMPATIBLE,
         default_temperature=0.2,
-        default_max_tokens=800,
-        description="Optional vision-language engine, used only when explicitly selected."
-    ),
-    "Qwen/Qwen2.5-VL-72B-Instruct": LLMModelConfig(
-        name="Qwen2.5-VL-72B-Instruct (Default Multimodal)",
-        model_id="Qwen/Qwen2.5-VL-72B-Instruct",
-        provider=ModelProvider.HUGGINGFACE,
-        default_temperature=0.2,
-        default_max_tokens=800,
-        description="Alibaba Cloud's state-of-the-art 72B parameter vision-language model. Excels at multimodal reasoning over text, diagrams, and UI screenshots."
-    ),
-    "Qwen/Qwen2.5-72B-Instruct": LLMModelConfig(
-        name="Qwen2.5-72B-Instruct",
-        model_id="Qwen/Qwen2.5-72B-Instruct",
-        provider=ModelProvider.HUGGINGFACE,
-        default_temperature=0.2,
-        default_max_tokens=800,
-        description="Top-tier 72B parameter text reasoning model."
-    ),
-    "meta-llama/Llama-3.3-70B-Instruct": LLMModelConfig(
-        name="Llama 3.3 70B Instruct",
-        model_id="meta-llama/Llama-3.3-70B-Instruct",
-        provider=ModelProvider.HUGGINGFACE,
-        default_temperature=0.2,
-        default_max_tokens=800,
-        description="Meta's latest 70B open-weights model."
+        default_max_tokens=1024,
+        description="Groq-hosted multimodal answer model for E2 and screenshot questions."
     )
 }
 
@@ -129,14 +105,14 @@ def get_embedding_config(model_id: str = "BAAI/bge-visualized-m3") -> EmbeddingM
     )
 
 
-def get_llm_config(model_id: str = "Qwen/Qwen2.5-VL-3B-Instruct") -> LLMModelConfig:
+def get_llm_config(model_id: str = "openai/gpt-oss-20b") -> LLMModelConfig:
     """Returns the configuration for the requested LLM or a sensible default."""
     return SUPPORTED_LLM_MODELS.get(
         model_id,
         LLMModelConfig(
             name=model_id,
             model_id=model_id,
-            provider=ModelProvider.HUGGINGFACE,
+            provider=ModelProvider.OPENAI_COMPATIBLE,
             default_temperature=0.2,
             default_max_tokens=800,
             description="Custom LLM model"

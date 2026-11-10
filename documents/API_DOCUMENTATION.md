@@ -33,13 +33,13 @@ Request:
 }
 ```
 
-`question` is required by the request schema. `previous_question` supports short follow-ups such as asking for steps. An image may be supplied in `image_base64` or the compatibility field `image`. `top_k` is between 1 and 20. `use_alt_model` selects the optional Liquid AI model; otherwise Qwen is used.
+`question` is required by the request schema. `previous_question` supports short follow-ups such as asking for steps. An image may be supplied in `image_base64` or the compatibility field `image`. `top_k` is between 1 and 20. E1 uses the configured Groq text model for text questions and the Groq vision model for questions with an image. Setting `use_alt_model` selects the Groq vision model (E2), including for text-only questions.
 
-Successful responses contain `question`, `answer`, `sources`, `portal_screens`, `model_used`, and `was_offline`. Each source may include `source`, `source_files`, `page`, `chunk_id`, `score`, `snippet`, `screen_reference`, `image_path`, `source_type`, `module`, and `question_number`. Manual sources have a PDF page. Q&A sources identify their module and question number and have no PDF page. When a Q&A entry clearly matches the question, `answer` is returned verbatim from that entry. In the FastAPI chat route, `was_offline` is false; local fallback is handled by the frontend/Express paths.
+Successful responses contain `question`, `answer`, `sources`, `portal_screens`, `model_used`, and `was_offline`. Each source may include `source`, `source_files`, `page`, `chunk_id`, `score`, `snippet`, `screen_reference`, `image_path`, `source_type`, `module`, and `question_number`. Manual sources have a PDF page. Q&A sources identify their module and question number and have no PDF page. When a Q&A entry clearly matches the question, `answer` is returned verbatim from that entry. `model_used` identifies the actual answer source/model, and `was_offline` reflects whether offline synthesis produced the answer.
 
 ### `GET /api/chat/health`
 
-Returns whether the FAISS retrieval index is loaded, its available metadata count, model names, and whether a Hugging Face token is configured. This does not guarantee that the hosted provider is currently reachable.
+Returns whether the FAISS retrieval index is loaded, its available metadata count, configured text and vision model names, and whether Groq is configured. Configuration does not guarantee that the hosted provider is currently reachable.
 
 ### `GET /api/chat/chunks?limit=10`
 

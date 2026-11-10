@@ -15,10 +15,14 @@ class Settings:
     VERSION: str = "2.0.0"
     
     # LLM Settings
+    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "").strip()
+    GROQ_TEXT_MODEL: str = os.getenv("GROQ_TEXT_MODEL", "openai/gpt-oss-20b").strip()
+    GROQ_VISION_MODEL: str = os.getenv("GROQ_VISION_MODEL", "qwen/qwen3.8-27b").strip()
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "").strip()
     GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-flash-latest").strip()
     HF_TOKEN: str = os.getenv("HF_TOKEN", "").strip()
-    LLM_MODEL: str = os.getenv("LLM_MODEL", "Qwen/Qwen2.5-VL-3B-Instruct").strip()
+    LOCAL_LLM_MODEL: str = os.getenv("LOCAL_LLM_MODEL", "Qwen/Qwen2.5-VL-3B-Instruct").strip()
+    LLM_MODEL: str = GROQ_TEXT_MODEL
     USE_LOCAL_LLM: bool = os.getenv("USE_LOCAL_LLM", "false").lower() in ("true", "1", "yes")
     
     # Embedding Settings

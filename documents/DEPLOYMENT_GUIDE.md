@@ -28,12 +28,13 @@ Set these backend environment variables in the backend host's secret/configurati
 
 | Variable | Value |
 |---|---|
-| `HF_TOKEN` | Hugging Face token, if hosted model inference is required |
-| `LLM_MODEL` | `Qwen/Qwen2.5-VL-3B-Instruct`; choose a model supported by an enabled Hugging Face Inference Provider |
-| `ALT_VL_MODEL` | `LiquidAI/LFM2.5-VL-1.6B` (optional alternative) |
-| `GEMINI_API_KEY` | Optional hosted fallback for text and screenshot answers when Hugging Face inference fails |
+| `GROQ_API_KEY` | Required for hosted E1/E2 answer generation; add the secret in the backend host's environment settings |
+| `GROQ_TEXT_MODEL` | E1 text model; defaults to `openai/gpt-oss-20b` |
+| `GROQ_VISION_MODEL` | E2 vision model and E1 image-question model; defaults to `qwen/qwen3.8-27b` |
+| `HF_TOKEN` | Optional Hugging Face token for embedding generation; not used for answer generation |
+| `LOCAL_LLM_MODEL` | Optional local Transformers model name; used only when `USE_LOCAL_LLM=true` |
+| `GEMINI_API_KEY` | Optional fallback for text and screenshot answers if Groq inference fails |
 | `GEMINI_MODEL` | Optional Gemini model name; defaults to `gemini-flash-latest` |
-| `GROQ_API_KEY` | Optional text-only fallback when Hugging Face and Gemini are unavailable |
 | `CORS_ORIGINS` | Comma-separated exact Netlify production and custom-domain origins, e.g. `https://example.netlify.app,https://assistant.example.org` |
 | `DATA_RAW_DIR` | Directory containing the manual PDF; defaults to `data/raw` relative to the project root |
 | `QA_DATA_PATH` | Supplemental Q&A text path; defaults to `data/raw/e-GP System Q&A.txt` |
@@ -43,7 +44,9 @@ Set these backend environment variables in the backend host's secret/configurati
 
 Keep all AI tokens on the backend. Do not configure provider credentials as `VITE_*` variables.
 
-Answer generation tries Hugging Face first, then Gemini when `GEMINI_API_KEY` is configured, then Groq for text-only questions when `GROQ_API_KEY` is configured. If no hosted provider succeeds, the backend uses its manual-grounded offline synthesis. Hugging Face embedding-provider credits are separate from these answer-model credentials; without embedding access, retrieval switches to keyword-only mode.
+E1 uses the configured Groq text model for text questions and the Groq vision model when a screenshot is attached. E2 always uses the Groq vision model. If Groq inference fails and `GEMINI_API_KEY` is configured, Gemini is tried as a fallback; otherwise, the backend uses manual-grounded offline synthesis. The `/api/chat/health` and `/api/health` endpoints report whether Groq is configured and the active default model names. Set `GROQ_API_KEY` in Render's backend environment variables and redeploy; setting it in Netlify or a local `.env` does not configure Render.
+
+Hugging Face embedding-provider access is separate from answer-model credentials; without embedding access, retrieval switches to keyword-only mode.
 
 The Q&A text and optional Word copy are parsed into numbered question/answer records at backend startup, deduplicated by question number and question text, and indexed as sparse TF-IDF vectors with term postings. If both files contain the same records, the text-file wording is retained and both filenames are recorded. The PDF continues to use its existing FAISS vector index. A clear Q&A match returns its answer verbatim; citations identify its module and question number, not a PDF page. Include the source files in the backend deployment artifact or configure the paths above.
 

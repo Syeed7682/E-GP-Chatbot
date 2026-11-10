@@ -19,6 +19,7 @@ async def health_check():
         "index_ready": is_ready,
         "total_chunks": len(faiss_service.metadata) if is_ready else 0,
         "llm_model": settings.LLM_MODEL,
-        "embedding_model": settings.EMBEDDING_MODEL
+        "vision_model": settings.GROQ_VISION_MODEL,
+        "embedding_model": settings.EMBEDDING_MODEL,
+        "groq_configured": bool(settings.GROQ_API_KEY),
     }
-

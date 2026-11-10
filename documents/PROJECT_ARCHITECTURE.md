@@ -38,7 +38,7 @@ Local corpus
 - `frontend/src/App.tsx` and `frontend/src/components/` implement the chat UI, screenshot selection, previews, page/source citation display, and manual page viewer.
 - `GovtOfficialSidebar.tsx` builds manual-based questions from meaningful section titles and key terms in the bundled corpus, filters suggestions as the user types, and links to the full-PDF download endpoint. Partial words and small spelling errors are supported; the suggestion count changes when the bundled data changes.
 - `frontend/src/services/api.ts` sends chat requests to `/api/chat`, checks backend health, and falls back to IndexedDB/local retrieval when the request fails.
-- `frontend/server.ts` runs an Express/Vite server. It first proxies chat to FastAPI when reachable; otherwise, it performs local retrieval and can call configured cloud providers.
+- `frontend/server.ts` runs an Express/Vite server. It first proxies chat to FastAPI when reachable; otherwise, it performs local retrieval and calls the configured Groq text/vision model when `GROQ_API_KEY` is set.
 - `frontend/src/data/allManualChunks.json` contains 1,170 records. `frontend/src/data/manualChunks.ts` combines bundled records with curated records for frontend features. Check `INITIAL_MANUAL_CHUNKS` directly rather than inferring its count from the JSON file.
 
 ### FastAPI backend
@@ -48,7 +48,7 @@ Local corpus
 - `backend/app/services/retrieval_service.py` searches the supplemental Q&A text separately from the PDF index, embeds a query when the semantic provider is available, retrieves dense FAISS candidates, ranks PDF keywords with domain expansions, and combines PDF scores using a weighted sum. It excludes pages 1–5 from dense results.
 - `backend/app/services/qa_service.py` parses numbered `Question`/`Q:` blocks from the text and optional Word sources, deduplicates matching entries, and builds sparse TF-IDF vectors plus inverted term postings at startup. Q&A references use module and question number, never a fabricated PDF page. These text vectors are separate from the existing PDF FAISS index.
 - `backend/app/services/hybrid_retriever.py` and `reranker.py` implement a separate retriever/reranker path; the active chat route does not call these services. RRF and a BGE reranker are not currently verified in the request path.
-- `backend/app/services/llm_service.py` uses Qwen2.5-VL-3B-Instruct by default, optionally uses Liquid AI when explicitly selected, and falls back to offline extractive synthesis. `vision_service.py` uses available OCR libraries; image data is also sent to the selected vision-language model.
+- `backend/app/services/llm_service.py` uses the configured Groq text model for E1, switches to the Groq vision model for screenshots, and uses that vision model for E2. Gemini is an optional hosted fallback; otherwise it falls back to offline grounded synthesis. `vision_service.py` uses available OCR libraries.
 - `backend/app/api/manual.py` serves page chunks, page images, keyword search, and the complete source PDF at `/api/manual/download`. Page images fall back to rendering the local PDF when no extracted image exists. `citation_service.py` maps citation pages to image endpoints.
 
 ### Document and vector data

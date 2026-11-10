@@ -11,7 +11,9 @@ from app.services.qa_service import qa_service
 from app.services.llm_service import (
     llm_service,
     LLM_MODEL,
+    GROQ_VISION_MODEL,
     get_gemini_api_key,
+    get_groq_api_key,
     is_procedure_steps_request,
     is_vague_steps_request,
 )
@@ -85,8 +87,10 @@ async def ask_question(request: ChatRequest) -> ChatResponse:
     answer_qa_source = direct_qa_source
     if direct_qa_source:
         answer = direct_qa_source["answer"]
+        answer_model = "e-GP System Q&A.txt (verbatim)"
+        was_offline = False
     else:
-        answer = llm_service.generate_answer(
+        answer, answer_model, was_offline = llm_service.generate_answer_with_metadata(
             answer_question or "Portal Screenshot Analysis",
             context,
             image=img_data,
@@ -95,6 +99,8 @@ async def ask_question(request: ChatRequest) -> ChatResponse:
         )
         if not answer or not answer.strip():
             answer = llm_service._offline_answer_generator(answer_question, context)
+            answer_model = "Offline grounded synthesis"
+            was_offline = True
         has_retrieval_header = re.search(
             r"\b(?:Supplemental Q&A|Manual)\s*:",
             answer,
@@ -114,6 +120,8 @@ async def ask_question(request: ChatRequest) -> ChatResponse:
             )
             if has_manual_source and manual_context:
                 answer = llm_service._offline_answer_generator(answer_question, manual_context)
+                answer_model = "Offline grounded synthesis"
+                was_offline = True
             else:
                 matched_qa = next(
                     (source for source in raw_sources if source.get("source_type") == "qa"),
@@ -122,6 +130,8 @@ async def ask_question(request: ChatRequest) -> ChatResponse:
                 if matched_qa:
                     answer = matched_qa["answer"]
                     answer_qa_source = matched_qa
+                    answer_model = "e-GP System Q&A.txt (verbatim)"
+                    was_offline = False
 
     # 4. Format Sources with Screenshot URLs
     sources = []
@@ -152,11 +162,11 @@ async def ask_question(request: ChatRequest) -> ChatResponse:
             )
         )
 
-    # Determine which model label to show
-    model_label = "e-GP System Q&A.txt (verbatim)" if answer_qa_source else f"{LLM_MODEL} (e-GP Grounded)"
-    if request.use_alt_model and not answer_qa_source:
-        from app.services.llm_service import ALT_VL_MODEL
-        model_label = f"{ALT_VL_MODEL} (Optional Liquid AI)"
+    model_label = (
+        answer_model
+        if answer_qa_source or was_offline
+        else f"{answer_model} (e-GP Grounded)"
+    )
 
     return ChatResponse(
         question=question or "Portal Screenshot Diagnostic",
@@ -164,7 +174,7 @@ async def ask_question(request: ChatRequest) -> ChatResponse:
         sources=sources,
         portal_screens=list(portal_screens),
         model_used=model_label,
-        was_offline=False
+        was_offline=was_offline
     )
 
 @router.get("/health", response_model=HealthResponse, summary="System health and vector index status")
@@ -179,9 +189,11 @@ async def health_check() -> HealthResponse:
         index_loaded=is_ready,
         total_chunks=chunk_count,
         llm_model=LLM_MODEL,
+        vision_model=GROQ_VISION_MODEL,
         embedding_model=EMBEDDING_MODEL,
         hf_configured=bool(llm_service.token),
-        gemini_configured=bool(get_gemini_api_key())
+        gemini_configured=bool(get_gemini_api_key()),
+        groq_configured=bool(get_groq_api_key())
     )
 
 @router.get("/chunks", summary="Inspect indexed manual chunks")

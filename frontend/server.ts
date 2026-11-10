@@ -5,7 +5,6 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
-import { HfInference } from '@huggingface/inference';
 import Tesseract from 'tesseract.js';
 import { INITIAL_MANUAL_CHUNKS, SERVER_DATASET_VERSION, SERVER_DATASET_HASH } from './src/data/manualChunks.ts';
 import { retrieveTopKChunks, generateOfflineAnswer } from './src/utils/offlineVectorEngine.ts';
@@ -39,6 +38,9 @@ app.get(['/api/health', '/api/chat/health'], (req, res) => {
     verified_chunks: 1188,
     version: serverCurrentVersion,
     hf_configured: Boolean(process.env.HF_TOKEN || process.env.HUGGINGFACE_TOKEN),
+    groq_configured: Boolean(process.env.GROQ_API_KEY),
+    llm_model: process.env.GROQ_TEXT_MODEL || 'openai/gpt-oss-20b',
+    vision_model: process.env.GROQ_VISION_MODEL || 'qwen/qwen3.8-27b',
     gemini_configured: false
   });
 });
@@ -238,11 +240,10 @@ app.post('/api/chat', async (req, res) => {
 
   const portalScreens = Array.from(new Set(retrieved.flatMap(r => r.chunk.screen_references)));
 
-  // Use Qwen by default; Liquid AI is selected only through the explicit alternate-model option.
-  const hfToken = process.env.HF_TOKEN || process.env.HUGGINGFACE_TOKEN;
-  if (hfToken) {
+  // Use Groq for both local-server fallback and FastAPI-backed inference.
+  const groqApiKey = process.env.GROQ_API_KEY;
+  if (groqApiKey) {
     try {
-      const hf = new HfInference(hfToken);
       const promptText = `USER QUESTION: ${question || 'Analyze this portal screenshot and explain the required e-GP procedure or error fix.'}
 ${ocrExtractedText ? `EXTRACTED PORTAL TEXT: ${ocrExtractedText}\n` : ''}
 RELEVANT OFFICIAL e-GP PE MANUAL CONTEXT (use as evidence; do not copy OCR artifacts or metadata):
@@ -250,9 +251,9 @@ ${retrievedContextText}
 
 Write a concise, direct answer in a natural conversational style. Prefer one short paragraph; use numbered steps only if the user needs a sequence of actions. Do not include page numbers, citations, chunk headings, source labels, or a separate screen list in the answer. Those references are displayed separately.`;
 
-      const modelToUse = use_alt_model
-        ? process.env.ALT_VL_MODEL || 'LiquidAI/LFM2.5-VL-1.6B'
-        : process.env.LLM_MODEL || 'Qwen/Qwen2.5-VL-3B-Instruct';
+      const modelToUse = use_alt_model || image_base64
+        ? process.env.GROQ_VISION_MODEL || 'qwen/qwen3.8-27b'
+        : process.env.GROQ_TEXT_MODEL || 'openai/gpt-oss-20b';
       const imageDataUrl = image_base64
         ? image_base64.startsWith('data:')
           ? image_base64
@@ -264,28 +265,43 @@ Write a concise, direct answer in a natural conversational style. Prefer one sho
             { type: 'image_url' as const, image_url: { url: imageDataUrl } }
           ]
         : promptText;
-      const response = await hf.chatCompletion({
-        model: modelToUse,
-        messages: [
-          { role: 'system', content: EGP_SYSTEM_PROMPT },
-          { role: 'user', content: userContent }
-        ],
-        max_tokens: 512
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${groqApiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: modelToUse,
+          messages: [
+            { role: 'system', content: EGP_SYSTEM_PROMPT },
+            { role: 'user', content: userContent }
+          ],
+          temperature: 0.2,
+          max_completion_tokens: 1024
+        }),
+        signal: AbortSignal.timeout(45000)
       });
 
-      const answer = response.choices?.[0]?.message?.content || '';
+      if (!response.ok) {
+        throw new Error(`Groq returned ${response.status}: ${(await response.text()).slice(0, 250)}`);
+      }
+      const payload = await response.json() as {
+        choices?: Array<{ message?: { content?: string | null } }>;
+      };
+      const answer = payload.choices?.[0]?.message?.content || '';
       if (answer) {
         return res.json({
           question: question || 'Portal Screenshot Diagnostic',
           answer,
           sources,
           portal_screens: portalScreens,
-          model_used: `${modelToUse} (via Hugging Face)`,
+          model_used: `${modelToUse} (Groq; e-GP Grounded)`,
           was_offline: false
         });
       }
-    } catch (hfErr: any) {
-      console.warn('Hugging Face call notice (using grounded local engine):', hfErr.message);
+    } catch (groqErr: any) {
+      console.warn('Groq call notice (using grounded local engine):', groqErr.message);
     }
   }
 

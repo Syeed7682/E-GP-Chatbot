@@ -16,7 +16,7 @@ Deliver a reliable assistant grounded in the official 543-page Bangladesh e-GP P
 - The ingestion code has PDF text extraction and chunking, but no verified OCR pass or structured table extraction. `PDFLoader` does not recognize the current `egp_manual.pdf` filename; the separate document-loader ingestion path does scan PDFs in `data/raw/`.
 - The existing index dimensions/count are verified, but its exact embedding-model provenance and vector quality are not. Do not overwrite or rebuild it before a retrieval evaluation.
 - The API configuration and `.env.example` use different embedding-model names. The checked-in `.env.example` previously contained a credential; its value has been removed. Revoke/rotate that credential because deleting it from the current file does not erase Git history.
-- The active local `.env` names `Qwen/Qwen2.5-VL-3B-Instruct` as primary and `LiquidAI/LFM2.5-VL-1.6B` as alternate. Code defaults now match; user screenshots go to Qwen unless the alternate model is explicitly selected.
+- E1/E2 answer generation uses Groq models: `openai/gpt-oss-20b` for text and `qwen/qwen3.8-27b` for vision. Hosted inference requires `GROQ_API_KEY` in the backend deployment environment; Gemini is an optional fallback.
 - The sidebar now has searchable manual-derived question suggestions and a link to download the full source PDF. The download requires the PDF in `data/raw/` and the FastAPI backend to be running.
 - README, architecture, plan, and API documentation describe the current implementation; ingestion, evaluation, and deployment documentation remain open work.
 - Root `.gitignore` now excludes local virtual environments and Python caches. Some cache files are already tracked; ignore rules do not untrack them.
@@ -88,14 +88,14 @@ Acceptance: a versioned test set reports Recall@5/10, MRR, and citation-page acc
 
 ### Phase 6 — Hosted multimodal model
 
-Status: **Qwen primary and optional Liquid AI selection are wired; live hosted inference remains unverified.**
+Status: **Groq E1/E2 routing is implemented; hosted credentials must be configured and verified on the deployment.**
 
-- [x] Set Qwen/Qwen2.5-VL-3B-Instruct as the primary model and LiquidAI/LFM2.5-VL-1.6B as an explicitly selected alternate.
-- [x] Route uploaded images to the primary vision model by default and include image payloads in Hugging Face chat requests.
-- Use a rotated token in local environment configuration only.
-- Confirm supported text and image model/provider, request format, and model limits.
+- [x] Route E1 text requests through Groq `openai/gpt-oss-20b` and E2/screenshot requests through `qwen/qwen3.8-27b`.
+- [x] Include screenshot image payloads and MIME types in Groq chat requests.
+- [x] Keep provider credentials in backend secret settings and report Groq readiness through health endpoints.
+- [x] Use Gemini as an optional fallback, followed by grounded offline synthesis.
 - Pass the question, screenshot, OCR text, and retrieved manual context with clear trust boundaries.
-- Add explicit timeout, rate-limit, invalid-image, and provider-error behavior.
+- Validate hosted inference, rate limits, invalid-image handling, and provider availability after deploying the configured key.
 - Require the assistant to distinguish screenshot observations from manual-backed rules and abstain when context is insufficient.
 
 Acceptance: text-only, correct screenshot, unrelated screenshot, malformed image, missing context, provider failure, and rate-limit cases behave as expected.

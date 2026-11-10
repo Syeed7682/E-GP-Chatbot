@@ -4,7 +4,6 @@ Tests chat endpoint responses and grounding.
 """
 import sys
 from pathlib import Path
-from types import SimpleNamespace
 import pytest
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 if str(BACKEND_DIR) not in sys.path:
@@ -13,6 +12,8 @@ if str(BACKEND_DIR) not in sys.path:
 from fastapi.testclient import TestClient
 from app.main import app
 from app.services.llm_service import (
+    GROQ_TEXT_MODEL,
+    GROQ_VISION_MODEL,
     LLMService,
     _image_data_url,
     _user_message_content,
@@ -36,16 +37,16 @@ def test_qwen_vision_payload_includes_image_data_url():
     ]
     assert _image_data_url("data:image/webp;base64,abc", "image/png") == "data:image/webp;base64,abc"
 
-def test_screenshot_uses_qwen_by_default(monkeypatch):
+def test_screenshot_uses_vision_model_by_default(monkeypatch):
     captured = {}
     monkeypatch.setattr(vision_service_module.vision_service, "extract_text_from_base64", lambda _: "")
     monkeypatch.setattr(retrieval_service_module.retrieval_service, "retrieve", lambda *args, **kwargs: ("manual context", []))
 
     def fake_generate_answer(question, context, **kwargs):
         captured.update(kwargs)
-        return "Grounded answer"
+        return "Grounded answer", "test/vision-model", False
 
-    monkeypatch.setattr(llm_service, "generate_answer", fake_generate_answer)
+    monkeypatch.setattr(llm_service, "generate_answer_with_metadata", fake_generate_answer)
     response = client.post(
         "/api/chat",
         json={
@@ -58,7 +59,7 @@ def test_screenshot_uses_qwen_by_default(monkeypatch):
     assert response.status_code == 200
     assert captured["use_alt_model"] is False
     assert captured["image_mime"] == "image/jpeg"
-    assert "Qwen/Qwen2.5-VL-3B-Instruct" in response.json()["model_used"]
+    assert "test/vision-model" in response.json()["model_used"]
 
 def test_direct_q_and_a_match_returns_source_answer_verbatim(monkeypatch):
     exact_answer = "Open My Account, select Verify NID, and follow the displayed instructions."
@@ -82,7 +83,7 @@ def test_direct_q_and_a_match_returns_source_answer_verbatim(monkeypatch):
     )
     monkeypatch.setattr(
         llm_service,
-        "generate_answer",
+        "generate_answer_with_metadata",
         lambda *args, **kwargs: pytest.fail("A direct Q&A answer should not be rewritten by an LLM"),
     )
 
@@ -104,7 +105,7 @@ def test_chat_returns_matching_file_answer_verbatim(monkeypatch):
     expected_answer = qa_service.search(question, limit=1)[0]["record"]["answer"]
     monkeypatch.setattr(
         llm_service,
-        "generate_answer",
+        "generate_answer_with_metadata",
         lambda *args, **kwargs: pytest.fail("A matching Q&A entry should not be rewritten"),
     )
 
@@ -144,9 +145,9 @@ def test_related_q_and_a_entry_is_sent_to_the_answer_model(monkeypatch):
 
     def fake_generate(question, retrieved_context, **kwargs):
         captured["context"] = retrieved_context
-        return "Generated answer from the retrieved Q&A."
+        return "Generated answer from the retrieved Q&A.", "test/model", False
 
-    monkeypatch.setattr(llm_service, "generate_answer", fake_generate)
+    monkeypatch.setattr(llm_service, "generate_answer_with_metadata", fake_generate)
 
     response = client.post(
         "/api/chat",
@@ -181,10 +182,12 @@ def test_chat_replaces_retrieval_context_echo_with_the_q_and_a_answer(monkeypatc
     )
     monkeypatch.setattr(
         llm_service,
-        "generate_answer",
+        "generate_answer_with_metadata",
         lambda *args, **kwargs: (
             "Supplemental Q&A: e-GP System Q&A.txt | Module: e-CMS Physical Progress\n"
-            "Q: How do I process the payment?\nA: " + answer_text
+            "Q: How do I process the payment?\nA: " + answer_text,
+            "test/model",
+            False,
         ),
     )
 
@@ -242,11 +245,13 @@ def test_chat_synthesizes_manual_answer_when_model_echoes_mixed_retrieval_contex
     )
     monkeypatch.setattr(
         llm_service,
-        "generate_answer",
+        "generate_answer_with_metadata",
         lambda *args, **kwargs: (
             "The bill status changes to Paypoint Accept DDO Bill. "
             "[Supplemental Q&A: e-GP System Q&A.txt | Relevance: 0.38] "
-            "Q: How do DDOs submit bills? A: Follow another procedure."
+            "Q: How do DDOs submit bills? A: Follow another procedure.",
+            "test/model",
+            False,
         ),
     )
 
@@ -427,10 +432,10 @@ def test_chat_uses_previous_topic_for_steps_followup(monkeypatch):
 
     def fake_generate_answer(question, context, **kwargs):
         captured["answer_question"] = question
-        return "APP steps"
+        return "APP steps", "test/model", False
 
     monkeypatch.setattr(retrieval_service_module.retrieval_service, "retrieve", fake_retrieve)
-    monkeypatch.setattr(llm_service, "generate_answer", fake_generate_answer)
+    monkeypatch.setattr(llm_service, "generate_answer_with_metadata", fake_generate_answer)
 
     response = client.post(
         "/api/chat",
@@ -467,7 +472,11 @@ def test_steps_followup_never_returns_an_empty_answer(monkeypatch):
             [],
         ),
     )
-    monkeypatch.setattr(llm_service, "generate_answer", lambda *args, **kwargs: "  ")
+    monkeypatch.setattr(
+        llm_service,
+        "generate_answer_with_metadata",
+        lambda *args, **kwargs: ("  ", "test/model", False),
+    )
 
     response = client.post(
         "/api/chat",
@@ -529,158 +538,127 @@ if __name__ == "__main__":
     test_chat_delete_tender()
     print("All chat API tests PASSED!")
 def test_model_prompt_enforces_manual_grounding_and_structured_answer_format():
-    class CapturingInferenceClient:
-        messages = None
+    import requests
+    captured = {}
 
-        def chat_completion(self, **kwargs):
-            self.messages = kwargs["messages"]
-            return SimpleNamespace(
-                choices=[
-                    SimpleNamespace(
-                        message=SimpleNamespace(content="The manual supports this conclusion.")
-                    )
-                ]
-            )
+    class SuccessfulResponse:
+        status_code = 200
 
-    client = CapturingInferenceClient()
-    service = LLMService.__new__(LLMService)
-    service.system_prompt = load_system_prompt()
-    service.model_name = "test-model"
-    service._hf_client = client
-    service._mode = "hf_api"
-    service._local_model = None
+        def json(self):
+            return {"choices": [{"message": {"content": "The manual supports this conclusion."}}]}
 
-    answer = service.generate_answer(
-        "What matters most during first login?",
-        "For first-time users, the system directs the PE to change the initial password. "
-        "The manual describes this as a measure to enhance portal security.",
-    )
+    def fake_post(url, headers, json, timeout):
+        captured["payload"] = json
+        captured["authorization"] = headers["Authorization"]
+        return SuccessfulResponse()
+
+    import app.services.llm_service as llm_service_module
+    from unittest.mock import patch
+    with patch.object(llm_service_module, "get_groq_api_key", return_value="test-key"), patch.object(requests, "post", fake_post):
+        service = LLMService.__new__(LLMService)
+        service.system_prompt = load_system_prompt()
+        answer = service._call_groq_api(
+            "What matters most during first login?",
+            "For first-time users, change the initial password to enhance portal security.",
+        )
+
+    messages = captured["payload"]["messages"]
 
     assert answer == "The manual supports this conclusion."
-    assert "answer using only the supplied official manual passages" in client.messages[0]["content"].lower()
-    assert "markdown tables for fees" in client.messages[0]["content"].lower()
-    assert "finish with a short **summary**" in client.messages[0]["content"].lower()
-    assert "source** line with relevant manual section number(s)" in client.messages[0]["content"].lower()
-    assert "preserve the source's exact number formatting" in client.messages[0]["content"].lower()
-    assert "follow the system instructions for answer structure" in client.messages[1]["content"].lower()
-    assert "enhance portal security" in client.messages[1]["content"]
+    assert captured["authorization"] == "Bearer test-key"
+    assert "answer using only the supplied official manual passages" in messages[0]["content"].lower()
+    assert "markdown tables for fees" in messages[0]["content"].lower()
+    assert "finish with a short **summary**" in messages[0]["content"].lower()
+    assert "source** line with relevant manual section number(s)" in messages[0]["content"].lower()
+    assert "preserve the source's exact number formatting" in messages[0]["content"].lower()
+    assert "follow the system instructions" in messages[1]["content"].lower()
+    assert "enhance portal security" in messages[1]["content"]
+    assert captured["payload"]["model"] == GROQ_TEXT_MODEL
 
 
-def test_empty_context_is_passed_to_model_with_manual_only_grounding_rules():
-    class CapturingInferenceClient:
-        messages = None
-
-        def chat_completion(self, **kwargs):
-            self.messages = kwargs["messages"]
-            return SimpleNamespace(
-                choices=[
-                    SimpleNamespace(
-                        message=SimpleNamespace(content="General e-GP guidance.")
-                    )
-                ]
-            )
-
-    client = CapturingInferenceClient()
-    service = LLMService.__new__(LLMService)
-    service.system_prompt = load_system_prompt()
-    service.model_name = "test-model"
-    service._hf_client = client
-    service._mode = "hf_api"
-    service._local_model = None
-
-    answer = service.generate_answer(
-        "How can a procuring entity improve its procurement planning?",
-        "No relevant context found in manuals.",
-    )
-
-    assert answer == "General e-GP guidance."
-    assert "answer using only the supplied official manual passages" in client.messages[0]["content"].lower()
-    assert "politely decline questions unrelated to e-gp or public procurement" in client.messages[0]["content"].lower()
-    assert "No relevant context found in manuals." in client.messages[1]["content"]
-
-
-def test_keyword_in_a_relevant_question_does_not_trigger_off_topic_refusal():
-    class CapturingInferenceClient:
-        messages = None
-
-        def chat_completion(self, **kwargs):
-            self.messages = kwargs["messages"]
-            return SimpleNamespace(
-                choices=[
-                    SimpleNamespace(
-                        message=SimpleNamespace(content="Check the applicable tender rules.")
-                    )
-                ]
-            )
-
-    client = CapturingInferenceClient()
-    service = LLMService.__new__(LLMService)
-    service.system_prompt = load_system_prompt()
-    service.model_name = "test-model"
-    service._hf_client = client
-    service._mode = "hf_api"
-    service._local_model = None
-
-    answer = service.generate_answer(
-        "Can a football club submit a tender in e-GP?",
-        "The manual says eligible tenderers may submit a tender through the portal.",
-    )
-
-    assert answer == "Check the applicable tender rules."
-
-
-def test_huggingface_failure_uses_configured_gemini_fallback_for_screenshots():
-    class UnavailableInferenceClient:
-        def chat_completion(self, **kwargs):
-            raise RuntimeError("model is not supported")
-
-    service = LLMService.__new__(LLMService)
-    service.system_prompt = load_system_prompt()
-    service.model_name = "unavailable-model"
-    service._hf_client = UnavailableInferenceClient()
-    service._mode = "hf_api"
-    service._local_model = None
-
+def test_groq_model_selection_and_multimodal_payload(monkeypatch):
+    import requests
+    import app.services.llm_service as llm_service_module
+    from unittest.mock import patch
     captured = {}
+
+    class SuccessfulResponse:
+        status_code = 200
+
+        def json(self):
+            return {"choices": [{"message": {"content": "Grounded vision answer."}}]}
+
+    def fake_post(url, headers, json, timeout):
+        captured["payload"] = json
+        return SuccessfulResponse()
+
+    with patch.object(llm_service_module, "get_groq_api_key", return_value="test-key"), patch.object(requests, "post", fake_post):
+        service = LLMService.__new__(LLMService)
+        service.system_prompt = load_system_prompt()
+        answer = service._call_groq_api(
+            "What does this screen show?",
+            "The manual describes the PE dashboard.",
+            image="aGVsbG8=",
+            image_mime="image/jpeg",
+        )
+
+    assert answer == "Grounded vision answer."
+    assert captured["payload"]["model"] == GROQ_VISION_MODEL
+    image_message = captured["payload"]["messages"][1]["content"]
+    assert image_message[1]["image_url"]["url"] == "data:image/jpeg;base64,aGVsbG8="
+
+
+def test_e1_image_and_e2_text_use_vision_model():
+    service = LLMService.__new__(LLMService)
+    service.system_prompt = load_system_prompt()
+    service._mode = "offline_fallback"
+    service._local_model = None
+    captured = []
+    service._call_groq_api = lambda *args, **kwargs: captured.append(kwargs["model"]) or "Grounded answer."
+    service._call_gemini_api = lambda *args, **kwargs: None
+
+    e1_image = service.generate_answer_with_metadata(
+        "What is shown?", "Manual context", image="image-data"
+    )
+    e2_text = service.generate_answer_with_metadata(
+        "Explain this workflow.", "Manual context", use_alt_model=True
+    )
+    e1_text = service.generate_answer_with_metadata(
+        "What does the manual say?", "Manual context"
+    )
+
+    assert captured == [GROQ_VISION_MODEL, GROQ_VISION_MODEL, GROQ_TEXT_MODEL]
+    assert e1_image[0] == "Grounded answer."
+    assert e1_image[1:] == (GROQ_VISION_MODEL, False)
+    assert e2_text[1:] == (GROQ_VISION_MODEL, False)
+    assert e1_text[1:] == (GROQ_TEXT_MODEL, False)
+
+
+def test_e2_groq_failure_uses_gemini_fallback_for_screenshots():
+    service = LLMService.__new__(LLMService)
+    service.system_prompt = load_system_prompt()
+    service._mode = "offline_fallback"
+    service._local_model = None
+    captured = {}
+    service._call_groq_api = lambda *args, **kwargs: None
 
     def gemini_fallback(question, context, image=None, image_mime="image/png"):
         captured.update(image=image, image_mime=image_mime)
         return "Grounded Gemini answer."
 
     service._call_gemini_api = gemini_fallback
-    service._call_groq_api = lambda *args: pytest.fail("Groq must not receive screenshots")
-
-    answer = service.generate_answer(
+    answer, model, was_offline = service.generate_answer_with_metadata(
         "What does this screen show?",
         "The manual describes the PE dashboard.",
         image="encoded-image",
         image_mime="image/jpeg",
+        use_alt_model=True,
     )
 
     assert answer == "Grounded Gemini answer."
+    assert model == "Gemini"
+    assert not was_offline
     assert captured == {"image": "encoded-image", "image_mime": "image/jpeg"}
-
-
-def test_huggingface_failure_uses_groq_fallback_for_text_questions():
-    class UnavailableInferenceClient:
-        def chat_completion(self, **kwargs):
-            raise RuntimeError("model is not supported")
-
-    service = LLMService.__new__(LLMService)
-    service.system_prompt = load_system_prompt()
-    service.model_name = "unavailable-model"
-    service._hf_client = UnavailableInferenceClient()
-    service._mode = "hf_api"
-    service._local_model = None
-    service._call_gemini_api = lambda *args, **kwargs: None
-    service._call_groq_api = lambda question, context: "Grounded Groq answer."
-
-    answer = service.generate_answer(
-        "What does the manual say?",
-        "The manual describes the PE dashboard.",
-    )
-
-    assert answer == "Grounded Groq answer."
 
 
 def test_gemini_screenshot_payload_keeps_the_image_mime_type(monkeypatch):

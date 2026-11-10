@@ -29,7 +29,7 @@ export default function App() {
   const [backendError, setBackendError] = useState<string | null>(null);
   const [uploadedImage, setUploadedImage] = useState<{ base64: string; name: string; mime: string } | null>(null);
 
-  // Qwen is the default model; Liquid AI is used only when explicitly selected.
+  // E1 is the grounded text model; E2 selects the Groq multimodal vision model.
   const [useAltModel, setUseAltModel] = useState(false);
 
   // Modals

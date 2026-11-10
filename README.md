@@ -15,7 +15,7 @@ Built with React, FastAPI, FAISS, and multimodal AI, the application combines se
 - **Retrieval-Augmented Generation (RAG):** Combines FAISS semantic search with domain-specific keyword ranking.
 - **Source-Grounded Responses:** Provides references to relevant manual pages to support generated answers.
 - **Screenshot-Based Questions:** Upload screenshots for OCR and vision-based question processing.
-- **Multimodal AI Support:** Uses Qwen2.5-VL for hosted inference, with Liquid AI available as an optional alternative.
+- **Multimodal AI Support:** Uses Groq-hosted GPT-OSS for E1 text answers and Qwen for E2 and screenshot answers.
 - **Manual Page Visualization:** View relevant manual pages alongside answers.
 - **Offline Browser Support:** Includes local retrieval and IndexedDB storage for browser-based access when the backend is unavailable.
 - **Suggested Questions:** Explore searchable, manual-based question suggestions.
@@ -31,7 +31,7 @@ Built with React, FastAPI, FAISS, and multimodal AI, the application combines se
 | Development Server | Express.js |
 | Vector Search | FAISS |
 | Retrieval | Dense Semantic Search, Keyword Scoring |
-| AI Models | Qwen2.5-VL-3B-Instruct, LiquidAI LFM2.5-VL-1.6B |
+| AI Models | Groq `openai/gpt-oss-20b`, Groq `qwen/qwen3.8-27b` |
 | Document Processing | PDF Processing, OCR, Vision |
 | Browser Storage | IndexedDB |
 | Deployment | Netlify, Python-compatible hosting |
@@ -68,12 +68,12 @@ The application supports configurable hosted inference providers.
 
 | Model | Purpose | Configuration |
 |---|---|---|
-| Qwen/Qwen2.5-VL-3B-Instruct | Primary multimodal model | Default |
-| LiquidAI/LFM2.5-VL-1.6B | Alternative multimodal model | Optional |
+| `openai/gpt-oss-20b` | Groq E1 text answers | Default |
+| `qwen/qwen3.8-27b` | Groq E2 and screenshot answers | Default |
 
-The primary model is used by default. The alternative provider is activated only when explicitly selected.
+Set `GROQ_API_KEY` on the backend host. `GROQ_TEXT_MODEL` and `GROQ_VISION_MODEL` can override the model defaults. Gemini is an optional hosted fallback.
 
-An optional Hugging Face access token enables hosted inference. When no provider is configured, the backend can use its available local or extractive fallback.
+Hugging Face credentials are not used for answer generation. When no hosted answer provider is configured, the backend uses its grounded offline synthesis.
 
 ## Project Structure
 

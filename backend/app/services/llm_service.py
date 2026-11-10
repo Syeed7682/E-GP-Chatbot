@@ -1,9 +1,7 @@
 """
 LLM Service (app/services/llm_service.py).
-Uses Qwen2.5-VL-3B-Instruct by default and Liquid AI only when explicitly selected:
-1. Local Transformers (Qwen2_5_VLForConditionalGeneration & AutoProcessor with CUDA / flash-attention-2)
-2. Hugging Face Inference API / Client (via HF_TOKEN)
-3. Smart Extractive Synthesis (zero-crash fallback generating detailed, structured answers grounded strictly in e-GP manuals)
+Uses configurable Groq-hosted text and vision models, with optional Gemini fallback and
+offline synthesis. An explicitly enabled local Transformers model remains available.
 
 Supports multimodal inputs (text queries + optional screenshot / image).
 """
@@ -53,19 +51,13 @@ def get_groq_api_key() -> str:
             key = sec
     return key
 
-def get_llm_model() -> str:
-    """Gets LLM_MODEL from environment variable or Streamlit Cloud secrets."""
-    model = os.getenv("LLM_MODEL", "Qwen/Qwen2.5-VL-3B-Instruct").strip()
-    sec = _get_st_secret("LLM_MODEL")
-    if sec:
-        model = sec
-    return model
-
 HF_TOKEN = get_hf_token()
 GEMINI_API_KEY = get_gemini_api_key()
 GROQ_API_KEY = get_groq_api_key()
-LLM_MODEL = get_llm_model()
-ALT_VL_MODEL = os.getenv("ALT_VL_MODEL", "LiquidAI/LFM2.5-VL-1.6B").strip()
+GROQ_TEXT_MODEL = os.getenv("GROQ_TEXT_MODEL", "openai/gpt-oss-20b").strip()
+GROQ_VISION_MODEL = os.getenv("GROQ_VISION_MODEL", "qwen/qwen3.8-27b").strip()
+LOCAL_LLM_MODEL = os.getenv("LOCAL_LLM_MODEL", "Qwen/Qwen2.5-VL-3B-Instruct").strip()
+LLM_MODEL = GROQ_TEXT_MODEL
 USE_LOCAL_LLM = os.getenv("USE_LOCAL_LLM", "false").lower() in ("true", "1", "yes")
 SYSTEM_PROMPT_PATH = os.path.join(os.path.dirname(__file__), "../prompts/system_prompt.txt")
 
@@ -130,7 +122,7 @@ def load_system_prompt() -> str:
 
 
 class LLMService:
-    def __init__(self, model_name: str = LLM_MODEL, token: str = HF_TOKEN, use_local: bool = USE_LOCAL_LLM):
+    def __init__(self, model_name: str = LOCAL_LLM_MODEL, token: str = HF_TOKEN, use_local: bool = USE_LOCAL_LLM):
         self.model_name = model_name
         self.token = token
         self.use_local = use_local
@@ -178,21 +170,18 @@ class LLMService:
                 self._local_model = None
                 self._processor = None
 
-        # 2. Check Hugging Face Inference API
-        if self.token and self.token != "your_huggingface_api_token_here":
-            try:
-                from huggingface_hub import InferenceClient
-                self._hf_client = InferenceClient(token=self.token, timeout=5)
-                self._mode = "hf_api"
-                print(f"[llm_service] Initialized Hugging Face Inference API for '{self.model_name}'.")
-                return
-            except Exception as e:
-                print(f"[llm_service] Could not initialize HF client: {e}")
-                self._hf_client = None
-
-        # 3. Fallback to smart offline synthesis
-        self._mode = "offline_fallback"
-        print("[llm_service] Notice: Running in smart offline synthesis mode.")
+        if get_groq_api_key():
+            self._mode = "groq_api"
+            print(
+                f"[llm_service] Groq configured for E1 '{GROQ_TEXT_MODEL}' "
+                f"and E2 '{GROQ_VISION_MODEL}'."
+            )
+        elif get_gemini_api_key():
+            self._mode = "gemini_api"
+            print("[llm_service] Groq is not configured; Gemini is available as the answer fallback.")
+        else:
+            self._mode = "offline_fallback"
+            print("[llm_service] Notice: no hosted answer provider is configured; using offline synthesis.")
 
     def _generate_local_transformers(self, question: str, context: str, image_url_or_path: Optional[str] = None, max_new_tokens: int = 512) -> str:
         """
@@ -285,6 +274,26 @@ class LLMService:
                         "the bill is accepted. It says to click **Accept**; after the confirmation appears, "
                         "the status changes to this label."
                     )
+
+        is_debar_topic = any(
+            term in q_lower
+            for term in ("debar", "suspension", "blacklist", "blacklisted")
+        )
+        is_definition_question = bool(
+            re.match(r"^(?:what\s+is|what\s+does|define|meaning\s+of)\b", q_lower)
+        )
+        if is_debar_topic and is_definition_question:
+            if (
+                re.search(r"HOPE intends to debar the suspended Tenderer", context, re.IGNORECASE)
+                and re.search(r"complete the debarment within 42 calendar days", context, re.IGNORECASE)
+                and re.search(r"After approving the debarment by HOPE", context, re.IGNORECASE)
+            ):
+                return (
+                    "Debarment is a decision by the Head of Procuring Entity (HOPE) concerning a suspended "
+                    "tenderer. The manual says HOPE must complete it within **42 calendar days**; after approval, "
+                    "the tenderer's details appear in the **Debarred Tenderer List**."
+                )
+            return "The provided manual extract does not specify this information."
 
         has_document_fee_table = bool(
             re.search(
@@ -434,8 +443,11 @@ class LLMService:
                 "Need help understanding what a specific workflow status means? Just ask! 😊"
             )
 
-        # 2.5 Debarment / Suspension (PPR Rule 127)
-        is_debar_query = any(k in q_lower for k in ["debar", "debarment", "suspension", "blacklist", "blacklisted", "deb-01"])
+        # 2.5 Debarment / Suspension procedures
+        is_debar_query = (
+            is_debar_topic
+            and bool(re.search(r"\b(?:how|steps?|procedure|process|initiat(?:e|ing)|revise)\b", q_lower))
+        )
         if is_debar_query:
             return (
                 "Under Public Procurement Rules (PPR-2008 Rule 127) and the official e-GP guidelines, "
@@ -880,8 +892,15 @@ class LLMService:
             print(f"[llm_service] Gemini API notice: {e}")
         return None
 
-    def _call_groq_api(self, question: str, context: str) -> Optional[str]:
-        """Calls Groq API (llama-3.3-70b-versatile) using free tier."""
+    def _call_groq_api(
+        self,
+        question: str,
+        context: str,
+        image: Optional[str] = None,
+        image_mime: str = "image/png",
+        model: Optional[str] = None,
+    ) -> Optional[str]:
+        """Calls the configured Groq text or vision model with grounded context."""
         api_key = get_groq_api_key()
         if not api_key:
             return None
@@ -889,22 +908,27 @@ class LLMService:
             import requests
             url = "https://api.groq.com/openai/v1/chat/completions"
             headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+            model_name = model or (GROQ_VISION_MODEL if image else GROQ_TEXT_MODEL)
+            user_message = (
+                f"Context from the e-GP manual and supplemental Q&A (use only as evidence):\n{context}\n\n"
+                f"Question: {question}\n\nFollow the system instructions. Do not copy retrieval metadata, "
+                "relevance scores, or Q:/A: labels into the answer."
+            )
             payload = {
-                "model": "llama-3.3-70b-versatile",
+                "model": model_name,
                 "messages": [
                     {"role": "system", "content": self.system_prompt},
-                    {"role": "user", "content": (
-                        f"Context from e-GP manual (use as evidence; do not copy OCR artifacts):\n{context}\n\n"
-                        f"Question: {question}\n\nFollow the system instructions for answer structure and use only supplied manual and supplemental Q&A content. "
-                        f"Include a Source line with section numbers only when present. For fee tables, preserve exact number "
-                        f"formatting and keep fee categories separate. Do not include internal scores or database details."
-                    )}
+                    {"role": "user", "content": _user_message_content(user_message, image, image_mime)}
                 ],
-                "temperature": 0.2
+                "temperature": 0.2,
+                "max_completion_tokens": 1024,
             }
-            resp = requests.post(url, headers=headers, json=payload, timeout=20)
+            resp = requests.post(url, headers=headers, json=payload, timeout=45)
             if resp.status_code == 200:
-                return resp.json()["choices"][0]["message"]["content"].strip()
+                answer = resp.json()["choices"][0]["message"].get("content")
+                if answer and answer.strip():
+                    return answer.strip()
+            print(f"[llm_service] Groq API status: {resp.status_code} - {resp.text[:250]}")
         except Exception as e:
             print(f"[llm_service] Groq API error: {e}")
         return None
@@ -916,77 +940,32 @@ class LLMService:
         image: Optional[str] = None,
         image_mime: str = "image/png",
     ) -> Optional[str]:
-        """
-        Calls the alternative vision-language model (LFM2.5-VL-1.6B) via HF Inference API.
-        Used when the user clicks the E2 button in the UI.
-        Supports text + optional image (screenshot understanding).
-        """
-        current_token = get_hf_token()
-        if not current_token or current_token == "your_huggingface_api_token_here":
-            print("[llm_service] ALT VL model: No HF token available.")
-            return None
+        """Uses the configured E2 multimodal model through Groq."""
+        return self._call_groq_api(
+            question,
+            context,
+            image=image,
+            image_mime=image_mime,
+            model=GROQ_VISION_MODEL,
+        )
 
-        try:
-            from huggingface_hub import InferenceClient
-            client = InferenceClient(token=current_token, timeout=30)
-
-            user_message = (
-                f"Retrieved e-GP manual and supplemental Q&A context (use as evidence; do not copy OCR artifacts):\n{context}\n\n"
-                f"User Question: {question}\n\n"
-                f"Follow the system instructions for answer structure and use only supplied manual and supplemental Q&A content. "
-                f"Include a Source line with section numbers only when present. For fee tables, preserve exact number "
-                f"formatting and keep fee categories separate. Do not include internal scores or database details."
-            )
-
-            messages = [
-                {"role": "system", "content": self.system_prompt},
-                {"role": "user", "content": _user_message_content(user_message, image, image_mime)}
-            ]
-
-            print(f"[llm_service] Calling ALT VL model: {ALT_VL_MODEL}")
-            response = client.chat_completion(
-                model=ALT_VL_MODEL,
-                messages=messages,
-                max_tokens=512,
-                temperature=0.2
-            )
-            answer = response.choices[0].message.content
-            if answer and answer.strip():
-                print(f"[llm_service] ALT VL model returned answer ({len(answer)} chars).")
-                return answer.strip()
-        except Exception as e:
-            print(f"[llm_service] ALT VL model ({ALT_VL_MODEL}) error: {e}")
-        return None
-
-    def generate_answer(
+    def generate_answer_with_metadata(
         self,
         question: str,
         context: str,
         image: Optional[str] = None,
         use_alt_model: bool = False,
         image_mime: str = "image/png",
-    ) -> str:
+    ) -> Tuple[str, str, bool]:
         """
-        Generates grounded answers using Qwen2.5-VL-3B-Instruct or the optional Liquid AI model.
-        Enforces strict domain guardrails, greeting handling, and Guideline 4.
-        
-        Args:
-            question: The user query.
-            context: Retrieved snippets from e-GP manuals.
-            image: Optional image URL or file path for multimodal queries.
-            
-        Returns:
-            Chatbot answer text.
+        Returns the grounded answer, the provider/model that produced it, and offline status.
         """
-        # 2. Clean the question and tokenise
         q_clean = re.sub(r'[^\w\s]', '', question.lower()).strip()
-        q_lower = q_clean  # Alias used by existing intent checks
-        tokens = q_lower.split()
+        tokens = q_clean.split()
 
         if is_vague_steps_request(question):
-            return clarify_steps_topic()
+            return clarify_steps_topic(), "e-GP Assistant", True
 
-        # 1. Casual Greetings Guardrail
         greetings = {"hi", "hello", "hey", "greetings", "good morning", "good afternoon", "good evening", "assalamu alaikum", "salam"}
         if q_clean in greetings or (len(tokens) <= 2 and any(t in greetings for t in tokens)):
             return (
@@ -999,7 +978,7 @@ class LLMService:
                 "- 🔄 **Workflow approvals** (Checker/Approver steps)\n"
                 "- 📑 **Contract management (CMS)** procedures\n\n"
                 "What would you like to know today? Just ask away! 😊"
-            )
+            ), "e-GP Assistant", True
 
         context_available = bool(
             context
@@ -1008,63 +987,40 @@ class LLMService:
         )
 
         if context_available and is_procedure_steps_request(question):
-            return self._steps_answer_from_context(question, context)
+            return self._steps_answer_from_context(question, context), "e-GP Assistant", True
 
-        # Mode 0: Alternative Vision-Language Model (E2 button) — LFM2.5-VL-1.6B via HF
+        # E2 always uses its configured multimodal model; E1 switches to it for images.
         if use_alt_model:
-            alt_answer = self._call_alt_vl_model(question, context, image=image, image_mime=image_mime)
-            if alt_answer:
-                return alt_answer
-            print("[llm_service] Liquid AI model failed; falling back to Qwen.")
+            vision_answer = self._call_alt_vl_model(question, context, image=image, image_mime=image_mime)
+            if vision_answer:
+                return vision_answer, GROQ_VISION_MODEL, False
+            print("[llm_service] E2 Groq inference failed; trying configured hosted fallback.")
 
-        # Mode 1: Local Transformers
-        if self._mode == "local_transformers" and self._local_model is not None:
+        # Keep explicitly enabled local inference available for E1 text requests.
+        if not use_alt_model and not image and self._mode == "local_transformers" and self._local_model is not None:
             try:
                 print(f"[llm_service] Running local inference on '{self.model_name}'...")
-                return self._generate_local_transformers(
+                local_answer = self._generate_local_transformers(
                     question,
                     context,
-                    image_url_or_path=_image_data_url(image, image_mime),
+                    image_url_or_path=None,
                 )
+                return local_answer, self.model_name, False
             except Exception as e:
                 print(f"[llm_service] Local transformers generation failed: {e}. Falling back.")
 
-        # Mode 2: Qwen Hugging Face Inference API
-        current_token = get_hf_token()
-        if self._hf_client is None and current_token and current_token != "your_huggingface_api_token_here":
-            try:
-                from huggingface_hub import InferenceClient
-                self._hf_client = InferenceClient(token=current_token, timeout=30)
-                self.model_name = get_llm_model()
-            except Exception as e:
-                self._hf_client = None
-
-        if self._hf_client is not None:
-            user_message = (
-                f"Retrieved e-GP manual and supplemental Q&A context (use as evidence; do not copy OCR artifacts):\n{context}\n\n"
-                f"User Question: {question}\n\n"
-                f"Follow the system instructions for answer structure and use only supplied manual and supplemental Q&A content. "
-                f"Include a Source line with section numbers only when present. For fee tables, preserve exact number "
-                f"formatting and keep fee categories separate. Do not include internal scores or database details. "
-                f"Correct OCR only when the intended wording is clear."
+        if not use_alt_model:
+            groq_model = GROQ_VISION_MODEL if image else GROQ_TEXT_MODEL
+            groq_answer = self._call_groq_api(
+                question,
+                context,
+                image=image,
+                image_mime=image_mime,
+                model=groq_model,
             )
-            try:
-                response = self._hf_client.chat_completion(
-                    model=self.model_name,
-                    messages=[
-                        {"role": "system", "content": self.system_prompt},
-                        {"role": "user", "content": _user_message_content(user_message, image, image_mime)}
-                    ],
-                    max_tokens=512,
-                    temperature=0.2
-                )
-                answer = response.choices[0].message.content
-                if answer and answer.strip():
-                    return answer.strip()
-            except Exception as e:
-                print(f"[llm_service] Qwen inference failed; using grounded offline synthesis: {e}")
+            if groq_answer:
+                return groq_answer, groq_model, False
 
-        # Optional hosted fallbacks are used only when their API keys are configured.
         gemini_answer = self._call_gemini_api(
             question,
             context,
@@ -1072,15 +1028,27 @@ class LLMService:
             image_mime=image_mime,
         )
         if gemini_answer:
-            return gemini_answer
+            return gemini_answer, "Gemini", False
 
-        if not image:
-            groq_answer = self._call_groq_api(question, context)
-            if groq_answer:
-                return groq_answer
+        return self._offline_answer_generator(question, context), "Offline grounded synthesis", True
 
-        # Final fallback: Smart Offline Grounded Synthesis
-        return self._offline_answer_generator(question, context)
+    def generate_answer(
+        self,
+        question: str,
+        context: str,
+        image: Optional[str] = None,
+        use_alt_model: bool = False,
+        image_mime: str = "image/png",
+    ) -> str:
+        """Compatibility wrapper for callers that only need answer text."""
+        answer, _, _ = self.generate_answer_with_metadata(
+            question,
+            context,
+            image=image,
+            use_alt_model=use_alt_model,
+            image_mime=image_mime,
+        )
+        return answer
 
 
 # Singleton instance

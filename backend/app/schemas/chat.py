@@ -14,7 +14,7 @@ class ChatRequest(BaseModel):
     image_name: Optional[str] = Field(None, description="Optional uploaded image filename")
     image_mime: Optional[str] = Field("image/png", description="MIME type of the uploaded image")
     top_k: Optional[int] = Field(5, description="Number of manual chunks to retrieve", ge=1, le=20)
-    use_alt_model: bool = Field(False, description="Use the optional Liquid AI vision-language model instead of Qwen")
+    use_alt_model: bool = Field(False, description="Use the E2 Groq vision-language model")
 
 class SourceDocument(BaseModel):
     """Reference to a manual passage or supplemental Q&A entry."""
@@ -36,7 +36,7 @@ class ChatResponse(BaseModel):
     answer: str
     sources: List[SourceDocument] = []
     portal_screens: List[str] = []
-    model_used: str = "Qwen/Qwen2.5-VL-3B-Instruct (Grounded)"
+    model_used: str = "openai/gpt-oss-20b (e-GP Grounded)"
     was_offline: bool = False
 
 class HealthResponse(BaseModel):
@@ -46,6 +46,8 @@ class HealthResponse(BaseModel):
     index_loaded: bool
     total_chunks: int
     llm_model: str
+    vision_model: str = "qwen/qwen3.8-27b"
     embedding_model: str
     hf_configured: bool = False
     gemini_configured: bool = Field(False, description="Whether a Gemini API key is configured as a hosted answer fallback")
+    groq_configured: bool = Field(False, description="Whether a Groq API key is configured for E1/E2 answer generation")
