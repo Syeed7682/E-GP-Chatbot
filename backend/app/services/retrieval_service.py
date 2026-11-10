@@ -213,37 +213,12 @@ class RetrievalService:
         is_debarment_intent = any(k in q_lower for k in [
             "debar", "debarment", "suspension", "blacklist", "blacklisted", "deb-01"
         ])
-        is_document_fee_details_query = (
-            bool(re.search(r"\b(?:fee|fees)\b", q_lower))
-            and bool(re.search(r"\b(?:view|payment|paid|status|company)\b", q_lower))
-        )
-        is_document_fee_query = (
-            bool(re.search(r"\b(?:fee|fees|price|cost|amount)\b", q_lower))
-            and bool(re.search(r"\b(?:tender|proposal|document|nct|ict)\b", q_lower))
-            and not is_document_fee_details_query
-        )
 
         for c in chunks:
             raw_text = c.get("text", "").lower()
             text = self._normalize_login_terms(raw_text)
             page = c.get("page", 0)
             score = 0.0
-
-            if is_document_fee_details_query and not re.search(
-                r"document fees? details.*(?:payment status|payment details)|"
-                r"(?:company name|payment status|payment details)",
-                text,
-                re.IGNORECASE | re.DOTALL,
-            ):
-                continue
-
-            if is_document_fee_query and not re.search(
-                r"(?:tender/proposal document price|"
-                r"\b(?:up to|above)\s+[\d,]+\s+[\d,.]+\s+[\d,.]+|"
-                r"tender document fee for international competitive tender)",
-                text,
-            ):
-                continue
 
             # Permanent exclusion of Table of Contents / Change Log / Preface (Pages 1 to 5)
             if page <= 5:
@@ -452,40 +427,6 @@ class RetrievalService:
 
         # Sort and take top_k
         ranked = sorted(combined_scores.values(), key=lambda x: x["score"], reverse=True)
-        if (
-            re.search(r"\b(?:fee|fees)\b", question, re.IGNORECASE)
-            and re.search(r"\b(?:view|payment|paid|status|company)\b", question, re.IGNORECASE)
-        ):
-            ranked = [
-                item for item in ranked
-                if re.search(
-                    r"(?:document fees? details.*(?:payment status|payment details)|"
-                    r"(?:company name|payment status|payment details))",
-                    item["chunk"].get("text", ""),
-                    re.IGNORECASE | re.DOTALL,
-                )
-            ]
-            if not ranked:
-                return "No relevant context found in manuals.", []
-
-        if (
-            re.search(r"\b(?:fee|fees|price|cost|amount)\b", question, re.IGNORECASE)
-            and re.search(r"\b(?:tender|proposal|document|nct|ict)\b", question, re.IGNORECASE)
-            and not re.search(r"\b(?:view|payment|paid|status|company)\b", question, re.IGNORECASE)
-        ):
-            ranked = [
-                item for item in ranked
-                if re.search(
-                    r"(?:tender/proposal document price|"
-                    r"\b(?:up to|above)\s+[\d,]+\s+[\d,.]+\s+[\d,.]+|"
-                    r"tender document fee for international competitive tender)",
-                    item["chunk"].get("text", ""),
-                    re.IGNORECASE,
-                )
-            ]
-            if not ranked:
-                return "No relevant context found in manuals.", []
-
         if is_login_procedure:
             page_matches = []
             seen_pages = set()

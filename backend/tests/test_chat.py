@@ -122,7 +122,7 @@ def test_offline_tender_fee_answer_formats_complete_manual_table():
         "Tender Document Fee for International Competitive Tender (ICT) will be BDT. 12,000.00.\n"
     )
 
-    answer = llm_service._offline_answer_generator("What is the tender fee?", context)
+    answer = llm_service._offline_answer_generator("Explain this price schedule.", context)
 
     assert "| Estimated package cost (BDT) | Current fee (BDT) | Revised fee (BDT) |" in answer
     assert "| Up to 10,00,000 | 1,000 | 500 |" in answer
@@ -314,10 +314,73 @@ def test_model_prompt_supports_bounded_reasoning_from_related_manual_evidence():
     )
 
     assert answer == "The manual supports this conclusion."
-    assert "combine relevant passages" in client.messages[0]["content"]
-    assert "label it plainly" in client.messages[0]["content"]
-    assert "synthesizing related passages" in client.messages[1]["content"]
+    assert "combine related evidence" in client.messages[0]["content"].lower()
+    assert "label it clearly" in client.messages[0]["content"].lower()
+    assert "related manual evidence when available" in client.messages[1]["content"]
     assert "enhance portal security" in client.messages[1]["content"]
+
+
+def test_related_question_with_no_retrieved_context_still_reaches_hosted_model():
+    class CapturingInferenceClient:
+        messages = None
+
+        def chat_completion(self, **kwargs):
+            self.messages = kwargs["messages"]
+            return SimpleNamespace(
+                choices=[
+                    SimpleNamespace(
+                        message=SimpleNamespace(content="General e-GP guidance.")
+                    )
+                ]
+            )
+
+    client = CapturingInferenceClient()
+    service = LLMService.__new__(LLMService)
+    service.system_prompt = load_system_prompt()
+    service.model_name = "test-model"
+    service._hf_client = client
+    service._mode = "hf_api"
+    service._local_model = None
+
+    answer = service.generate_answer(
+        "How can a procuring entity improve its procurement planning?",
+        "No relevant context found in manuals.",
+    )
+
+    assert answer == "General e-GP guidance."
+    assert "answer every question" in client.messages[0]["content"].lower()
+    assert "politely decline questions that are unrelated" in client.messages[0]["content"].lower()
+    assert "No relevant context found in manuals." in client.messages[1]["content"]
+
+
+def test_keyword_in_a_relevant_question_does_not_trigger_off_topic_refusal():
+    class CapturingInferenceClient:
+        messages = None
+
+        def chat_completion(self, **kwargs):
+            self.messages = kwargs["messages"]
+            return SimpleNamespace(
+                choices=[
+                    SimpleNamespace(
+                        message=SimpleNamespace(content="Check the applicable tender rules.")
+                    )
+                ]
+            )
+
+    client = CapturingInferenceClient()
+    service = LLMService.__new__(LLMService)
+    service.system_prompt = load_system_prompt()
+    service.model_name = "test-model"
+    service._hf_client = client
+    service._mode = "hf_api"
+    service._local_model = None
+
+    answer = service.generate_answer(
+        "Can a football club submit a tender in e-GP?",
+        "The manual says eligible tenderers may submit a tender through the portal.",
+    )
+
+    assert answer == "Check the applicable tender rules."
 
 
 def test_huggingface_failure_uses_configured_gemini_fallback_for_screenshots():

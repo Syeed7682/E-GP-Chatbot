@@ -121,10 +121,10 @@ def load_system_prompt() -> str:
 
     return (
         "You are the official assistant for the electronic Government Procurement (e-GP) system. "
-        "Ground answers only in the provided manual context. Combine related passages when they clearly support "
-        "the answer, even if their wording differs from the question. Clearly label any inference, identify "
-        "what remains unverified, and do not invent facts or portal behavior. If evidence is insufficient, say so "
-        "rather than guessing. Keep answers concise and do not include citations; the application displays references."
+        "Answer questions about e-GP and public procurement regardless of wording, and politely decline unrelated "
+        "questions. Decide relevance from meaning, not a fixed list of words. Use provided manual passages as "
+        "authoritative evidence; when they do not cover an on-topic question, distinguish general guidance from "
+        "confirmed manual facts. Do not invent official rules or portal behavior. Keep answers concise."
     )
 
 
@@ -208,8 +208,9 @@ class LLMService:
         prompt_text = (
             f"Context from e-GP Manuals:\n{context}\n\n"
             f"User Question: {question}\n\n"
-            f"Answer directly and concisely from the manual context above, synthesizing related passages even when their wording differs from the question. "
-            f"Clearly label any inference and do not add unsupported facts. Use a professional, measured tone, "
+            f"Answer e-GP and public-procurement questions even when no exact passage is retrieved. Use related manual evidence when available; "
+            f"when it is not, provide clearly identified general guidance. Politely decline unrelated questions. "
+            f"Label inferences and never present them as official rules. Use a professional, measured tone, "
             f"clear complete sentences, and no emojis, conversational filler, or generic closing offer. "
             f"Do not include page numbers or citations; the application displays references separately."
         )
@@ -260,8 +261,9 @@ class LLMService:
 
         if not context or "No relevant context" in context or "No manual index" in context:
             return (
-                "I could not find enough information in the available manual context to provide those steps. "
-                "Please specify the e-GP process you are asking about."
+                "I could not retrieve a supporting manual passage for this question, so I cannot verify an official "
+                "e-GP rule or portal procedure. If you share a related manual section or more context, I can help "
+                "interpret it."
             )
 
         if is_procedure_steps_request(question):
@@ -269,12 +271,14 @@ class LLMService:
 
         q_lower = question.lower().strip()
 
-        is_document_fee_query = (
-            bool(re.search(r"\b(?:fee|fees|price|cost|amount)\b", q_lower))
-            and bool(re.search(r"\b(?:tender|proposal|document|nct|ict)\b", q_lower))
-            and not bool(re.search(r"\b(?:view|payment|paid|status|company)\b", q_lower))
+        has_document_fee_table = bool(
+            re.search(
+                r"Estimated Cost \(Taka\).*?Current Fee \(Taka\).*?Revised Fee \(Taka\)",
+                context,
+                re.IGNORECASE | re.DOTALL,
+            )
         )
-        if is_document_fee_query:
+        if has_document_fee_table:
             fee_rows = []
             seen_fee_rows = set()
 
@@ -812,8 +816,9 @@ class LLMService:
             prompt_text = (
                 f"Context from official Bangladesh e-GP Procuring Entity Manual (use as evidence; do not copy OCR artifacts):\n{context}\n\n"
                 f"User Question: {question}\n\n"
-                f"Answer directly from the context, synthesizing related passages even when their wording differs from the question. "
-                f"Clearly label any inference and do not add unsupported facts. Prefer one short, natural paragraph; "
+                f"Answer e-GP and public-procurement questions even when no exact passage is retrieved. Use related manual evidence when available; "
+                f"when it is not, provide clearly identified general guidance. Politely decline unrelated questions. "
+                f"Label inferences and never present them as official rules. Prefer one short, natural paragraph; "
                 f"use numbered steps only when the user needs a sequence. Do not include page numbers, citations, "
                 f"chunk headings, source labels, or a separate screen list; the application displays references separately. "
                 f"Correct obvious OCR line breaks and split words when their meaning is clear."
@@ -872,8 +877,10 @@ class LLMService:
                     {"role": "system", "content": self.system_prompt},
                     {"role": "user", "content": (
                         f"Context from e-GP manual (use as evidence; do not copy OCR artifacts):\n{context}\n\n"
-                        f"Question: {question}\n\nAnswer from the manual context, synthesizing relevant related passages even when wording differs. "
-                        f"Clearly label any inference and do not add unsupported facts. Prefer one short paragraph when possible. "
+                        f"Question: {question}\n\nAnswer e-GP and public-procurement questions even when no exact passage is retrieved. "
+                        f"Use related manual evidence when available; otherwise provide clearly identified general guidance. "
+                        f"Politely decline unrelated questions. Label inferences and never present them as official rules. "
+                        f"Prefer one short paragraph when possible. "
                         f"Use numbered steps only for a necessary sequence. Do not include citations, page numbers, "
                         f"chunk headings, or source labels; references are displayed separately."
                     )}
@@ -911,8 +918,9 @@ class LLMService:
             user_message = (
                 f"Context from official Bangladesh e-GP Procuring Entity Manual (use as evidence; do not copy OCR artifacts):\n{context}\n\n"
                 f"User Question: {question}\n\n"
-                f"Answer directly from the context above, synthesizing related passages even when their wording differs from the question. "
-                f"Clearly label any inference and do not add unsupported facts. Prefer one natural paragraph; "
+                f"Answer e-GP and public-procurement questions even when no exact passage is retrieved. Use related manual evidence when available; "
+                f"when it is not, provide clearly identified general guidance. Politely decline unrelated questions. "
+                f"Label inferences and never present them as official rules. Prefer one natural paragraph; "
                 f"use numbered steps only when a sequence is necessary. Do not include citations, page numbers, "
                 f"chunk headings, or source labels; the application shows references separately."
             )
@@ -980,25 +988,13 @@ class LLMService:
                 "What would you like to know today? Just ask away! 😊"
             )
 
-        # 2. Out-of-Domain / Entertainment Guardrail (e.g. "make a joke", "tell a story")
-        off_topic_triggers = {"joke", "jokes", "funny", "story", "stories", "poem", "song", "sing", "game", "weather", "cricket", "football", "movie"}
-        if any(t in off_topic_triggers for t in tokens):
-            return (
-                "Ha! I wish I could help with that, but I'm afraid jokes and stories are a bit outside my expertise. 😄\n\n"
-                "I'm **Proca**, your dedicated e-GP Manual Assistant — I live and breathe government procurement procedures! "
-                "If you have any questions about the **e-GP portal, tenders, APP, workflows, or account setup**, "
-                "I'm your go-to assistant.\n\n"
-                "What procurement topic can I help you with? 🏛️"
-            )
+        context_available = bool(
+            context
+            and "No relevant context" not in context
+            and "No manual index" not in context
+        )
 
-        # 3. Guideline 4: If context does not contain enough information
-        if not context or "No relevant context" in context or "No manual index" in context:
-            return (
-                "I could not find enough information in the available manual context to answer that. "
-                "Please specify the e-GP process you need help with."
-            )
-
-        if is_procedure_steps_request(question):
+        if context_available and is_procedure_steps_request(question):
             return self._steps_answer_from_context(question, context)
 
         # Mode 0: Alternative Vision-Language Model (E2 button) — LFM2.5-VL-1.6B via HF
@@ -1034,8 +1030,9 @@ class LLMService:
             user_message = (
                 f"Context from official Bangladesh e-GP Procuring Entity Manual (use as evidence; do not copy OCR artifacts):\n{context}\n\n"
                 f"User Question: {question}\n\n"
-                f"Answer directly from the context, synthesizing related passages even when their wording differs from the question. "
-                f"Clearly label any inference and do not add unsupported facts. Prefer one short, natural paragraph; "
+                f"Answer e-GP and public-procurement questions even when no exact passage is retrieved. Use related manual evidence when available; "
+                f"when it is not, provide clearly identified general guidance. Politely decline unrelated questions. "
+                f"Label inferences and never present them as official rules. Prefer one short, natural paragraph; "
                 f"use numbered steps only when the user needs a sequence. Do not include page numbers, citations, "
                 f"chunk headings, source labels, or a separate screen list; the application displays references separately. "
                 f"Correct obvious OCR line breaks and split words when their meaning is clear."
