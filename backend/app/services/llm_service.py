@@ -269,6 +269,23 @@ class LLMService:
 
         q_lower = question.lower().strip()
 
+        if re.match(r"^(?:what|meaning|define)\b", q_lower):
+            status_match = re.search(
+                r"\bstatus\b.{0,180}?\bchanged\s+as\s+([^\n.]+)",
+                context,
+                re.IGNORECASE,
+            )
+            if status_match:
+                status_label = status_match.group(1).strip(" \t\"'“”\uFFFD")
+                query_terms = set(re.findall(r"[a-z0-9]+", q_lower))
+                status_terms = set(re.findall(r"[a-z0-9]+", status_label.lower()))
+                if status_label and query_terms & status_terms:
+                    return (
+                        f"The manual identifies **{status_label}** as the e-GP bill status shown after "
+                        "the bill is accepted. It says to click **Accept**; after the confirmation appears, "
+                        "the status changes to this label."
+                    )
+
         has_document_fee_table = bool(
             re.search(
                 r"Estimated Cost \(Taka\).*?Current Fee \(Taka\).*?Revised Fee \(Taka\)",

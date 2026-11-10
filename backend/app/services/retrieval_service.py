@@ -158,6 +158,21 @@ class RetrievalService:
             })
         return "\n\n---\n\n".join(context_parts), sources
 
+    @staticmethod
+    def _term_coverage(question: str, text: str) -> float:
+        terms = {
+            term for term in re.findall(r"\w+", question.lower())
+            if term not in STOPWORDS and len(term) > 1
+        }
+        if not terms:
+            return 0.0
+        text = text.lower()
+        matched = sum(
+            bool(re.search(r"\b" + re.escape(term) + r"\b", text))
+            for term in terms
+        )
+        return matched / len(terms)
+
     def is_ready(self) -> bool:
         """Returns True if the FAISS index is loaded and ready to serve queries."""
         return self.faiss_service.index is not None and len(self.faiss_service.metadata) > 0
@@ -537,6 +552,21 @@ class RetrievalService:
             })
 
         full_context_str = "\n\n---\n\n".join(context_parts)
+        if qa_context and qa_matches and not any(match["direct_match"] for match in qa_matches):
+            manual_coverage = max(
+                self._term_coverage(question, item["chunk"].get("text", ""))
+                for item in top_matches
+            )
+            qa_coverage = max(
+                self._term_coverage(
+                    question,
+                    f"{match['record']['question']} {match['record']['answer']}",
+                )
+                for match in qa_matches
+            )
+            if manual_coverage >= 0.75 and manual_coverage >= qa_coverage + 0.15:
+                qa_context, qa_sources = "", []
+
         if qa_context:
             full_context_str = f"{qa_context}\n\n---\n\n{full_context_str}"
             sources = qa_sources + sources

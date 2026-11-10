@@ -9,7 +9,8 @@ if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
 from app.services.embedding_service import EmbeddingService, embedding_service
-from app.services.retrieval_service import retrieval_service
+from app.services.qa_service import QAService
+from app.services.retrieval_service import RetrievalService, retrieval_service
 
 def test_embedding_provider_failure_disables_semantic_search():
     class FailedInferenceClient:
@@ -118,6 +119,39 @@ def test_repairs_mid_word_chunk_boundary():
     assert not repaired.lstrip().startswith("mber from")
     assert "member from evaluation committee" in repaired
     assert "complete the technical evaluation on behalf of the team" in repaired
+
+def test_exact_manual_match_excludes_loosely_related_qa_entries():
+    class KeywordOnlyEmbedding:
+        semantic_search_available = False
+
+    class ManualIndex:
+        index = object()
+        metadata = [{
+            "chunk_id": 1,
+            "page": 388,
+            "source": "official manual",
+            "text": (
+                "To accept the bill, click on Accept. Then the bill is accepted. "
+                "In this stage, the iBAS++ bill status in e-GP system will be changed "
+                "as Paypoint Accept DDO Bill."
+            ),
+        }]
+
+        def load(self):
+            return True
+
+    retrieval = RetrievalService(
+        emb_service=KeywordOnlyEmbedding(),
+        f_service=ManualIndex(),
+        q_service=QAService(),
+    )
+
+    context, sources = retrieval.retrieve("what Paypoint Accept DDO Bill", top_k=5)
+
+    assert "Paypoint Accept DDO Bill" in context
+    assert "Supplemental Q&A" not in context
+    assert sources
+    assert all(source.get("source_type") != "qa" for source in sources)
 
 if __name__ == "__main__":
     test_retrieval_service_ready()

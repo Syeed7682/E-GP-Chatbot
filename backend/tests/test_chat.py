@@ -200,6 +200,73 @@ def test_chat_replaces_retrieval_context_echo_with_the_q_and_a_answer(monkeypatc
     assert result["sources"][0]["question_number"] == 801
     assert result["model_used"] == "e-GP System Q&A.txt (verbatim)"
 
+def test_chat_synthesizes_manual_answer_when_model_echoes_mixed_retrieval_context(monkeypatch):
+    manual_context = (
+        "[Manual: official manual | Page 388 | Relevance: 1.00]\n"
+        "In this stage, the iBAS++ bill status in e-GP system will be changed as "
+        "Paypoint Accept DDO Bill."
+    )
+    qa_context = (
+        "[Supplemental Q&A: e-GP System Q&A.txt | Module: DDO Integration | Question 881]\n"
+        "Q: How do DDOs submit e-GP bills?\nA:\nFollow a different transfer procedure."
+    )
+    sources = [
+        {
+            "source": "e-GP System Q&A.txt",
+            "source_type": "qa",
+            "page": None,
+            "chunk_id": None,
+            "question_number": 881,
+            "module": "DDO Integration",
+            "score": 0.38,
+            "snippet": "Follow a different transfer procedure.",
+            "answer": "Follow a different transfer procedure.",
+            "direct_match": False,
+            "image_path": None,
+        },
+        {
+            "source": "official manual",
+            "source_type": "manual",
+            "page": 388,
+            "chunk_id": 1,
+            "score": 1.0,
+            "snippet": "Paypoint Accept DDO Bill",
+            "image_path": None,
+        },
+    ]
+    captured = {}
+    monkeypatch.setattr(
+        retrieval_service_module.retrieval_service,
+        "retrieve",
+        lambda *args, **kwargs: (qa_context + "\n\n---\n\n" + manual_context, sources),
+    )
+    monkeypatch.setattr(
+        llm_service,
+        "generate_answer",
+        lambda *args, **kwargs: (
+            "The bill status changes to Paypoint Accept DDO Bill. "
+            "[Supplemental Q&A: e-GP System Q&A.txt | Relevance: 0.38] "
+            "Q: How do DDOs submit bills? A: Follow another procedure."
+        ),
+    )
+
+    def offline_answer(question, context):
+        captured["context"] = context
+        return "After the bill is accepted, its e-GP status becomes **Paypoint Accept DDO Bill**."
+
+    monkeypatch.setattr(llm_service, "_offline_answer_generator", offline_answer)
+
+    response = client.post(
+        "/api/chat",
+        json={"question": "what Paypoint Accept DDO Bill"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["answer"] == (
+        "After the bill is accepted, its e-GP status becomes **Paypoint Accept DDO Bill**."
+    )
+    assert captured["context"] == manual_context
+
 def test_chat_health():
     res = client.get("/api/chat/health")
     assert res.status_code == 200
@@ -244,6 +311,26 @@ def test_offline_answer_uses_concise_prose_without_citations_or_boilerplate():
     assert "key details" not in answer.lower()
     assert "would you like" not in answer.lower()
     assert not answer.lstrip().startswith(("1.", "**1."))
+
+def test_offline_answer_synthesizes_the_paypoint_bill_status_from_manual_context():
+    context = (
+        "[Manual: official manual | Page 388]\n"
+        "To accept the bill, click on Accept button.\n"
+        "Then a pop-up is displayed with notification message that bill is accepted.\n"
+        "In this stage, the iBAS++ bill status in e-GP system will be changed as "
+        "\uFFFDPaypoint Accept DDO Bill\uFFFD."
+    )
+
+    answer = llm_service._offline_answer_generator(
+        "what Paypoint Accept DDO Bill",
+        context,
+    )
+
+    assert answer == (
+        "The manual identifies **Paypoint Accept DDO Bill** as the e-GP bill status shown after "
+        "the bill is accepted. It says to click **Accept**; after the confirmation appears, "
+        "the status changes to this label."
+    )
 
 def test_offline_tender_fee_answer_uses_structured_sections_and_preserves_source_values():
     context = (

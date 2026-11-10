@@ -82,22 +82,32 @@ async def ask_question(request: ChatRequest) -> ChatResponse:
         if not answer or not answer.strip():
             answer = llm_service._offline_answer_generator(answer_question, context)
         has_retrieval_header = re.search(
-            r"^\s*\[?(?:Supplemental Q&A|Manual)\s*:",
+            r"\b(?:Supplemental Q&A|Manual)\s*:",
             answer,
-            re.IGNORECASE | re.MULTILINE,
+            re.IGNORECASE,
         )
         has_question_answer_labels = (
             re.search(r"^\s*Q\s*:", answer, re.IGNORECASE | re.MULTILINE)
             and re.search(r"^\s*A\s*:", answer, re.IGNORECASE | re.MULTILINE)
         )
         if has_retrieval_header or has_question_answer_labels:
-            matched_qa = next(
-                (source for source in raw_sources if source.get("source_type") == "qa"),
-                None,
+            manual_context = "\n\n---\n\n".join(
+                block for block in context.split("\n\n---\n\n")
+                if not re.search(r"^\s*\[Supplemental Q&A\s*:", block)
             )
-            if matched_qa:
-                answer = matched_qa["answer"]
-                answer_qa_source = matched_qa
+            has_manual_source = any(
+                source.get("source_type") != "qa" for source in raw_sources
+            )
+            if has_manual_source and manual_context:
+                answer = llm_service._offline_answer_generator(answer_question, manual_context)
+            else:
+                matched_qa = next(
+                    (source for source in raw_sources if source.get("source_type") == "qa"),
+                    None,
+                )
+                if matched_qa:
+                    answer = matched_qa["answer"]
+                    answer_qa_source = matched_qa
 
     # 4. Format Sources with Screenshot URLs
     sources = []
