@@ -104,6 +104,35 @@ def test_offline_answer_uses_concise_prose_without_citations_or_boilerplate():
     assert "would you like" not in answer.lower()
     assert not answer.lstrip().startswith(("1.", "**1."))
 
+def test_offline_tender_fee_answer_formats_complete_manual_table():
+    context = (
+        "[Manual: Official e-GP Manual | Page 60]\n"
+        "4.1.14 Based on the Package Estimated Cost for Procurement Type of NCT, "
+        "Tender/Proposal Document Price (In BDT) will be added automatically.\n"
+        "Estimated Cost (Taka) Current Fee (Taka) Revised Fee (Taka)\n"
+        "Up to 10,000,00 1,000.00 500.00\n"
+        "Up to 25,000,00 1,000.00 1,000.00\n"
+        "Up to 50,000,00 1,000.00 1,500.00\n"
+        "Up to 2,00,000,00 2,000.00 2,500.00\n"
+        "Up to 10,00,000,00 4,000.00 4,000.00\n"
+        "Up to 30,00,000,00 4,000.00 5,000.00\n"
+        "Up to 50,00,000,00 4,000.00 6,000.00\n"
+        "Up to 100,00,000,00 4,000.00 7,000.00\n"
+        "Above 100,00,000,00 4,000.00 10,000.00\n"
+        "Tender Document Fee for International Competitive Tender (ICT) will be BDT. 12,000.00.\n"
+    )
+
+    answer = llm_service._offline_answer_generator("What is the tender fee?", context)
+
+    assert "| Estimated package cost (BDT) | Current fee (BDT) | Revised fee (BDT) |" in answer
+    assert "| Up to 10,00,000 | 1,000 | 500 |" in answer
+    assert "| Up to 2,00,00,000 | 2,000 | 2,500 |" in answer
+    assert "| Up to 30,00,00,000 | 4,000 | 5,000 |" in answer
+    assert "| Above 1,00,00,00,000 | 4,000 | 10,000 |" in answer
+    assert "BDT 12,000" in answer
+    assert "Not specified" not in answer
+    assert "Pre-Tender" not in answer
+
 def test_generic_manual_question_gets_a_grounded_answer():
     context = (
         "[Manual: e-GP System User Manual | Page 6 | Relevance: 0.9]\n"

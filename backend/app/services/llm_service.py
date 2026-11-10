@@ -269,6 +269,70 @@ class LLMService:
 
         q_lower = question.lower().strip()
 
+        is_document_fee_query = (
+            bool(re.search(r"\b(?:fee|fees|price|cost|amount)\b", q_lower))
+            and bool(re.search(r"\b(?:tender|proposal|document|nct|ict)\b", q_lower))
+            and not bool(re.search(r"\b(?:view|payment|paid|status|company)\b", q_lower))
+        )
+        if is_document_fee_query:
+            fee_rows = []
+            seen_fee_rows = set()
+
+            def format_bdt(value: str) -> str:
+                whole_value = str(int(value.split(".", 1)[0].replace(",", "")))
+                if len(whole_value) <= 3:
+                    return whole_value
+                last_three, leading = whole_value[-3:], whole_value[:-3]
+                groups = []
+                while len(leading) > 2:
+                    groups.insert(0, leading[-2:])
+                    leading = leading[:-2]
+                groups.insert(0, leading)
+                return f"{','.join(groups)},{last_three}"
+
+            for line in context.splitlines():
+                match = re.fullmatch(
+                    r"\s*(Up to|Above)\s+([\d,]+)\s+([\d,]+(?:\.\d{2})?)\s+([\d,]+(?:\.\d{2})?)\s*",
+                    line,
+                    re.IGNORECASE,
+                )
+                if not match:
+                    continue
+                limit, estimated_cost, current_fee, revised_fee = match.groups()
+                row = (
+                    "Up to" if limit.lower() == "up to" else "Above",
+                    format_bdt(estimated_cost),
+                    format_bdt(current_fee),
+                    format_bdt(revised_fee),
+                )
+                if row not in seen_fee_rows:
+                    seen_fee_rows.add(row)
+                    fee_rows.append(row)
+
+            if fee_rows:
+                answer = (
+                    "For National Competitive Tendering (NCT), the Tender/Proposal Document Price is "
+                    "added automatically based on the package’s estimated cost (Section 4.1.14). "
+                    "The manual lists the current and revised fees as follows:\n\n"
+                    "| Estimated package cost (BDT) | Current fee (BDT) | Revised fee (BDT) |\n"
+                    "| --- | ---: | ---: |\n"
+                )
+                answer += "".join(
+                    f"| {limit} {cost} | {current} | {revised} |\n"
+                    for limit, cost, current, revised in fee_rows
+                )
+                ict_fee_match = re.search(
+                    r"Tender Document Fee for International Competitive Tender \(ICT\).*?([\d,]+(?:\.\d{2})?)",
+                    context,
+                    re.IGNORECASE | re.DOTALL,
+                )
+                if ict_fee_match:
+                    answer += (
+                        f"\nFor International Competitive Tendering (ICT), the document fee is "
+                        f"BDT {format_bdt(ict_fee_match.group(1))}."
+                    )
+                return answer.strip()
+
         # Parse extracted chunks, keeping manual metadata out of the answer.
         raw_blocks = context.split("---")
         cleaned_chunks: List[Dict[str, Any]] = []

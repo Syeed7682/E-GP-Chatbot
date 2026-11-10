@@ -52,6 +52,33 @@ def test_debarment_retrieval():
     print(f"[PASS] Debarment retrieved pages: {pages}")
     assert any(p in (342, 343, 344, 345, 346, 347, 348) for p in pages)
 
+def test_tender_fee_retrieval_excludes_payment_status_and_pre_tender_context(monkeypatch):
+    retrieval_service.load_index_if_needed()
+    monkeypatch.setattr(embedding_service, "_mode", "offline_multimodal_fallback")
+
+    context, sources = retrieval_service.retrieve("What is the tender fee?", top_k=5)
+
+    assert sources
+    assert all(source["page"] == 60 for source in sources)
+    assert "Tender/Proposal Document Price" in context
+    assert "Tender Document Fee for International Competitive Tender" in context
+    assert "Document fees tab" not in context
+    assert "Pre-Tender meeting" not in context
+
+def test_document_fee_view_retrieval_excludes_price_schedule(monkeypatch):
+    retrieval_service.load_index_if_needed()
+    monkeypatch.setattr(embedding_service, "_mode", "offline_multimodal_fallback")
+
+    context, sources = retrieval_service.retrieve(
+        "How can I view document fee details?",
+        top_k=3,
+    )
+
+    assert sources
+    assert all(source["page"] == 188 for source in sources)
+    assert "payment status" in context.lower()
+    assert "Tender/Proposal Document Price" not in context
+
 def test_vague_question_falls_back_to_relevant_keyword_matches(monkeypatch):
     retrieval_service.load_index_if_needed()
     monkeypatch.setattr(embedding_service, "_mode", "offline_multimodal_fallback")
