@@ -34,11 +34,16 @@ export const SourceCitation: React.FC<SourceCitationProps> = ({ sources, onOpenP
             >
               <div className="flex items-center justify-between font-semibold text-emerald-900 dark:text-emerald-300">
                 <span className="flex items-center gap-1">
-                  📖 Page {src.page} — {src.source}
+                  {src.page != null
+                    ? `📖 Page ${src.page} — ${src.source}`
+                    : `📚 ${src.source}${src.module ? ` · ${src.module}` : ''}${src.question_number ? ` · Question ${src.question_number}` : ''}`}
                 </span>
-                {onOpenPage && (
+                {src.page != null && onOpenPage && (
                   <button
-                    onClick={() => onOpenPage(src.page)}
+                    onClick={() => {
+                      const page = src.page;
+                      if (page != null) onOpenPage(page);
+                    }}
                     className="flex items-center gap-1 text-[11px] text-emerald-700 hover:underline cursor-pointer"
                   >
                     View Page <ExternalLink className="w-3 h-3" />
@@ -61,4 +66,3 @@ export const SourceCitation: React.FC<SourceCitationProps> = ({ sources, onOpenP
     </div>
   );
 };
-

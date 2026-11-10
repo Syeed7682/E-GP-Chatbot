@@ -14,9 +14,9 @@ React 19 / Vite UI
 FastAPI
   ├─ POST /api/chat
   │    ├─ optional backend OCR for uploaded images
-  │    ├─ retrieval_service: FAISS + weighted keyword fusion
+  │    ├─ retrieval_service: PDF FAISS + weighted keyword fusion, plus supplemental Q&A text search
   │    ├─ LLM service: HF/local/offline fallback
-  │    └─ source/page citation response
+  │    └─ manual-page or Q&A module/question citations
   ├─ /api/manual/*: page chunks, page image, keyword search, PDF download
   └─ /api/sync/*: client chunk sync and mutation endpoints
 
@@ -25,6 +25,10 @@ Local corpus
                    -> FAISS IndexFlatIP (1,188 x 1,024)
                    -> metadata.json (1,188 records)
                    -> frontend bundled chunks (1,170 records)
+
+  data/raw/e-GP System Q&A.txt (1,000 numbered entries)
+                   -> startup parser and lexical question matching
+                   -> verbatim answer for a confident question match
 ```
 
 ## Application surfaces
@@ -40,8 +44,9 @@ Local corpus
 ### FastAPI backend
 
 - `backend/app/main.py` registers chat, health, manual, and sync routers under `/api`.
-- `backend/app/api/chat.py` is the active backend chat entry point. It sanitizes question/image input, runs optional OCR, calls `retrieval_service.retrieve`, invokes the LLM service, and returns page citations.
-- `backend/app/services/retrieval_service.py` embeds a query, retrieves dense FAISS candidates, ranks keywords with domain expansions, and combines scores using a weighted sum. It excludes pages 1–5 from dense results.
+- `backend/app/api/chat.py` is the active backend chat entry point. It sanitizes question/image input, runs optional OCR, calls `retrieval_service.retrieve`, returns confident supplemental Q&A answers verbatim, otherwise invokes the LLM service, and returns source citations.
+- `backend/app/services/retrieval_service.py` searches the supplemental Q&A text separately from the PDF index, embeds a query when the semantic provider is available, retrieves dense FAISS candidates, ranks PDF keywords with domain expansions, and combines PDF scores using a weighted sum. It excludes pages 1–5 from dense results.
+- `backend/app/services/qa_service.py` parses numbered `Question`/`Q:` blocks from `data/raw/e-GP System Q&A.txt`; Q&A references use module and question number, never a fabricated PDF page. The Q&A file is not added to or used to rebuild the existing FAISS index.
 - `backend/app/services/hybrid_retriever.py` and `reranker.py` implement a separate retriever/reranker path; the active chat route does not call these services. RRF and a BGE reranker are not currently verified in the request path.
 - `backend/app/services/llm_service.py` uses Qwen2.5-VL-3B-Instruct by default, optionally uses Liquid AI when explicitly selected, and falls back to offline extractive synthesis. `vision_service.py` uses available OCR libraries; image data is also sent to the selected vision-language model.
 - `backend/app/api/manual.py` serves page chunks, page images, keyword search, and the complete source PDF at `/api/manual/download`. Page images fall back to rendering the local PDF when no extracted image exists. `citation_service.py` maps citation pages to image endpoints.
@@ -51,6 +56,7 @@ Local corpus
 - Local source: `data/raw/egp_manual.pdf` (100,156,678 bytes; 543 pages). The PDF is present in the working tree but is not tracked by Git.
 - Processed corpus: `data/processed/chunks.json` (1,188 records; current schema includes `chunk_id`, `source`, `page`, `text`, `image_path`, and `content_type`).
 - Vector assets: `data/faiss_index/index.faiss` and `data/faiss_index/metadata.json`. The index contains 1,188 vectors at 1,024 dimensions; metadata has 1,188 records covering every page from 1 through 543.
+- Supplemental Q&A source: `data/raw/e-GP System Q&A.txt` contains 1,000 numbered entries across modules. The backend loads it using `QA_DATA_PATH` (default path above); it must be present in the backend deployment artifact.
 - These checks establish count and page coverage only. They do not prove embedding provenance, normalization, semantic quality, or citation accuracy.
 - Image assets exist under `data/extracted_images/`. A previous text scan found 10 image-heavy pages with fewer than 40 extracted characters (96, 98, 100, 102, 107, 108, 130, 365, 467, and 485); those pages remain OCR-review candidates. There is no verified OCR-by-page report or structured table output yet.
 - The current backend chunk schema omits `section_title` and `screen_references`; the existing `validate_chunks.py` consequently reports zero screen references. The frontend build script derives headings/screens separately from chunk text.

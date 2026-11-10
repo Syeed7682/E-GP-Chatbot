@@ -365,6 +365,7 @@ The project uses both backend document storage and frontend-bundled manual data.
 | File | Description |
 |---|---|
 | `data/raw/egp_manual.pdf` | Original 543-page manual |
+| `data/raw/e-GP System Q&A.txt` | Supplemental 1,000-question answer source |
 | `data/processed/chunks.json` | Extracted and processed document chunks |
 | `data/faiss_index/index.faiss` | FAISS vector index |
 | `data/faiss_index/metadata.json` | Vector-to-chunk metadata |

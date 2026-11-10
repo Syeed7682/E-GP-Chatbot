@@ -31,10 +31,13 @@ export interface PortalScreen {
 
 export interface ChatSourceCitation {
   source: string;
-  page: number;
-  chunk_id: number;
+  page?: number | null;
+  chunk_id?: number | null;
   score: number;
   snippet: string;
+  source_type?: 'manual' | 'qa';
+  question_number?: number | null;
+  module?: string | null;
   screen_reference?: string;
   image_path?: string | null;
 }

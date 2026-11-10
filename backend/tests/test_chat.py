@@ -22,6 +22,7 @@ from app.services.llm_service import is_vague_steps_request
 from app.services import retrieval_service as retrieval_service_module
 from app.services import vision_service as vision_service_module
 from app.services.llm_service import llm_service
+from app.services.qa_service import qa_service
 
 client = TestClient(app)
 
@@ -58,6 +59,62 @@ def test_screenshot_uses_qwen_by_default(monkeypatch):
     assert captured["use_alt_model"] is False
     assert captured["image_mime"] == "image/jpeg"
     assert "Qwen/Qwen2.5-VL-3B-Instruct" in response.json()["model_used"]
+
+def test_direct_q_and_a_match_returns_source_answer_verbatim(monkeypatch):
+    exact_answer = "Open My Account, select Verify NID, and follow the displayed instructions."
+    qa_source = {
+        "source": "e-GP System Q&A.txt",
+        "source_type": "qa",
+        "page": None,
+        "chunk_id": None,
+        "question_number": 1,
+        "module": "Portal Access",
+        "score": 1.0,
+        "snippet": exact_answer,
+        "answer": exact_answer,
+        "direct_match": True,
+        "image_path": None,
+    }
+    monkeypatch.setattr(
+        retrieval_service_module.retrieval_service,
+        "retrieve",
+        lambda *args, **kwargs: ("Q&A context", [qa_source]),
+    )
+    monkeypatch.setattr(
+        llm_service,
+        "generate_answer",
+        lambda *args, **kwargs: pytest.fail("A direct Q&A answer should not be rewritten by an LLM"),
+    )
+
+    response = client.post(
+        "/api/chat",
+        json={"question": "How do I verify my NID in e-GP?"},
+    )
+
+    assert response.status_code == 200
+    result = response.json()
+    assert result["answer"] == exact_answer
+    assert result["sources"][0]["source_type"] == "qa"
+    assert result["sources"][0]["page"] is None
+    assert result["sources"][0]["question_number"] == 1
+    assert result["model_used"] == "e-GP System Q&A.txt (verbatim)"
+
+def test_chat_returns_matching_file_answer_verbatim(monkeypatch):
+    question = "How to Verify National ID (NID) for PE and Vendor User Accounts?"
+    expected_answer = qa_service.search(question, limit=1)[0]["record"]["answer"]
+    monkeypatch.setattr(
+        llm_service,
+        "generate_answer",
+        lambda *args, **kwargs: pytest.fail("A matching Q&A entry should not be rewritten"),
+    )
+
+    response = client.post("/api/chat", json={"question": question})
+
+    assert response.status_code == 200
+    result = response.json()
+    assert result["answer"] == expected_answer
+    assert result["sources"][0]["source"] == "e-GP System Q&A.txt"
+    assert result["sources"][0]["question_number"] == 1
 
 def test_chat_health():
     res = client.get("/api/chat/health")
@@ -318,7 +375,7 @@ def test_model_prompt_enforces_manual_grounding_and_structured_answer_format():
     )
 
     assert answer == "The manual supports this conclusion."
-    assert "answer using only the supplied manual content" in client.messages[0]["content"].lower()
+    assert "answer using only the supplied official manual passages" in client.messages[0]["content"].lower()
     assert "markdown tables for fees" in client.messages[0]["content"].lower()
     assert "finish with a short **summary**" in client.messages[0]["content"].lower()
     assert "source** line with relevant manual section number(s)" in client.messages[0]["content"].lower()
@@ -355,7 +412,7 @@ def test_empty_context_is_passed_to_model_with_manual_only_grounding_rules():
     )
 
     assert answer == "General e-GP guidance."
-    assert "answer using only the supplied manual content" in client.messages[0]["content"].lower()
+    assert "answer using only the supplied official manual passages" in client.messages[0]["content"].lower()
     assert "politely decline questions unrelated to e-gp or public procurement" in client.messages[0]["content"].lower()
     assert "No relevant context found in manuals." in client.messages[1]["content"]
 

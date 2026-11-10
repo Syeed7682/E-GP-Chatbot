@@ -17,7 +17,7 @@ Returns general service status, retrieval-index readiness, chunk count, and conf
 
 ### `POST /api/chat`
 
-Ask a question grounded in the e-GP manual, optionally including a screenshot.
+Ask a question grounded in the e-GP manual and the supplemental Q&A text, optionally including a screenshot.
 
 Request:
 
@@ -35,7 +35,7 @@ Request:
 
 `question` is required by the request schema. `previous_question` supports short follow-ups such as asking for steps. An image may be supplied in `image_base64` or the compatibility field `image`. `top_k` is between 1 and 20. `use_alt_model` selects the optional Liquid AI model; otherwise Qwen is used.
 
-Successful responses contain `question`, `answer`, `sources`, `portal_screens`, `model_used`, and `was_offline`. Each source may include `source`, `page`, `chunk_id`, `score`, `snippet`, `screen_reference`, and `image_path`. Image paths point to the manual page image endpoint. In the FastAPI chat route, `was_offline` is false; local fallback is handled by the frontend/Express paths.
+Successful responses contain `question`, `answer`, `sources`, `portal_screens`, `model_used`, and `was_offline`. Each source may include `source`, `page`, `chunk_id`, `score`, `snippet`, `screen_reference`, `image_path`, `source_type`, `module`, and `question_number`. Manual sources have a PDF page. Q&A sources identify their module and question number and have no PDF page. When a Q&A entry clearly matches the question, `answer` is returned verbatim from that entry. In the FastAPI chat route, `was_offline` is false; local fallback is handled by the frontend/Express paths.
 
 ### `GET /api/chat/health`
 

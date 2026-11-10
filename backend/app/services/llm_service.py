@@ -121,7 +121,7 @@ def load_system_prompt() -> str:
 
     return (
         "You are the official assistant for the electronic Government Procurement (e-GP) system. "
-        "Answer using only supplied manual content and retrieved context; politely decline questions unrelated "
+        "Answer using only supplied official manual passages and supplemental e-GP Q&A context; politely decline questions unrelated "
         "to e-GP or public procurement. Preserve all values as written. If context is incomplete or unclear, state "
         "'The provided manual extract does not specify this information.' Format multi-part answers with headings, "
         "tables or bullets as appropriate, add a Summary when useful, and include a Source line only when section "
@@ -209,7 +209,7 @@ class LLMService:
         prompt_text = (
             f"Context from e-GP Manuals:\n{context}\n\n"
             f"User Question: {question}\n\n"
-            f"Follow the system instructions for answer structure. Use only supplied manual content. "
+            f"Follow the system instructions for answer structure. Use only supplied manual and supplemental Q&A content. "
             f"Include a Source line with section numbers only when the context provides them. "
             f"For fee tables, preserve the source's exact number formatting and keep fee categories separate."
         )
@@ -817,9 +817,9 @@ class LLMService:
             }
 
             prompt_text = (
-                f"Context from official Bangladesh e-GP Procuring Entity Manual (use as evidence; do not copy OCR artifacts):\n{context}\n\n"
+                f"Retrieved e-GP manual and supplemental Q&A context (use as evidence; do not copy OCR artifacts):\n{context}\n\n"
                 f"User Question: {question}\n\n"
-                f"Follow the system instructions for answer structure and use only supplied manual content. "
+                f"Follow the system instructions for answer structure and use only supplied manual and supplemental Q&A content. "
                 f"Include a Source line with section numbers only when present in the context. "
                 f"For fee tables, preserve exact number formatting and keep fee categories separate. "
                 f"Do not include internal scores or database details. Correct OCR only when the intended wording is clear."
@@ -878,7 +878,7 @@ class LLMService:
                     {"role": "system", "content": self.system_prompt},
                     {"role": "user", "content": (
                         f"Context from e-GP manual (use as evidence; do not copy OCR artifacts):\n{context}\n\n"
-                        f"Question: {question}\n\nFollow the system instructions for answer structure and use only supplied manual content. "
+                        f"Question: {question}\n\nFollow the system instructions for answer structure and use only supplied manual and supplemental Q&A content. "
                         f"Include a Source line with section numbers only when present. For fee tables, preserve exact number "
                         f"formatting and keep fee categories separate. Do not include internal scores or database details."
                     )}
@@ -914,9 +914,9 @@ class LLMService:
             client = InferenceClient(token=current_token, timeout=30)
 
             user_message = (
-                f"Context from official Bangladesh e-GP Procuring Entity Manual (use as evidence; do not copy OCR artifacts):\n{context}\n\n"
+                f"Retrieved e-GP manual and supplemental Q&A context (use as evidence; do not copy OCR artifacts):\n{context}\n\n"
                 f"User Question: {question}\n\n"
-                f"Follow the system instructions for answer structure and use only supplied manual content. "
+                f"Follow the system instructions for answer structure and use only supplied manual and supplemental Q&A content. "
                 f"Include a Source line with section numbers only when present. For fee tables, preserve exact number "
                 f"formatting and keep fee categories separate. Do not include internal scores or database details."
             )
@@ -1024,9 +1024,9 @@ class LLMService:
 
         if self._hf_client is not None:
             user_message = (
-                f"Context from official Bangladesh e-GP Procuring Entity Manual (use as evidence; do not copy OCR artifacts):\n{context}\n\n"
+                f"Retrieved e-GP manual and supplemental Q&A context (use as evidence; do not copy OCR artifacts):\n{context}\n\n"
                 f"User Question: {question}\n\n"
-                f"Follow the system instructions for answer structure and use only supplied manual content. "
+                f"Follow the system instructions for answer structure and use only supplied manual and supplemental Q&A content. "
                 f"Include a Source line with section numbers only when present. For fee tables, preserve exact number "
                 f"formatting and keep fee categories separate. Do not include internal scores or database details. "
                 f"Correct OCR only when the intended wording is clear."

@@ -10,6 +10,7 @@ from typing import List, Dict, Tuple, Optional, Any
 from collections import Counter
 from app.services.embedding_service import embedding_service
 from app.services.faiss_service import faiss_service
+from app.services.qa_service import qa_service
 
 STOPWORDS = {
     'a', 'about', 'above', 'after', 'again', 'against', 'all', 'am', 'an', 'and', 'any', 'are', 'aren',
@@ -123,9 +124,37 @@ class RetrievalService:
 
         return text
 
-    def __init__(self, emb_service=embedding_service, f_service=faiss_service):
+    def __init__(self, emb_service=embedding_service, f_service=faiss_service, q_service=qa_service):
         self.embedding_service = emb_service
         self.faiss_service = f_service
+        self.qa_service = q_service
+
+    @staticmethod
+    def _format_qa_matches(matches: List[Dict]) -> Tuple[str, List[Dict]]:
+        context_parts = []
+        sources = []
+        for match in matches:
+            record = match["record"]
+            score = match["score"]
+            context_parts.append(
+                f"[Supplemental Q&A: e-GP System Q&A.txt | Module: {record['module']} | "
+                f"Question {record['question_number']} | Relevance: {score:.2f}]\n"
+                f"Q: {record['question']}\nA:\n{record['answer']}"
+            )
+            sources.append({
+                "source": "e-GP System Q&A.txt",
+                "source_type": "qa",
+                "page": None,
+                "chunk_id": None,
+                "question_number": record["question_number"],
+                "module": record["module"],
+                "score": round(score, 2),
+                "snippet": record["answer"][:250] + ("..." if len(record["answer"]) > 250 else ""),
+                "answer": record["answer"],
+                "direct_match": match["direct_match"],
+                "image_path": None,
+            })
+        return "\n\n---\n\n".join(context_parts), sources
 
     def is_ready(self) -> bool:
         """Returns True if the FAISS index is loaded and ready to serve queries."""
@@ -338,12 +367,19 @@ class RetrievalService:
             - context_str: Formatted context block for the LLM prompt.
             - sources: List of structured source metadata dicts with image_path.
         """
+        qa_matches = self.qa_service.search(question, limit=1)
+        qa_context, qa_sources = self._format_qa_matches(qa_matches)
+
         if not self.load_index_if_needed():
+            if qa_context:
+                return qa_context, qa_sources
             return "No manual index is loaded. Please run ingestion and index building first.", []
 
         # Early guardrail: If text query has no substantive keywords and no image is attached
         raw_words = [w for w in re.findall(r'\w+', question.lower()) if w not in STOPWORDS]
         if not raw_words and image is None:
+            if qa_context:
+                return qa_context, qa_sources
             return "No relevant context found in manuals.", []
 
         # 1. FAISS Dense Retrieval; offline hash vectors are incompatible with a semantic index.
@@ -418,11 +454,15 @@ class RetrievalService:
                     }
 
         if not combined_scores:
+            if qa_context:
+                return qa_context, qa_sources
             return "No relevant context found in manuals.", []
 
         # Filter out irrelevant noise (e.g. non-procurement queries like "make a joke")
         raw_words = [w for w in re.findall(r'\w+', question.lower()) if w not in STOPWORDS]
         if not kw_results and (not raw_words or max_faiss < 0.35):
+            if qa_context:
+                return qa_context, qa_sources
             return "No relevant context found in manuals.", []
 
         # Sort and take top_k
@@ -495,7 +535,10 @@ class RetrievalService:
             })
 
         full_context_str = "\n\n---\n\n".join(context_parts)
-        return full_context_str, sources
+        if qa_context:
+            full_context_str = f"{qa_context}\n\n---\n\n{full_context_str}"
+            sources = qa_sources + sources
+        return full_context_str, sources[:max(top_k, 1)]
 
 
 # Singleton instance

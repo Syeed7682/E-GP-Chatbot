@@ -167,15 +167,15 @@ const ManualAnswerImage: React.FC<{ sources: ChatSourceCitation[] }> = ({ source
   const imageSources = Array.from(
     new Map(
       [
-        ...sources.filter((source) => source.screen_reference),
-        ...sources
+        ...sources.filter((source) => source.page != null && source.screen_reference),
+        ...sources.filter((source) => source.page != null)
       ].map((source) => [source.page, source])
     ).values()
   );
   const [pageIndex, setPageIndex] = useState(0);
   const source = imageSources[pageIndex];
 
-  if (!source) {
+  if (!source || source.page == null) {
     return (
       <p role="status" className="mt-2 text-xs text-amber-700">
         Manual page image unavailable. Check the public backend URL and ensure the manual PDF is installed on the backend.
@@ -200,12 +200,20 @@ const ManualAnswerImage: React.FC<{ sources: ChatSourceCitation[] }> = ({ source
 };
 
 const ManualReferences: React.FC<{ sources: ChatSourceCitation[] }> = ({ sources }) => {
-  const pages = Array.from(new Set(sources.map((source) => source.page))).slice(0, 4);
-  if (pages.length === 0) return null;
+  const pages = Array.from(new Set(sources.flatMap((source) => source.page == null ? [] : [source.page]))).slice(0, 4);
+  const qaReferences = Array.from(new Set(
+    sources
+      .filter((source) => source.source_type === 'qa' && source.question_number != null)
+      .map((source) => `${source.source}${source.module ? ` · ${source.module}` : ''} · Question ${source.question_number}`)
+  ));
+  if (pages.length === 0 && qaReferences.length === 0) return null;
 
   return (
     <p className="mt-2 text-xs text-slate-500">
-      Reference: Official e-GP Manual · {pages.map((page) => `p. ${page}`).join(', ')}
+      Reference: {[
+        ...(pages.length ? [`Official e-GP Manual · ${pages.map((page) => `p. ${page}`).join(', ')}`] : []),
+        ...qaReferences,
+      ].join('; ')}
     </p>
   );
 };

@@ -92,7 +92,12 @@ def test_login_step_retrieval_includes_full_pages():
         include_page_context=True,
     )
 
-    assert {source["page"] for source in sources}.issubset({6, 7, 8})
+    manual_pages = {
+        source["page"] for source in sources
+        if source.get("source_type") != "qa"
+    }
+    assert manual_pages.issubset({6, 7, 8})
+    assert any(source.get("source_type") == "qa" for source in sources)
     flattened_context = " ".join(context.split())
     assert "1.1 When accessing" in flattened_context
     assert "1.2 For users logging in for the first time" in flattened_context

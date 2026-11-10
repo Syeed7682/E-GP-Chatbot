@@ -60,22 +60,32 @@ async def ask_question(request: ChatRequest) -> ChatResponse:
         )
 
     # 3. Generate Answer: Auto-shift to Vision Engine if an image is provided
-    answer = llm_service.generate_answer(
-        answer_question or "Portal Screenshot Analysis",
-        context,
-        image=img_data,
-        use_alt_model=request.use_alt_model,
-        image_mime=request.image_mime or "image/png",
-    )
-    if not answer or not answer.strip():
-        answer = llm_service._offline_answer_generator(answer_question, context)
+    direct_qa_source = next(
+        (
+            source for source in raw_sources
+            if source.get("source_type") == "qa" and source.get("direct_match")
+        ),
+        None,
+    ) if not img_data else None
+    if direct_qa_source:
+        answer = direct_qa_source["answer"]
+    else:
+        answer = llm_service.generate_answer(
+            answer_question or "Portal Screenshot Analysis",
+            context,
+            image=img_data,
+            use_alt_model=request.use_alt_model,
+            image_mime=request.image_mime or "image/png",
+        )
+        if not answer or not answer.strip():
+            answer = llm_service._offline_answer_generator(answer_question, context)
 
     # 4. Format Sources with Screenshot URLs
     sources = []
     portal_screens = set()
     for s in raw_sources:
         page = s["page"]
-        img_url = citation_service.resolve_screenshot_path(page)
+        img_url = citation_service.resolve_screenshot_path(page) if page is not None else None
         
         # Collect screen references
         snippet = s["snippet"]
@@ -92,13 +102,16 @@ async def ask_question(request: ChatRequest) -> ChatResponse:
                 score=s["score"],
                 snippet=snippet,
                 screen_reference=sc_matches[0] if sc_matches else None,
-                image_path=img_url
+                image_path=img_url,
+                source_type=s.get("source_type", "manual"),
+                question_number=s.get("question_number"),
+                module=s.get("module"),
             )
         )
 
     # Determine which model label to show
-    model_label = f"{LLM_MODEL} (e-GP Grounded)"
-    if request.use_alt_model:
+    model_label = "e-GP System Q&A.txt (verbatim)" if direct_qa_source else f"{LLM_MODEL} (e-GP Grounded)"
+    if request.use_alt_model and not direct_qa_source:
         from app.services.llm_service import ALT_VL_MODEL
         model_label = f"{ALT_VL_MODEL} (Optional Liquid AI)"
 

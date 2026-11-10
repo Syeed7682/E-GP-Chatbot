@@ -12,6 +12,7 @@ Deploy the repository's `backend/` application to a Python service that can acce
 
 - `data/faiss_index/index.faiss`
 - `data/faiss_index/metadata.json`
+- `data/raw/e-GP System Q&A.txt` for supplemental question-and-answer retrieval.
 - The official manual PDF under `data/raw/` if PDF download or PDF-rendered page images are required.
 - Any extracted page images used by the manual viewer.
 
@@ -35,12 +36,15 @@ Set these backend environment variables in the backend host's secret/configurati
 | `GROQ_API_KEY` | Optional text-only fallback when Hugging Face and Gemini are unavailable |
 | `CORS_ORIGINS` | Comma-separated exact Netlify production and custom-domain origins, e.g. `https://example.netlify.app,https://assistant.example.org` |
 | `DATA_RAW_DIR` | Directory containing the manual PDF; defaults to `data/raw` relative to the project root |
+| `QA_DATA_PATH` | Supplemental Q&A text path; defaults to `data/raw/e-GP System Q&A.txt` |
 | `FAISS_INDEX_PATH` | FAISS index path; defaults to `data/faiss_index/index.faiss` |
 | `FAISS_METADATA_PATH` | FAISS metadata path; defaults to `data/faiss_index/metadata.json` |
 
 Keep all AI tokens on the backend. Do not configure provider credentials as `VITE_*` variables.
 
 Answer generation tries Hugging Face first, then Gemini when `GEMINI_API_KEY` is configured, then Groq for text-only questions when `GROQ_API_KEY` is configured. If no hosted provider succeeds, the backend uses its manual-grounded offline synthesis. Hugging Face embedding-provider credits are separate from these answer-model credentials; without embedding access, retrieval switches to keyword-only mode.
+
+The Q&A text is parsed into numbered question/answer records at backend startup and searched separately from the PDF's FAISS index. A clear match returns that Q&A answer verbatim; citations identify its module and question number, not a PDF page. Include this text file in the backend deployment artifact or configure `QA_DATA_PATH` to its mounted location.
 
 Before connecting Netlify, verify:
 

@@ -17,14 +17,17 @@ class ChatRequest(BaseModel):
     use_alt_model: bool = Field(False, description="Use the optional Liquid AI vision-language model instead of Qwen")
 
 class SourceDocument(BaseModel):
-    """Source manual passage reference citation."""
+    """Reference to a manual passage or supplemental Q&A entry."""
     source: str = Field("Official e-GP Procuring Entity Manual", description="Document name")
-    page: int = Field(..., description="Page number in official PDF")
-    chunk_id: int = Field(..., description="Unique chunk index")
+    page: Optional[int] = Field(None, description="Page number in official PDF, when applicable")
+    chunk_id: Optional[int] = Field(None, description="Unique indexed chunk, when applicable")
     score: float = Field(..., description="Relevance similarity score")
     snippet: str = Field(..., description="Representative excerpt text")
     screen_reference: Optional[str] = Field(None, description="Portal screen identifier (e.g. Screen - D50)")
     image_path: Optional[str] = Field(None, description="Extracted screenshot image path if available")
+    source_type: str = Field("manual", description="Source kind: manual or qa")
+    question_number: Optional[int] = Field(None, description="Question number for supplemental Q&A sources")
+    module: Optional[str] = Field(None, description="Module title for supplemental Q&A sources")
 
 class ChatResponse(BaseModel):
     """Chatbot response containing answer and citations."""
