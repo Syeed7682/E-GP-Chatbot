@@ -83,7 +83,9 @@ const FormattedGovtText: React.FC<{ text: string; onOpenScreenModal?: (screenId:
       flushList();
       const title = trimmed.replace(/^###\s+/, '');
       elements.push(
-        <h4 key={`h3-${idx}`} className="font-semibold text-sm text-slate-800">{title}</h4>
+        <h4 key={`h3-${idx}`} className="font-semibold text-sm text-slate-800">
+          {renderInlineStyles(title)}
+        </h4>
       );
       return;
     }
@@ -92,7 +94,19 @@ const FormattedGovtText: React.FC<{ text: string; onOpenScreenModal?: (screenId:
       flushList();
       const title = trimmed.replace(/^####\s+/, '');
       elements.push(
-        <h5 key={`h4-${idx}`} className="font-semibold text-slate-800">{title}</h5>
+        <h5 key={`h4-${idx}`} className="font-semibold text-slate-800">
+          {renderInlineStyles(title)}
+        </h5>
+      );
+      return;
+    }
+
+    if (trimmed.length <= 100 && /^[^:]+:\s*$/.test(trimmed)) {
+      flushList();
+      elements.push(
+        <p key={`label-${idx}`} className="font-semibold text-slate-800">
+          {renderInlineStyles(trimmed.replace(/\s+:/, ':'))}
+        </p>
       );
       return;
     }
