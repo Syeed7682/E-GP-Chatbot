@@ -24,6 +24,7 @@ export default function App() {
   const [inputQuestion, setInputQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'chat' | 'guide'>('chat');
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [language, setLanguage] = useState<'en' | 'bn'>('en');
   const [backendError, setBackendError] = useState<string | null>(null);
   const [uploadedImage, setUploadedImage] = useState<{ base64: string; name: string; mime: string } | null>(null);
@@ -180,6 +181,7 @@ export default function App() {
   };
 
   const handleSelectSuggestedQuestion = (q: string) => {
+    setIsMobileSidebarOpen(false);
     setActiveTab('chat');
     setInputQuestion(q);
     handleSendMessage(q);
@@ -203,6 +205,7 @@ export default function App() {
       {/* 1. Government-Style Header */}
       <GovtOfficialHeader
         syncState={syncState}
+        onOpenMobileMenu={() => setIsMobileSidebarOpen(true)}
         activeTab={activeTab}
         setActiveTab={(tab) => {
           setActiveTab(tab);
@@ -217,10 +220,12 @@ export default function App() {
       />
 
       {/* 2. Main Content Container */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row max-w-[1750px] w-full mx-auto shadow-sm border-x border-white/60 bg-white/55 backdrop-blur-xl">
+      <div className="mx-auto flex min-h-0 w-full min-w-0 max-w-[1750px] flex-1 flex-col overflow-hidden border-x border-white/60 bg-white/55 shadow-sm backdrop-blur-xl md:flex-row">
         {/* Navigation / Sidebar Panel */}
         <GovtOfficialSidebar
           syncState={syncState}
+          isMobileOpen={isMobileSidebarOpen}
+          onCloseMobile={() => setIsMobileSidebarOpen(false)}
           onSelectSuggestedQuestion={handleSelectSuggestedQuestion}
           onNewChat={handleNewChat}
           onClearConversation={handleClearConversation}

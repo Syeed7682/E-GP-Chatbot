@@ -160,7 +160,7 @@ const FormattedGovtText: React.FC<{ text: string; onOpenScreenModal?: (screenId:
 
   flushList();
 
-  return <div className="space-y-1">{elements}</div>;
+  return <div className="min-w-0 space-y-1 break-words [overflow-wrap:anywhere]">{elements}</div>;
 };
 
 const ManualAnswerImage: React.FC<{ sources: ChatSourceCitation[] }> = ({ sources }) => {
@@ -276,17 +276,17 @@ export const GovtChatArea: React.FC<GovtChatAreaProps> = ({
   return (
     <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-white/25 text-slate-800">
       {/* Messages Stream */}
-      <div className="min-h-0 flex-1 overflow-y-auto bg-transparent p-4 md:p-6 space-y-4">
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto bg-transparent p-3 sm:p-4 md:p-6">
         {messages.map((msg) => {
           const isUser = msg.sender === 'user';
 
           return (
             <div
               key={msg.id}
-              className={`mx-auto flex w-full max-w-3xl ${isUser ? 'justify-end' : 'justify-start'}`}
+              className={`mx-auto flex w-full min-w-0 max-w-3xl ${isUser ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-[85%] space-y-2 rounded-2xl px-4 py-3 ${
+                className={`min-w-0 max-w-[94%] space-y-2 rounded-2xl px-3 py-3 sm:max-w-[85%] sm:px-4 ${
                   isUser
                     ? 'rounded-tr-md bg-[#3568D4] text-white'
                     : 'rounded-tl-md border border-white/70 bg-white/55 text-slate-800 shadow-sm backdrop-blur-lg'
@@ -353,7 +353,7 @@ export const GovtChatArea: React.FC<GovtChatAreaProps> = ({
       </div>
 
       {/* Input Form Area */}
-      <div className="border-t border-white/70 bg-white/45 p-4 backdrop-blur-xl">
+      <div className="border-t border-white/70 bg-white/45 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl sm:p-4 sm:pb-[max(1rem,env(safe-area-inset-bottom))]">
         <div className="mx-auto max-w-3xl">
           {uploadedImage && (
             <div className="mb-2.5 inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-700">
