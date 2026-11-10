@@ -3,6 +3,7 @@ import logging
 import math
 import re
 from difflib import SequenceMatcher
+from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Dict, List, Optional, Set
 
@@ -118,60 +119,153 @@ def parse_qa_text(text: str) -> List[Dict]:
 
 
 class QAService:
-    def __init__(self, path: Optional[Path] = None):
+    """Builds sparse TF-IDF vectors and inverted indexes for supplemental Q&A documents."""
+
+    def __init__(self, path: Optional[Path] = None, docx_path: Optional[Path] = None):
         self.path = path or settings.QA_DATA_PATH
+        self.docx_path = docx_path if path is None else None
+        if path is None and self.docx_path is None:
+            self.docx_path = settings.QA_DOCX_PATH
         self.records: List[Dict] = []
-        self._record_tokens: List[Set[str]] = []
+        self._question_tokens: List[Set[str]] = []
+        self._answer_tokens: List[Set[str]] = []
+        self._question_vectors: List[Dict[str, float]] = []
+        self._answer_vectors: List[Dict[str, float]] = []
+        self._question_postings: Dict[str, Set[int]] = defaultdict(set)
+        self._answer_postings: Dict[str, Set[int]] = defaultdict(set)
+        self._document_frequency: Counter[str] = Counter()
         self._load()
 
     def _load(self) -> None:
-        if not self.path.is_file():
-            logger.warning("Supplemental e-GP Q&A file is missing: %s", self.path)
+        parsed_sources = []
+        for path in (self.path, self.docx_path):
+            if path is None:
+                continue
+            if not path.is_file():
+                if path == self.path:
+                    logger.warning("Supplemental e-GP Q&A file is missing: %s", path)
+                continue
+            if path.suffix.lower() == ".docx":
+                from docx import Document
+
+                text = "\n".join(paragraph.text for paragraph in Document(path).paragraphs)
+            else:
+                text = path.read_text(encoding="utf-8-sig")
+            parsed_sources.append((path.name, parse_qa_text(text)))
+
+        if not parsed_sources:
             return
 
-        text = self.path.read_text(encoding="utf-8-sig")
-        self.records = parse_qa_text(text)
-        self._record_tokens = [
-            _search_tokens(f"{record['title']} {record['question']}")
-            for record in self.records
-        ]
-        logger.info("Loaded %s supplemental e-GP Q&A records from %s", len(self.records), self.path)
+        records_by_key: Dict[tuple[int, str], Dict] = {}
+        for source_name, source_records in parsed_sources:
+            for record in source_records:
+                key = (
+                    record["question_number"],
+                    " ".join(sorted(_search_tokens(record["question"]))),
+                )
+                existing = records_by_key.get(key)
+                if existing is None:
+                    records_by_key[key] = {
+                        **record,
+                        "source": source_name,
+                        "source_files": [source_name],
+                    }
+                elif source_name not in existing["source_files"]:
+                    existing["source_files"].append(source_name)
+
+        self.records = sorted(records_by_key.values(), key=lambda record: record["question_number"])
+        self._build_index()
+        logger.info(
+            "Loaded and indexed %s supplemental Q&A records from %s (%s question terms, %s answer terms)",
+            len(self.records),
+            ", ".join(name for name, _ in parsed_sources),
+            len(self._question_postings),
+            len(self._answer_postings),
+        )
+
+    def _build_index(self) -> None:
+        self._question_tokens.clear()
+        self._answer_tokens.clear()
+        self._question_vectors.clear()
+        self._answer_vectors.clear()
+        self._question_postings.clear()
+        self._answer_postings.clear()
+        self._document_frequency.clear()
+
+        for record_id, record in enumerate(self.records):
+            question_tokens = _search_tokens(f"{record['title']} {record['question']}")
+            answer_tokens = _search_tokens(record["answer"])
+            self._question_tokens.append(question_tokens)
+            self._answer_tokens.append(answer_tokens)
+
+            for token in question_tokens:
+                self._question_postings[token].add(record_id)
+            for token in answer_tokens:
+                self._answer_postings[token].add(record_id)
+            for token in question_tokens | answer_tokens:
+                self._document_frequency[token] += 1
+
+        document_count = len(self.records)
+
+        def idf(token: str) -> float:
+            frequency = self._document_frequency[token]
+            return 1.0 + math.log((document_count + 1) / (frequency + 1))
+
+        def vectorize(tokens: Set[str]) -> Dict[str, float]:
+            weights = {token: idf(token) for token in tokens}
+            norm = math.sqrt(sum(weight * weight for weight in weights.values()))
+            return {token: weight / norm for token, weight in weights.items()} if norm else {}
+
+        for question_tokens, answer_tokens in zip(self._question_tokens, self._answer_tokens):
+            self._question_vectors.append(vectorize(question_tokens))
+            self._answer_vectors.append(vectorize(answer_tokens))
 
     def search(self, query: str, limit: int = 3) -> List[Dict]:
         query_tokens = _search_tokens(query)
         if len(query_tokens) < 2 or not self.records or limit < 1:
             return []
 
-        document_frequency: Dict[str, int] = {}
-        for tokens in self._record_tokens:
-            for token in tokens:
-                document_frequency[token] = document_frequency.get(token, 0) + 1
-
-        def idf(token: str) -> float:
-            count = document_frequency.get(token, 0)
-            return 1.0 + math.log((len(self.records) + 1) / (count + 1))
-
-        query_weight = sum(idf(token) for token in query_tokens)
+        query_weights = {
+            token: 1.0 + math.log((len(self.records) + 1) / (self._document_frequency.get(token, 0) + 1))
+            for token in query_tokens
+        }
+        query_norm = math.sqrt(sum(weight * weight for weight in query_weights.values()))
+        query_vector = {
+            token: weight / query_norm
+            for token, weight in query_weights.items()
+        } if query_norm else {}
         normalized_query = " ".join(sorted(query_tokens))
         matches = []
-        for record, record_tokens in zip(self.records, self._record_tokens):
-            common = query_tokens & record_tokens
-            if not common:
+        candidate_ids: Set[int] = set()
+        for token in query_tokens:
+            candidate_ids.update(self._question_postings.get(token, ()))
+            candidate_ids.update(self._answer_postings.get(token, ()))
+
+        for record_id in candidate_ids:
+            record = self.records[record_id]
+            question_tokens = self._question_tokens[record_id]
+            answer_tokens = self._answer_tokens[record_id]
+            question_matches = query_tokens & question_tokens
+            answer_matches = query_tokens & answer_tokens
+            if not question_matches and not answer_matches:
                 continue
 
-            matched_weight = sum(idf(token) for token in common)
-            candidate_weight = sum(idf(token) for token in record_tokens)
-            coverage = matched_weight / query_weight if query_weight else 0.0
-            precision = matched_weight / candidate_weight if candidate_weight else 0.0
-            candidate_text = " ".join(sorted(record_tokens))
+            question_similarity = sum(
+                query_vector.get(token, 0.0) * self._question_vectors[record_id].get(token, 0.0)
+                for token in query_tokens
+            )
+            answer_similarity = sum(
+                query_vector.get(token, 0.0) * self._answer_vectors[record_id].get(token, 0.0)
+                for token in query_tokens
+            )
+            coverage = len(question_matches) / len(query_tokens)
+            answer_coverage = len(answer_matches) / len(query_tokens)
+            candidate_text = " ".join(sorted(question_tokens))
             similarity = SequenceMatcher(None, normalized_query, candidate_text).ratio()
-            score = min(1.0, 0.72 * coverage + 0.18 * precision + 0.10 * similarity)
-            direct_match = (
-                len(query_tokens) >= 2
-                and coverage >= 0.80
-                and score >= 0.68
-            ) or (len(query_tokens) >= 2 and similarity >= 0.90)
-
+            question_score = 0.70 * question_similarity + 0.20 * answer_similarity + 0.10 * similarity
+            answer_score = 0.65 * answer_similarity + 0.35 * answer_coverage
+            score = min(1.0, max(question_score, answer_score))
+            direct_match = coverage >= 0.75 and question_similarity >= 0.68
             matches.append({
                 "record": record,
                 "score": score,

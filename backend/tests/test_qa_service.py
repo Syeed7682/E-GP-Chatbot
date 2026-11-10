@@ -50,9 +50,17 @@ def test_parser_rejects_incomplete_qa_entries():
 
 
 def test_q_and_a_file_has_one_thousand_records_and_matches_verbatim():
-    service = QAService(settings.QA_DATA_PATH)
+    service = QAService()
 
     assert len(service.records) == 1000
+    assert service.records[0]["source_files"] == [
+        "e-GP System Q&A.txt",
+        "e-GP System Q&A .docx",
+    ]
+    assert service._question_postings["national"]
+    assert service._answer_postings["captcha"]
+    assert len(service._question_vectors) == 1000
+    assert service._question_vectors[0]
     result = service.search(
         "How to Verify National ID (NID) for PE and Vendor User Accounts?",
         limit=1,
@@ -61,6 +69,7 @@ def test_q_and_a_file_has_one_thousand_records_and_matches_verbatim():
     assert len(result) == 1
     assert result[0]["record"]["question_number"] == 1
     assert result[0]["direct_match"] is True
+    assert result[0]["record"]["question_number"] == 1
     assert result[0]["record"]["answer"].startswith(
         "To verify your National ID (NID) in the e-GP system, follow these step-by-step instructions:"
     )
@@ -74,7 +83,7 @@ def test_q_and_a_search_does_not_match_unrelated_terms():
 
 
 def test_q_and_a_search_matches_a_paraphrased_password_change_question():
-    service = QAService(settings.QA_DATA_PATH)
+    service = QAService()
 
     result = service.search("How to log in for the first time and change password?", limit=1)
 
@@ -83,8 +92,17 @@ def test_q_and_a_search_matches_a_paraphrased_password_change_question():
     assert result[0]["direct_match"] is True
 
 
+def test_q_and_a_search_can_retrieve_a_match_using_answer_terms():
+    service = QAService()
+
+    result = service.search("NID captcha attempts", limit=3)
+
+    assert result
+    assert result[0]["record"]["question_number"] == 1
+
+
 def test_retrieval_returns_confident_q_and_a_without_loading_faiss():
-    service = QAService(settings.QA_DATA_PATH)
+    service = QAService()
 
     class EmptyFaiss:
         index = None
@@ -104,7 +122,7 @@ def test_retrieval_returns_confident_q_and_a_without_loading_faiss():
         top_k=3,
     )
 
-    assert "Supplemental Q&A: e-GP System Q&A.txt" in context
+    assert "Supplemental Q&A: e-GP System Q&A.txt, e-GP System Q&A .docx" in context
     assert "Question 1" in context
     assert sources[0]["direct_match"] is True
     assert sources[0]["question_number"] == 1

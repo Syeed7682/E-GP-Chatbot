@@ -136,13 +136,15 @@ class RetrievalService:
         for match in matches:
             record = match["record"]
             score = match["score"]
+            source_files = record.get("source_files", [record["source"]])
             context_parts.append(
-                f"[Supplemental Q&A: e-GP System Q&A.txt | Module: {record['module']} | "
+                f"[Supplemental Q&A: {', '.join(source_files)} | Module: {record['module']} | "
                 f"Question {record['question_number']} | Relevance: {score:.2f}]\n"
                 f"Q: {record['question']}\nA:\n{record['answer']}"
             )
             sources.append({
                 "source": "e-GP System Q&A.txt",
+                "source_files": source_files,
                 "source_type": "qa",
                 "page": None,
                 "chunk_id": None,
@@ -367,7 +369,7 @@ class RetrievalService:
             - context_str: Formatted context block for the LLM prompt.
             - sources: List of structured source metadata dicts with image_path.
         """
-        qa_matches = self.qa_service.search(question, limit=1)
+        qa_matches = self.qa_service.search(question, limit=min(max(top_k, 1), 3))
         qa_context, qa_sources = self._format_qa_matches(qa_matches)
 
         if not self.load_index_if_needed():

@@ -45,6 +45,7 @@ class Settings:
     PROJECT_ROOT: Path = ROOT_DIR
     DATA_RAW_DIR: Path = ROOT_DIR / os.getenv("DATA_RAW_DIR", "data/raw")
     QA_DATA_PATH: Path = ROOT_DIR / os.getenv("QA_DATA_PATH", "data/raw/e-GP System Q&A.txt")
+    QA_DOCX_PATH: Path = ROOT_DIR / os.getenv("QA_DOCX_PATH", "data/raw/e-GP System Q&A .docx")
     PROCESSED_DATA_PATH: Path = ROOT_DIR / os.getenv("PROCESSED_DATA_PATH", "data/processed/chunks.json")
     FAISS_INDEX_PATH: Path = ROOT_DIR / os.getenv("FAISS_INDEX_PATH", "data/faiss_index/index.faiss")
     FAISS_METADATA_PATH: Path = ROOT_DIR / os.getenv("FAISS_METADATA_PATH", "data/faiss_index/metadata.json")

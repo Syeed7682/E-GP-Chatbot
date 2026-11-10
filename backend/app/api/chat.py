@@ -2,6 +2,7 @@
 Chat API Router (app/api/chat.py).
 Handles chat queries with OCR vision extraction, hybrid retrieval, and grounded Qwen LLM answering.
 """
+import re
 from typing import List, Dict, Any
 from fastapi import APIRouter, HTTPException, Query
 from app.schemas.chat import ChatRequest, ChatResponse, SourceDocument, HealthResponse
@@ -67,6 +68,7 @@ async def ask_question(request: ChatRequest) -> ChatResponse:
         ),
         None,
     ) if not img_data else None
+    answer_qa_source = direct_qa_source
     if direct_qa_source:
         answer = direct_qa_source["answer"]
     else:
@@ -79,6 +81,23 @@ async def ask_question(request: ChatRequest) -> ChatResponse:
         )
         if not answer or not answer.strip():
             answer = llm_service._offline_answer_generator(answer_question, context)
+        has_retrieval_header = re.search(
+            r"^\s*\[?(?:Supplemental Q&A|Manual)\s*:",
+            answer,
+            re.IGNORECASE | re.MULTILINE,
+        )
+        has_question_answer_labels = (
+            re.search(r"^\s*Q\s*:", answer, re.IGNORECASE | re.MULTILINE)
+            and re.search(r"^\s*A\s*:", answer, re.IGNORECASE | re.MULTILINE)
+        )
+        if has_retrieval_header or has_question_answer_labels:
+            matched_qa = next(
+                (source for source in raw_sources if source.get("source_type") == "qa"),
+                None,
+            )
+            if matched_qa:
+                answer = matched_qa["answer"]
+                answer_qa_source = matched_qa
 
     # 4. Format Sources with Screenshot URLs
     sources = []
@@ -89,7 +108,6 @@ async def ask_question(request: ChatRequest) -> ChatResponse:
         
         # Collect screen references
         snippet = s["snippet"]
-        import re
         sc_matches = re.findall(r'Screen\s*[-–—:]\s*[A-Za-z0-9_.]+', snippet, re.IGNORECASE)
         for sc in sc_matches:
             portal_screens.add(sc)
@@ -104,14 +122,15 @@ async def ask_question(request: ChatRequest) -> ChatResponse:
                 screen_reference=sc_matches[0] if sc_matches else None,
                 image_path=img_url,
                 source_type=s.get("source_type", "manual"),
+                source_files=s.get("source_files", []),
                 question_number=s.get("question_number"),
                 module=s.get("module"),
             )
         )
 
     # Determine which model label to show
-    model_label = "e-GP System Q&A.txt (verbatim)" if direct_qa_source else f"{LLM_MODEL} (e-GP Grounded)"
-    if request.use_alt_model and not direct_qa_source:
+    model_label = "e-GP System Q&A.txt (verbatim)" if answer_qa_source else f"{LLM_MODEL} (e-GP Grounded)"
+    if request.use_alt_model and not answer_qa_source:
         from app.services.llm_service import ALT_VL_MODEL
         model_label = f"{ALT_VL_MODEL} (Optional Liquid AI)"
 

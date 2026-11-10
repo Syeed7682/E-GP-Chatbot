@@ -26,6 +26,7 @@ class SourceDocument(BaseModel):
     screen_reference: Optional[str] = Field(None, description="Portal screen identifier (e.g. Screen - D50)")
     image_path: Optional[str] = Field(None, description="Extracted screenshot image path if available")
     source_type: str = Field("manual", description="Source kind: manual or qa")
+    source_files: List[str] = Field(default_factory=list, description="Files containing the source content")
     question_number: Optional[int] = Field(None, description="Question number for supplemental Q&A sources")
     module: Optional[str] = Field(None, description="Module title for supplemental Q&A sources")
 

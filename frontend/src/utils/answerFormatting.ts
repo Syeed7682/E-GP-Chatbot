@@ -46,15 +46,18 @@ export function formatAssistantAnswer(text: string): string {
   });
   const hadNumberedItems = balancedMarkdownLines.some((line) => /^(?:\*\*)?\d+(?:\.\d+)*[.)](?:\*\*)?\s+/.test(line));
   const cleanedLines = balancedMarkdownLines
-    .map((line) => line
-      .replace(/^Screen\s*[-–—:]\s*[A-Za-z0-9.]+\s+\d+(?:\.\d+)*\s*/i, '')
-      .replace(/^Screen\s*[-–—:]\s*[A-Za-z0-9.]+\s*/i, '')
-      .replace(/^\(?As shown in Screen\s*[-–—:]\s*[A-Za-z0-9.]+\)?[.!]?\s*$/i, '')
-      .replace(/\s*\(?\s*Page\s+\d+(?:\s*[-–—,]\s*\d+)*\s*\)?/gi, '')
-      .replace(/\s+within the login\.?$/i, '')
-      .replace(/\s+/g, ' ')
-      .replace(/^[^A-Za-z0-9]+/, '')
-      .trim())
+    .map((line) => {
+      const preserveMarkdownPrefix = /^(?:[-*•]\s|#{1,6}\s|\*\*|\d+[.)]\s)/.test(line);
+      const cleanedLine = line
+        .replace(/^Screen\s*[-–—:]\s*[A-Za-z0-9.]+\s+\d+(?:\.\d+)*\s*/i, '')
+        .replace(/^Screen\s*[-–—:]\s*[A-Za-z0-9.]+\s*/i, '')
+        .replace(/^\(?As shown in Screen\s*[-–—:]\s*[A-Za-z0-9.]+\)?[.!]?\s*$/i, '')
+        .replace(/\s*\(?\s*Page\s+\d+(?:\s*[-–—,]\s*\d+)*\s*\)?/gi, '')
+        .replace(/\s+within the login\.?$/i, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      return preserveMarkdownPrefix ? cleanedLine : cleanedLine.replace(/^[^A-Za-z0-9#]+/, '');
+    })
     .filter((line) => line.length > 0)
     .filter((line) => !/^This message signifies\b/i.test(line))
     .filter((line) => !/^[a-z]\s+Changed successfully/.test(line))

@@ -117,7 +117,7 @@ const FormattedGovtText: React.FC<{ text: string; onOpenScreenModal?: (screenId:
       return;
     }
 
-    if (trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
+    if (trimmed.startsWith('- ') || trimmed.startsWith('* ') || trimmed.startsWith('• ')) {
       const content = trimmed.substring(2);
       currentList.push(
         <li key={`li-${idx}`} className="flex items-start gap-2 text-sm text-slate-700 leading-relaxed">
@@ -174,6 +174,8 @@ const ManualAnswerImage: React.FC<{ sources: ChatSourceCitation[] }> = ({ source
   );
   const [pageIndex, setPageIndex] = useState(0);
   const source = imageSources[pageIndex];
+
+  if (imageSources.length === 0) return null;
 
   if (!source || source.page == null) {
     return (

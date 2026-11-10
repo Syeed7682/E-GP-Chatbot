@@ -36,6 +36,7 @@ export interface ChatSourceCitation {
   score: number;
   snippet: string;
   source_type?: 'manual' | 'qa';
+  source_files?: string[];
   question_number?: number | null;
   module?: string | null;
   screen_reference?: string;

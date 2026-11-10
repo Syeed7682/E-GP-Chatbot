@@ -116,6 +116,90 @@ def test_chat_returns_matching_file_answer_verbatim(monkeypatch):
     assert result["sources"][0]["source"] == "e-GP System Q&A.txt"
     assert result["sources"][0]["question_number"] == 1
 
+def test_related_q_and_a_entry_is_sent_to_the_answer_model(monkeypatch):
+    captured = {}
+    answer_text = "Follow the Q&A instructions and verify the submitted details."
+    qa_source = {
+        "source": "e-GP System Q&A.txt",
+        "source_type": "qa",
+        "page": None,
+        "chunk_id": None,
+        "question_number": 2,
+        "module": "Portal Access",
+        "score": 0.62,
+        "snippet": answer_text,
+        "answer": answer_text,
+        "direct_match": False,
+        "image_path": None,
+    }
+    context = (
+        "[Supplemental Q&A: e-GP System Q&A.txt | Module: Portal Access | Question 2]\n"
+        "Q: How do I verify a mobile number?\nA:\n" + answer_text
+    )
+    monkeypatch.setattr(
+        retrieval_service_module.retrieval_service,
+        "retrieve",
+        lambda *args, **kwargs: (context, [qa_source]),
+    )
+
+    def fake_generate(question, retrieved_context, **kwargs):
+        captured["context"] = retrieved_context
+        return "Generated answer from the retrieved Q&A."
+
+    monkeypatch.setattr(llm_service, "generate_answer", fake_generate)
+
+    response = client.post(
+        "/api/chat",
+        json={"question": "Can you explain mobile verification?"},
+    )
+
+    assert response.status_code == 200
+    assert captured["context"] == context
+    assert "e-GP System Q&A.txt" in captured["context"]
+    assert answer_text in captured["context"]
+    assert response.json()["answer"] == "Generated answer from the retrieved Q&A."
+
+def test_chat_replaces_retrieval_context_echo_with_the_q_and_a_answer(monkeypatch):
+    answer_text = "Navigate to e-CMS, open Physical Progress, and generate the invoice."
+    qa_source = {
+        "source": "e-GP System Q&A.txt",
+        "source_type": "qa",
+        "page": None,
+        "chunk_id": None,
+        "question_number": 801,
+        "module": "e-CMS Physical Progress",
+        "score": 0.26,
+        "snippet": answer_text,
+        "answer": answer_text,
+        "direct_match": False,
+        "image_path": None,
+    }
+    monkeypatch.setattr(
+        retrieval_service_module.retrieval_service,
+        "retrieve",
+        lambda *args, **kwargs: ("[Supplemental Q&A: e-GP System Q&A.txt | Relevance: 0.26]\nQ: ...\nA:\n" + answer_text, [qa_source]),
+    )
+    monkeypatch.setattr(
+        llm_service,
+        "generate_answer",
+        lambda *args, **kwargs: (
+            "Supplemental Q&A: e-GP System Q&A.txt | Module: e-CMS Physical Progress\n"
+            "Q: How do I process the payment?\nA: " + answer_text
+        ),
+    )
+
+    response = client.post(
+        "/api/chat",
+        json={"question": "Paypoint Acceptance and Payment Disbursement?"},
+    )
+
+    assert response.status_code == 200
+    result = response.json()
+    assert result["answer"] == answer_text
+    assert "Relevance:" not in result["answer"]
+    assert result["sources"][0]["question_number"] == 801
+    assert result["model_used"] == "e-GP System Q&A.txt (verbatim)"
+
 def test_chat_health():
     res = client.get("/api/chat/health")
     assert res.status_code == 200
