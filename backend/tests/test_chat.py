@@ -274,6 +274,17 @@ def test_chat_health():
     assert data["status"] in ("healthy", "index_not_loaded")
     print("[PASS] Chat health check")
 
+def test_chat_question_suggestions_include_all_q_and_a_questions():
+    response = client.get("/api/chat/questions")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total"] == 1000
+    assert len(data["questions"]) == 1000
+    assert data["questions"][0]["question_number"] == 1
+    assert data["questions"][0]["question"]
+    assert data["questions"][0]["module"]
+
 def test_chat_debarment():
     res = client.post("/api/chat", json={"question": "what is debarment?", "top_k": 3})
     assert res.status_code == 200

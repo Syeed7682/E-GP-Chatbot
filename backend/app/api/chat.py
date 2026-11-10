@@ -7,6 +7,7 @@ from typing import List, Dict, Any
 from fastapi import APIRouter, HTTPException, Query
 from app.schemas.chat import ChatRequest, ChatResponse, SourceDocument, HealthResponse
 from app.services.retrieval_service import retrieval_service
+from app.services.qa_service import qa_service
 from app.services.llm_service import (
     llm_service,
     LLM_MODEL,
@@ -21,6 +22,19 @@ from app.services.citation_service import citation_service
 from app.core.security import sanitize_user_query, sanitize_image_base64
 
 router = APIRouter(prefix="/chat", tags=["Chat"])
+
+@router.get("/questions", summary="List supplemental e-GP Q&A questions")
+async def list_question_suggestions() -> Dict[str, Any]:
+    """Returns the question text and module for every indexed Q&A record."""
+    questions = [
+        {
+            "question_number": record["question_number"],
+            "module": record["module"],
+            "question": record["question"],
+        }
+        for record in qa_service.records
+    ]
+    return {"total": len(questions), "questions": questions}
 
 @router.post("", response_model=ChatResponse, summary="Ask a question about e-GP manuals")
 async def ask_question(request: ChatRequest) -> ChatResponse:

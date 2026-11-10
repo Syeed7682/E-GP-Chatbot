@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Plus,
   HelpCircle,
@@ -9,11 +9,8 @@ import {
   X,
 } from 'lucide-react';
 import { SyncState } from '../types/egp';
-import { API_BASE } from '../services/api';
-import {
-  MANUAL_QUESTION_SUGGESTIONS,
-  searchManualQuestionSuggestions,
-} from '../utils/manualQuestionSuggestions';
+import { API_BASE, fetchQuestionSuggestions, QuestionSuggestion } from '../services/api';
+import { searchQuestionSuggestions } from '../utils/qaQuestionSuggestions';
 
 interface GovtOfficialSidebarProps {
   syncState: SyncState;
@@ -37,17 +34,40 @@ export const GovtOfficialSidebar: React.FC<GovtOfficialSidebarProps> = ({
   onOpenSyncModal
 }) => {
   const [suggestionQuery, setSuggestionQuery] = useState('');
+  const [questions, setQuestions] = useState<QuestionSuggestion[]>([]);
+  const [questionsLoading, setQuestionsLoading] = useState(true);
+  const [questionsError, setQuestionsError] = useState(false);
   const hasQuery = suggestionQuery.trim().length > 0;
+
+  useEffect(() => {
+    let active = true;
+    fetchQuestionSuggestions()
+      .then((loadedQuestions) => {
+        if (active) setQuestions(loadedQuestions);
+      })
+      .catch((error: unknown) => {
+        console.error('Failed to load e-GP Q&A suggestions:', error);
+        if (active) setQuestionsError(true);
+      })
+      .finally(() => {
+        if (active) setQuestionsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const matchingSuggestions = useMemo(
-    () => searchManualQuestionSuggestions(suggestionQuery),
-    [suggestionQuery],
+    () => searchQuestionSuggestions(suggestionQuery, questions),
+    [suggestionQuery, questions],
   );
   const visibleSuggestions = hasQuery
     ? matchingSuggestions.slice(0, 30)
-    : MANUAL_QUESTION_SUGGESTIONS.slice(0, 12);
+    : questions.slice(0, 12);
   const totalVisibleCount = hasQuery
     ? matchingSuggestions.length
-    : MANUAL_QUESTION_SUGGESTIONS.length;
+    : questions.length;
 
   return (
     <>
@@ -93,10 +113,10 @@ export const GovtOfficialSidebar: React.FC<GovtOfficialSidebarProps> = ({
         <div className="flex items-center justify-between border-b border-slate-200 pb-2">
           <div className="flex items-center gap-1.5 font-bold text-[#0F172A]">
             <Search className="w-3.5 h-3.5 text-[#0B4F8A]" />
-            <span>{language === 'en' ? 'Questions from the Manual' : 'ম্যানুয়াল থেকে প্রশ্ন'}</span>
+            <span>{language === 'en' ? 'Questions from e-GP Q&A' : 'e-GP প্রশ্নোত্তর থেকে প্রশ্ন'}</span>
           </div>
           <span className="text-[10px] font-mono font-bold text-slate-500 bg-slate-200/60 px-1.5 py-0.2 rounded">
-            {language === 'en' ? `${MANUAL_QUESTION_SUGGESTIONS.length} questions` : `${MANUAL_QUESTION_SUGGESTIONS.length}টি প্রশ্ন`}
+            {language === 'en' ? `${questions.length} questions` : `${questions.length}টি প্রশ্ন`}
           </span>
         </div>
 
@@ -130,15 +150,15 @@ export const GovtOfficialSidebar: React.FC<GovtOfficialSidebarProps> = ({
               ? `${totalVisibleCount} matching suggestions${totalVisibleCount > 30 ? ' · showing first 30' : ''}`
               : `${totalVisibleCount}টি মিলেছে${totalVisibleCount > 30 ? ' · প্রথম ৩০টি দেখানো হচ্ছে' : ''}`
             : language === 'en'
-              ? `Browse ${MANUAL_QUESTION_SUGGESTIONS.length} topics from the manual`
-              : `ম্যানুয়ালের ${MANUAL_QUESTION_SUGGESTIONS.length}টি বিষয় দেখুন`}
+              ? `Browse ${questions.length} questions from the Q&A file`
+              : `প্রশ্নোত্তর ফাইলের ${questions.length}টি প্রশ্ন দেখুন`}
         </p>
 
         <div className="max-h-64 space-y-1.5 overflow-y-auto pt-0.5 pr-1">
           {visibleSuggestions.map((suggestion) => {
             return (
               <button
-                key={`${suggestion.page}-${suggestion.question}`}
+                key={suggestion.question_number}
                 onClick={() => {
                   onSelectSuggestedQuestion(suggestion.question);
                   onCloseMobile();
@@ -149,17 +169,29 @@ export const GovtOfficialSidebar: React.FC<GovtOfficialSidebarProps> = ({
                 <span className="text-[11.5px]">
                   {suggestion.question}
                   <span className="ml-1 block pt-0.5 text-[10px] font-normal text-slate-400">
-                    Manual page {suggestion.page}
+                    {suggestion.module} · Q{suggestion.question_number}
                   </span>
                 </span>
               </button>
             );
           })}
+          {questionsLoading && (
+            <p className="rounded-lg bg-white/70 p-3 text-[11px] leading-relaxed text-slate-500">
+              {language === 'en' ? 'Loading e-GP questions...' : 'e-GP প্রশ্ন লোড হচ্ছে...'}
+            </p>
+          )}
+          {!questionsLoading && questionsError && (
+            <p role="alert" className="rounded-lg bg-amber-50 p-3 text-[11px] leading-relaxed text-amber-800">
+              {language === 'en'
+                ? 'Could not load Q&A questions. Check the backend connection and try again.'
+                : 'প্রশ্নোত্তর লোড করা যায়নি। ব্যাকএন্ড সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।'}
+            </p>
+          )}
           {hasQuery && matchingSuggestions.length === 0 && (
             <p className="rounded-lg bg-white/70 p-3 text-[11px] leading-relaxed text-slate-500">
               {language === 'en'
-                ? 'No matching manual topics. Try a shorter keyword or a different phrase.'
-                : 'ম্যানুয়ালে মেলেনি। ছোট শব্দ বা অন্য বাক্যাংশ দিয়ে খুঁজুন।'}
+                ? 'No matching Q&A questions. Try a shorter keyword or a different phrase.'
+                : 'প্রশ্নোত্তরে মেলেনি। ছোট শব্দ বা অন্য বাক্যাংশ দিয়ে খুঁজুন।'}
             </p>
           )}
         </div>

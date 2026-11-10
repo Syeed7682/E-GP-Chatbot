@@ -23,6 +23,25 @@ export interface SendChatParams {
   use_alt_model?: boolean;
 }
 
+export interface QuestionSuggestion {
+  question_number: number;
+  module: string;
+  question: string;
+}
+
+export async function fetchQuestionSuggestions(): Promise<QuestionSuggestion[]> {
+  const response = await fetch(`${API_BASE}/api/chat/questions`);
+  if (!response.ok) {
+    throw new Error(`Could not load Q&A question suggestions (HTTP ${response.status}).`);
+  }
+
+  const data: { total: number; questions: QuestionSuggestion[] } = await response.json();
+  if (!Array.isArray(data.questions)) {
+    throw new Error('The backend returned an invalid Q&A question list.');
+  }
+  return data.questions;
+}
+
 /**
  * Checks the FastAPI backend health status
  */
