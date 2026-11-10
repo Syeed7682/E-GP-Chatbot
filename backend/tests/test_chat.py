@@ -104,7 +104,7 @@ def test_offline_answer_uses_concise_prose_without_citations_or_boilerplate():
     assert "would you like" not in answer.lower()
     assert not answer.lstrip().startswith(("1.", "**1."))
 
-def test_offline_tender_fee_answer_formats_complete_manual_table():
+def test_offline_tender_fee_answer_uses_structured_sections_and_preserves_source_values():
     context = (
         "[Manual: Official e-GP Manual | Page 60]\n"
         "4.1.14 Based on the Package Estimated Cost for Procurement Type of NCT, "
@@ -124,12 +124,16 @@ def test_offline_tender_fee_answer_formats_complete_manual_table():
 
     answer = llm_service._offline_answer_generator("Explain this price schedule.", context)
 
+    assert "### 1. National Competitive Tendering (NCT)" in answer
     assert "| Estimated package cost (BDT) | Current fee (BDT) | Revised fee (BDT) |" in answer
-    assert "| Up to 10,00,000 | 1,000 | 500 |" in answer
-    assert "| Up to 2,00,00,000 | 2,000 | 2,500 |" in answer
-    assert "| Up to 30,00,00,000 | 4,000 | 5,000 |" in answer
-    assert "| Above 1,00,00,00,000 | 4,000 | 10,000 |" in answer
-    assert "BDT 12,000" in answer
+    assert "| Up to 10,000,00 | 1,000.00 | 500.00 |" in answer
+    assert "| Up to 2,00,000,00 | 2,000.00 | 2,500.00 |" in answer
+    assert "| Up to 30,00,000,00 | 4,000.00 | 5,000.00 |" in answer
+    assert "| Above 100,00,000,00 | 4,000.00 | 10,000.00 |" in answer
+    assert "### 2. International Competitive Tendering (ICT)" in answer
+    assert "BDT 12,000.00" in answer
+    assert "### Summary" in answer
+    assert "**Source:** Section 4.1.14" in answer
     assert "Not specified" not in answer
     assert "Pre-Tender" not in answer
 
@@ -285,7 +289,7 @@ if __name__ == "__main__":
     test_chat_debarment()
     test_chat_delete_tender()
     print("All chat API tests PASSED!")
-def test_model_prompt_supports_bounded_reasoning_from_related_manual_evidence():
+def test_model_prompt_enforces_manual_grounding_and_structured_answer_format():
     class CapturingInferenceClient:
         messages = None
 
@@ -314,13 +318,16 @@ def test_model_prompt_supports_bounded_reasoning_from_related_manual_evidence():
     )
 
     assert answer == "The manual supports this conclusion."
-    assert "combine related evidence" in client.messages[0]["content"].lower()
-    assert "label it clearly" in client.messages[0]["content"].lower()
-    assert "related manual evidence when available" in client.messages[1]["content"]
+    assert "answer using only the supplied manual content" in client.messages[0]["content"].lower()
+    assert "markdown tables for fees" in client.messages[0]["content"].lower()
+    assert "finish with a short **summary**" in client.messages[0]["content"].lower()
+    assert "source** line with relevant manual section number(s)" in client.messages[0]["content"].lower()
+    assert "preserve the source's exact number formatting" in client.messages[0]["content"].lower()
+    assert "follow the system instructions for answer structure" in client.messages[1]["content"].lower()
     assert "enhance portal security" in client.messages[1]["content"]
 
 
-def test_related_question_with_no_retrieved_context_still_reaches_hosted_model():
+def test_empty_context_is_passed_to_model_with_manual_only_grounding_rules():
     class CapturingInferenceClient:
         messages = None
 
@@ -348,8 +355,8 @@ def test_related_question_with_no_retrieved_context_still_reaches_hosted_model()
     )
 
     assert answer == "General e-GP guidance."
-    assert "answer every question" in client.messages[0]["content"].lower()
-    assert "politely decline questions that are unrelated" in client.messages[0]["content"].lower()
+    assert "answer using only the supplied manual content" in client.messages[0]["content"].lower()
+    assert "politely decline questions unrelated to e-gp or public procurement" in client.messages[0]["content"].lower()
     assert "No relevant context found in manuals." in client.messages[1]["content"]
 
 

@@ -121,10 +121,11 @@ def load_system_prompt() -> str:
 
     return (
         "You are the official assistant for the electronic Government Procurement (e-GP) system. "
-        "Answer questions about e-GP and public procurement regardless of wording, and politely decline unrelated "
-        "questions. Decide relevance from meaning, not a fixed list of words. Use provided manual passages as "
-        "authoritative evidence; when they do not cover an on-topic question, distinguish general guidance from "
-        "confirmed manual facts. Do not invent official rules or portal behavior. Keep answers concise."
+        "Answer using only supplied manual content and retrieved context; politely decline questions unrelated "
+        "to e-GP or public procurement. Preserve all values as written. If context is incomplete or unclear, state "
+        "'The provided manual extract does not specify this information.' Format multi-part answers with headings, "
+        "tables or bullets as appropriate, add a Summary when useful, and include a Source line only when section "
+        "numbers are present in the context. Do not invent facts or citations."
     )
 
 
@@ -208,11 +209,9 @@ class LLMService:
         prompt_text = (
             f"Context from e-GP Manuals:\n{context}\n\n"
             f"User Question: {question}\n\n"
-            f"Answer e-GP and public-procurement questions even when no exact passage is retrieved. Use related manual evidence when available; "
-            f"when it is not, provide clearly identified general guidance. Politely decline unrelated questions. "
-            f"Label inferences and never present them as official rules. Use a professional, measured tone, "
-            f"clear complete sentences, and no emojis, conversational filler, or generic closing offer. "
-            f"Do not include page numbers or citations; the application displays references separately."
+            f"Follow the system instructions for answer structure. Use only supplied manual content. "
+            f"Include a Source line with section numbers only when the context provides them. "
+            f"For fee tables, preserve the source's exact number formatting and keep fee categories separate."
         )
         user_content.append({"type": "text", "text": prompt_text})
 
@@ -262,8 +261,7 @@ class LLMService:
         if not context or "No relevant context" in context or "No manual index" in context:
             return (
                 "I could not retrieve a supporting manual passage for this question, so I cannot verify an official "
-                "e-GP rule or portal procedure. If you share a related manual section or more context, I can help "
-                "interpret it."
+                "e-GP rule or portal procedure. The provided manual extract does not specify this information."
             )
 
         if is_procedure_steps_request(question):
@@ -282,18 +280,6 @@ class LLMService:
             fee_rows = []
             seen_fee_rows = set()
 
-            def format_bdt(value: str) -> str:
-                whole_value = str(int(value.split(".", 1)[0].replace(",", "")))
-                if len(whole_value) <= 3:
-                    return whole_value
-                last_three, leading = whole_value[-3:], whole_value[:-3]
-                groups = []
-                while len(leading) > 2:
-                    groups.insert(0, leading[-2:])
-                    leading = leading[:-2]
-                groups.insert(0, leading)
-                return f"{','.join(groups)},{last_three}"
-
             for line in context.splitlines():
                 match = re.fullmatch(
                     r"\s*(Up to|Above)\s+([\d,]+)\s+([\d,]+(?:\.\d{2})?)\s+([\d,]+(?:\.\d{2})?)\s*",
@@ -305,9 +291,9 @@ class LLMService:
                 limit, estimated_cost, current_fee, revised_fee = match.groups()
                 row = (
                     "Up to" if limit.lower() == "up to" else "Above",
-                    format_bdt(estimated_cost),
-                    format_bdt(current_fee),
-                    format_bdt(revised_fee),
+                    estimated_cost,
+                    current_fee,
+                    revised_fee,
                 )
                 if row not in seen_fee_rows:
                     seen_fee_rows.add(row)
@@ -315,8 +301,18 @@ class LLMService:
 
             if fee_rows:
                 answer = (
-                    "For National Competitive Tendering (NCT), the Tender/Proposal Document Price is "
-                    "added automatically based on the package’s estimated cost (Section 4.1.14). "
+                    "### 1. National Competitive Tendering (NCT)\n\n"
+                )
+                if re.search(
+                    r"Tender/Proposal Document Price.*?(?:automatically added|added automatically)",
+                    context,
+                    re.IGNORECASE | re.DOTALL,
+                ):
+                    answer += (
+                        "The Tender/Proposal Document Price is automatically added based on the package's "
+                        "estimated cost, as stated in the manual.\n\n"
+                    )
+                answer += (
                     "The manual lists the current and revised fees as follows:\n\n"
                     "| Estimated package cost (BDT) | Current fee (BDT) | Revised fee (BDT) |\n"
                     "| --- | ---: | ---: |\n"
@@ -332,9 +328,16 @@ class LLMService:
                 )
                 if ict_fee_match:
                     answer += (
-                        f"\nFor International Competitive Tendering (ICT), the document fee is "
-                        f"BDT {format_bdt(ict_fee_match.group(1))}."
+                        "\n### 2. International Competitive Tendering (ICT)\n\n"
+                        f"The document fee is **BDT {ict_fee_match.group(1)}**, as stated in the manual."
                     )
+                answer += (
+                    "\n\n### Summary\n\n"
+                    "The manual lists separate document fees for NCT and ICT; NCT fees vary by estimated "
+                    "package cost, while the ICT fee is stated separately."
+                )
+                if re.search(r"\b4\.1\.14\b", context):
+                    answer += "\n\n**Source:** Section 4.1.14"
                 return answer.strip()
 
         # Parse extracted chunks, keeping manual metadata out of the answer.
@@ -816,12 +819,10 @@ class LLMService:
             prompt_text = (
                 f"Context from official Bangladesh e-GP Procuring Entity Manual (use as evidence; do not copy OCR artifacts):\n{context}\n\n"
                 f"User Question: {question}\n\n"
-                f"Answer e-GP and public-procurement questions even when no exact passage is retrieved. Use related manual evidence when available; "
-                f"when it is not, provide clearly identified general guidance. Politely decline unrelated questions. "
-                f"Label inferences and never present them as official rules. Prefer one short, natural paragraph; "
-                f"use numbered steps only when the user needs a sequence. Do not include page numbers, citations, "
-                f"chunk headings, source labels, or a separate screen list; the application displays references separately. "
-                f"Correct obvious OCR line breaks and split words when their meaning is clear."
+                f"Follow the system instructions for answer structure and use only supplied manual content. "
+                f"Include a Source line with section numbers only when present in the context. "
+                f"For fee tables, preserve exact number formatting and keep fee categories separate. "
+                f"Do not include internal scores or database details. Correct OCR only when the intended wording is clear."
             )
 
             parts = []
@@ -877,12 +878,9 @@ class LLMService:
                     {"role": "system", "content": self.system_prompt},
                     {"role": "user", "content": (
                         f"Context from e-GP manual (use as evidence; do not copy OCR artifacts):\n{context}\n\n"
-                        f"Question: {question}\n\nAnswer e-GP and public-procurement questions even when no exact passage is retrieved. "
-                        f"Use related manual evidence when available; otherwise provide clearly identified general guidance. "
-                        f"Politely decline unrelated questions. Label inferences and never present them as official rules. "
-                        f"Prefer one short paragraph when possible. "
-                        f"Use numbered steps only for a necessary sequence. Do not include citations, page numbers, "
-                        f"chunk headings, or source labels; references are displayed separately."
+                        f"Question: {question}\n\nFollow the system instructions for answer structure and use only supplied manual content. "
+                        f"Include a Source line with section numbers only when present. For fee tables, preserve exact number "
+                        f"formatting and keep fee categories separate. Do not include internal scores or database details."
                     )}
                 ],
                 "temperature": 0.2
@@ -918,11 +916,9 @@ class LLMService:
             user_message = (
                 f"Context from official Bangladesh e-GP Procuring Entity Manual (use as evidence; do not copy OCR artifacts):\n{context}\n\n"
                 f"User Question: {question}\n\n"
-                f"Answer e-GP and public-procurement questions even when no exact passage is retrieved. Use related manual evidence when available; "
-                f"when it is not, provide clearly identified general guidance. Politely decline unrelated questions. "
-                f"Label inferences and never present them as official rules. Prefer one natural paragraph; "
-                f"use numbered steps only when a sequence is necessary. Do not include citations, page numbers, "
-                f"chunk headings, or source labels; the application shows references separately."
+                f"Follow the system instructions for answer structure and use only supplied manual content. "
+                f"Include a Source line with section numbers only when present. For fee tables, preserve exact number "
+                f"formatting and keep fee categories separate. Do not include internal scores or database details."
             )
 
             messages = [
@@ -1030,12 +1026,10 @@ class LLMService:
             user_message = (
                 f"Context from official Bangladesh e-GP Procuring Entity Manual (use as evidence; do not copy OCR artifacts):\n{context}\n\n"
                 f"User Question: {question}\n\n"
-                f"Answer e-GP and public-procurement questions even when no exact passage is retrieved. Use related manual evidence when available; "
-                f"when it is not, provide clearly identified general guidance. Politely decline unrelated questions. "
-                f"Label inferences and never present them as official rules. Prefer one short, natural paragraph; "
-                f"use numbered steps only when the user needs a sequence. Do not include page numbers, citations, "
-                f"chunk headings, source labels, or a separate screen list; the application displays references separately. "
-                f"Correct obvious OCR line breaks and split words when their meaning is clear."
+                f"Follow the system instructions for answer structure and use only supplied manual content. "
+                f"Include a Source line with section numbers only when present. For fee tables, preserve exact number "
+                f"formatting and keep fee categories separate. Do not include internal scores or database details. "
+                f"Correct OCR only when the intended wording is clear."
             )
             try:
                 response = self._hf_client.chat_completion(
