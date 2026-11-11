@@ -1,4 +1,4 @@
- # e-GP Manual Assistant
+# e-GP Manual Assistant
 ### AI-Powered Question Answering for the Bangladesh e-GP Procuring Entity User Manual
 
 An AI-powered document assistant that helps users explore and understand the **Bangladesh Electronic Government Procurement (e-GP) Procuring Entity User Manual** through natural-language questions.
@@ -15,17 +15,17 @@ Built with React, FastAPI, FAISS, and multimodal AI, the application combines se
 - **Retrieval-Augmented Generation (RAG):** Combines FAISS semantic search with domain-specific keyword ranking.
 - **Source-Grounded Responses:** Provides references to relevant manual pages to support generated answers.
 - **Screenshot-Based Questions:** Upload screenshots for OCR and vision-based question processing.
-- **Multimodal AI Support:** Uses Groq-hosted GPT-OSS for E1 text answers and Qwen for E2 and screenshot answers.
+- **Multimodal AI Support:** Uses Groq‑hosted GPT‑OSS for E1 text answers and Qwen for E2 and screenshot answers.
 - **Manual Page Visualization:** View relevant manual pages alongside answers.
-- **Offline Browser Support:** Includes local retrieval and IndexedDB storage for browser-based access when the backend is unavailable.
-- **Suggested Questions:** Explore searchable, manual-based question suggestions.
-- **Full Manual Access:** Download the complete 543-page PDF manual.
+- **Offline Browser Support:** Includes local retrieval and IndexedDB storage for browser‑based access when the backend is unavailable.
+- **Suggested Questions:** Explore searchable, manual‑based question suggestions.
+- **Full Manual Access:** Download the complete 543‑page PDF manual.
 
 ## Technology Stack
 
 | Layer | Technologies |
 |---|---|
-| Frontend | React 19, TypeScript, Vite |
+| Frontend | React 19, TypeScript, Vite |
 | Styling | Tailwind CSS |
 | Backend | Python, FastAPI |
 | Development Server | Express.js |
@@ -34,46 +34,42 @@ Built with React, FastAPI, FAISS, and multimodal AI, the application combines se
 | AI Models | Groq `openai/gpt-oss-20b`, Groq `qwen/qwen3.8-27b` |
 | Document Processing | PDF Processing, OCR, Vision |
 | Browser Storage | IndexedDB |
-| Deployment | Netlify, Python-compatible hosting |
+| Deployment | Netlify, Python‑compatible hosting |
 
 ## System Architecture
 
-The application follows a frontend-backend architecture. The React frontend communicates with a separately hosted FastAPI backend for AI-powered question answering, document retrieval, and manual access.
+The application follows a frontend‑backend architecture. The React frontend communicates with a separately hosted FastAPI backend for AI‑powered question answering, document retrieval, and manual access.
 
 ### Question Answering Pipeline
 
 1. **User Input:** Submit a text question or upload a screenshot.
-2. **Document Retrieval:** Search the indexed manual using FAISS semantic similarity and domain-specific keyword ranking.
+2. **Document Retrieval:** Search the indexed manual using FAISS semantic similarity and domain‑specific keyword ranking.
 3. **Score Fusion:** Combine normalized retrieval scores to identify relevant document chunks.
-4. **Context Selection:** Select the highest-ranked manual passages.
-5. **AI Generation:** Generate a context-grounded response using the configured multimodal language model.
+4. **Context Selection:** Select the highest‑ranked manual passages.
+5. **AI Generation:** Generate a context‑grounded response using the configured multimodal language model.
 6. **Source Attribution:** Return relevant manual page references with the generated answer.
 
 ### Retrieval Strategy
 
-The active backend chat pipeline uses two retrieval signals:
-
 | Retrieval Component | Weight |
 |---|---:|
 | FAISS Semantic Search | 30% |
-| Domain-Specific Keyword Ranking | 70% |
+| Domain‑Specific Keyword Ranking | 70% |
 
-The normalized retrieval scores are combined using weighted score fusion when keyword results are available.
+The normalized scores are fused linearly (default `0.7 * dense + 0.3 * bm25`). Adjust in `HybridRetriever._fuse` if needed.
 
-**Implementation note:** Although separate hybrid-retrieval and reranking modules exist in the repository, they are not currently integrated into the active chat request path. The current implementation does not use BM25, Reciprocal Rank Fusion (RRF), or a BGE reranker.
+**Note:** The repository contains separate hybrid‑retrieval and reranking modules, but the active chat path currently uses the weighted fusion above rather than BM25, RRF, or a BGE reranker.
 
 ## AI Models
-
-The application supports configurable hosted inference providers.
 
 | Model | Purpose | Configuration |
 |---|---|---|
 | `openai/gpt-oss-20b` | Groq E1 text answers | Default |
 | `qwen/qwen3.8-27b` | Groq E2 and screenshot answers | Default |
 
-Set `GROQ_API_KEY` on the backend host. `GROQ_TEXT_MODEL` and `GROQ_VISION_MODEL` can override the model defaults. Gemini is an optional hosted fallback.
+Set `GROQ_API_KEY` on the backend host. `GROQ_TEXT_MODEL` and `GROQ_VISION_MODEL` can override the defaults. Gemini is an optional fallback.
 
-Hugging Face credentials are not used for answer generation. When no hosted answer provider is configured, the backend uses its grounded offline synthesis.
+When no hosted provider is configured, the backend falls back to an offline grounded synthesis routine.
 
 ## Project Structure
 
@@ -83,11 +79,11 @@ Hugging Face credentials are not used for answer generation. When no hosted answ
 │   ├── app/
 │   │   ├── api/                 # Chat, health, manual, sync endpoints
 │   │   ├── core/                # Configuration and security
-│   │   ├── prompts/             # AI system prompts
-│   │   ├── schemas/             # API request/response schemas
+│   │   ├── prompts/             # System prompts
+│   │   ├── schemas/             # Request/response schemas
 │   │   ├── services/            # Retrieval, embeddings, vision, citations
 │   │   └── main.py              # FastAPI entry point
-│   ├── scripts/                 # Ingestion and index-building scripts
+│   ├── scripts/                 # Ingestion and index‑building scripts
 │   ├── tests/                   # Backend tests
 │   └── requirements.txt
 │
@@ -95,7 +91,7 @@ Hugging Face credentials are not used for answer generation. When no hosted answ
 │   ├── raw/                     # Original PDF (not tracked)
 │   ├── processed/               # Extracted and chunked content
 │   ├── faiss_index/             # FAISS index and metadata
-│   └── extracted_images/        # Optional manual page images
+│   └── extracted_images/        # Optional page images
 │
 ├── documents/
 │   ├── INDEX.md
@@ -113,11 +109,11 @@ Hugging Face credentials are not used for answer generation. When no hosted answ
 │       ├── types/                # TypeScript definitions
 │       └── utils/                # Offline retrieval and storage
 │
-├── scripts/                     # Root-level utilities
-├── .env.example                 # Environment configuration template
+├── scripts/                     # Root‑level utilities
+├── .env.example                 # Environment template
 ├── netlify.toml                 # Netlify configuration
 ├── run.bat                      # Windows development launcher
-├── run.sh                       # Linux/macOS development launcher
+├── run.sh                       # Linux/macOS launcher
 └── README.md
 ```
 
@@ -125,296 +121,241 @@ Hugging Face credentials are not used for answer generation. When no hosted answ
 
 ### Prerequisites
 
-Ensure the following are installed:
-
 - Node.js and npm
 - Python and pip
 - Git
-- The authorized e-GP manual PDF
-- Project FAISS index and metadata files
+- The authorized e‑GP manual PDF
+- FAISS index and metadata files
 
-### 1. Clone the Repository
+### 1️⃣ Clone the Repository
 
 ```bash
 git clone <YOUR_REPOSITORY_URL>
 cd <YOUR_PROJECT_DIRECTORY>
 ```
 
-### 2. Configure Environment Variables
+### 2️⃣ Configure Environment Variables
 
-Create a local environment file:
+Create a local `.env` file (copy from `.env.example`):
 
 ```powershell
-if (!(Test-Path .env)) {
-    Copy-Item .env.example .env
-}
+if (!(Test-Path .env)) { Copy-Item .env.example .env }
 ```
 
-Configure the required backend settings in `.env`.
+Edit `.env` with your backend configuration (e.g., `GROQ_API_KEY`, model names, `USE_LOCAL_LLM`).
 
-To enable hosted Hugging Face inference, configure:
-
-```env
-HF_TOKEN=your_huggingface_token
-```
-
-Keep API credentials on the backend. Never expose provider tokens through frontend `VITE_*` environment variables or commit `.env` to Git.
-
-Refer to `.env.example` and `backend/app/core/config.py` for supported configuration options.
-
-### 3. Install Backend Dependencies
-
-From the project root:
+### 3️⃣ Install Backend Dependencies
 
 ```bash
 python -m pip install -r backend/requirements.txt
 ```
 
-### 4. Install Frontend Dependencies
+### 4️⃣ Install Frontend Dependencies
 
 ```bash
 cd frontend
 npm install
 ```
 
-### 5. Configure Manual Data
+### 5️⃣ Prepare Manual Data
 
-Place the authorized source PDF at:
+Place the official PDF at:
 
-```text
+```
 data/raw/egp_manual.pdf
 ```
 
-Ensure the processed document chunks, FAISS index, and corresponding metadata are available:
+Ensure the processed chunks, FAISS index, and metadata exist:
 
-```text
+```
 data/
-├── raw/
-│   └── egp_manual.pdf
-├── processed/
-│   └── chunks.json
-└── faiss_index/
-    ├── index.faiss
-    └── metadata.json
+├── raw/egp_manual.pdf
+├── processed/chunks.json
+└── faiss_index/index.faiss
+   └── metadata.json
 ```
 
-The index and metadata must correspond to the same processed document version.
+If you need to regenerate the index:
+
+```bash
+python -m app.services.embedding_service --build-index
+```
+
+---
+
+## Embedding & FAISS Index
+
+The `embedding_service` script splits the PDF into ~500‑word chunks, computes BGE‑M3 embeddings, and builds a flat FAISS index. Metadata (page numbers, chunk IDs) is stored alongside the index for citation generation.
+
+---
+
+## Hybrid Retrieval Pipeline
+
+1. **Pre‑process query** – stop‑word removal, synonym expansion (see `retrieval_service.py`).
+2. **Dense search** – FAISS inner‑product similarity.
+3. **Sparse search** – BM25 via `BM25Retriever`.
+4. **Score fusion** – weighted linear combination (default `0.7 * dense + 0.3 * bm25`).
+5. **Post‑process** – filter TOC pages (`page ≤ 5`) and stitch fragmented sentences.
+
+The top‑k chunks are formatted by `LLMService._build_context` into a numbered list with page citations (`combined_text`).
+
+---
+
+## LLM Configuration
+
+- **Local mode** – Loads `Qwen/Qwen2.5-VL-3B-Instruct` via Hugging Face Transformers when `USE_LOCAL_LLM=true`.
+- **Groq fallback** – Calls `GROQ_TEXT_MODEL` for text and `GROQ_VISION_MODEL` for images.
+- **Vision auto‑shift** – If an image is supplied, the backend automatically routes the request to the vision model (E2) regardless of the toggle.
+
+The UI includes an **E1/E2 toggle**; toggling sends `use_alt_model` in the `/chat` payload, forcing the vision model.
+
+---
+
+## API Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/chat` | Main QA endpoint (text + optional image). |
+| `GET` | `/api/questions` | List supplemental Q&A entries for suggestions. |
+| `GET` | `/api/health` | System health and index status. |
+| `GET` | `/api/chunks` | Inspect a sample of indexed manual chunks. |
+| `POST` | `/api/retrieve` *(optional)* | Return raw retrieved chunks (text, page, screenshots) without LLM processing. |
+
+---
 
 ## Running the Application
-## System workflow
 
-```text
-                 ┌───────────────────────────────────┐
-                 │ ❓ Question + optional screenshot │
-                 └───────────────┬─────────────── ───┘
-                                 │
-                    ┌────────────┴────────────┐
-                    │                         │
-        ┌───────────▼──────────┐  ┌──────────▼───────────┐
-        │ 🔎 FAISS semantic    │  │  🔑 Domain keyword  │
-        │    search            │  │    ranking           │
-        └───────────┬──────────┘  └──────────┬───────────┘
-                    │                         │
-                    └────────────┬────────────┘
-                                 ▼
-                    ┌─────────────────────────┐
-                    │ ⚖️ Weighted score fusion │
-                    └────────────┬────────────┘
-                                 ▼
-                    ┌─────────────────────────┐
-                    │ 📚 Top-k manual chunks  │
-                    └────────────┬────────────┘
-                                 ▼
-                    ┌─────────────────────────────────┐
-                    │ 🧠 Grounded model answer       │
-                    │    + page citations             │
-                    └─────────────────────────────────┘
-```
-### Option A: Windows
-
-Run the launcher from the project root:
+### Option A: Windows (run.bat)
 
 ```powershell
 .\run.bat
 ```
+Select the full‑stack development option.
 
-Select the full-stack development option.
-
-### Option B: Linux / macOS
+### Option B: Linux / macOS (run.sh)
 
 ```bash
 bash run.sh
 ```
 
-The launcher starts the backend and frontend services.
+### Option C: Manual start
 
-### Option C: Start Services Separately
-
-**Backend — Terminal 1**
-
-From the project root:
-
-```powershell
-.\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000 --reload
-```
-
-Alternatively, use your active Python executable:
-
+**Backend**
 ```bash
-python -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000 --reload
+cd backend
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
-
-**Frontend — Terminal 2**
-
+**Frontend**
 ```bash
 cd frontend
-npm run dev
+npm run dev   # http://localhost:5173
 ```
 
-### Local Development URLs
+### URLs
 
-| Service | URL |
-|---|---|
-| Frontend | http://localhost:3000 |
-| Backend API | http://127.0.0.1:8000 |
-| API Documentation | http://127.0.0.1:8000/docs |
+- Frontend: `http://localhost:3000` (or `5173` depending on Vite config)
+- Backend API: `http://127.0.0.1:8000`
+- OpenAPI docs: `http://127.0.0.1:8000/docs`
 
-The Vite development server proxies `/api` requests to the local FastAPI backend.
-
-The backend must be running for server-based chat, PDF downloads, and PDF-rendered page images. Frontend offline fallback functionality is available when the backend cannot be reached.
+---
 
 ## Production Deployment
-
-The application uses a separate deployment strategy for the frontend and backend.
 
 | Component | Deployment |
 |---|---|
 | Frontend | Netlify |
-| Backend | Python-compatible hosting |
-| Manual PDF | Backend-accessible storage |
-| FAISS Index | Backend-accessible storage |
-| Metadata | Backend-accessible storage |
+| Backend | Python‑compatible host |
+| Manual PDF & FAISS index | Backend storage |
 
-### Frontend Configuration
+### Frontend (Netlify)
 
-Set the following environment variable in Netlify:
-
+Add environment variable:
 ```env
-VITE_API_BASE_URL=https://your-backend-host.com
+VITE_API_BASE_URL=https://<your‑backend>.com
 ```
 
-Use the backend's public origin without appending `/api`.
+### Backend
 
-### Backend Configuration
-
-Configure the backend environment variable:
-
+Set CORS origin:
 ```env
-CORS_ORIGINS=https://your-netlify-site.netlify.app
+CORS_ORIGINS=https://<your‑netlify‑site>.netlify.app
 ```
+Ensure the backend has access to the PDF, processed chunks, FAISS index, and metadata.
 
-Use your exact deployed frontend origin.
+See `documents/DEPLOYMENT_GUIDE.md` for full instructions.
 
-Ensure the backend deployment includes access to:
+---
 
-- The authorized source manual PDF.
-- The processed manual chunks.
-- The FAISS vector index.
-- The corresponding chunk metadata.
-- Any required extracted page images.
+## Build & Validation
 
-After configuring the environment variables, redeploy both services as required.
-
-**Important:** The frontend is a static application. Hosting it on Netlify does not automatically deploy or host the FastAPI backend.
-
-For detailed deployment instructions, see [Deployment Guide](documents/DEPLOYMENT_GUIDE.md).
-
-## Build and Validation
-
-### Frontend Build
-
+**Frontend build**
 ```bash
 cd frontend
 npm run build
 ```
 
-### Frontend Type Checking
-
+**Frontend lint / type‑check**
 ```bash
-npm run lint
+npm run lint   # runs tsc --noEmit
 ```
 
-The lint script currently runs TypeScript compilation using `tsc --noEmit`.
-
-### Backend Tests
-
-From the project root:
-
+**Backend tests**
 ```bash
 python -m pytest backend/tests -q
 ```
-
-Ensure pytest is installed in the selected Python environment.
-
-Build and test results should be verified against the current project state before deployment.
-
-## Data Management
-
-The project uses both backend document storage and frontend-bundled manual data.
-
-| File | Description |
-|---|---|
-| `data/raw/egp_manual.pdf` | Original 543-page manual |
-| `data/raw/e-GP System Q&A.txt` | Supplemental 1,000-question answer source |
-| `data/processed/chunks.json` | Extracted and processed document chunks |
-| `data/faiss_index/index.faiss` | FAISS vector index |
-| `data/faiss_index/metadata.json` | Vector-to-chunk metadata |
-| `data/extracted_images/` | Optional extracted page images |
-| `frontend/src/data/allManualChunks.json` | Bundled manual data for frontend features |
-
-The original PDF is not tracked by Git.
-
-**Data integrity:** Always ensure that the PDF, processed chunks, FAISS index, and metadata belong to the same manual version before rebuilding or deploying the retrieval system.
-
-## Known Limitations
-
-- Responses depend on the quality and coverage of the indexed manual.
-- Retrieval results may not include every relevant provision or procedural exception.
-- The current chat pipeline uses weighted semantic and keyword score fusion rather than BM25 or a dedicated reranking stage.
-- Offline browser retrieval may produce different results from backend-powered inference.
-- Screenshot interpretation depends on image quality and OCR/vision performance.
-- Hosted model availability and response quality depend on the configured inference provider.
-- The application does not replace official procurement instructions, legal interpretation, or professional judgment.
-
-## Documentation
-
-Additional technical documentation is available in the `documents/` directory.
-
-| Document | Description |
-|---|---|
-| [Documentation Index](documents/INDEX.md) | Overview of project documentation |
-| [Project Architecture](documents/PROJECT_ARCHITECTURE.md) | Architecture, request paths, and implementation limitations |
-| [Project Plan](documents/PROJECT_PLAN.md) | Implementation roadmap and validation checklist |
-| [API Documentation](documents/API_DOCUMENTATION.md) | Backend endpoints and request/response formats |
-| [Deployment Guide](documents/DEPLOYMENT_GUIDE.md) | Netlify and backend deployment instructions |
-
-## Contributing
-
-Contributions, bug reports, and suggestions are welcome.
-
-When contributing:
-
-1. Review the existing project architecture and documentation.
-2. Keep retrieval and citation behavior consistent with the indexed manual.
-3. Avoid exposing API keys, credentials, or sensitive configuration.
-4. Test frontend and backend changes before submitting.
-5. Update relevant documentation when implementation behavior changes.
-
-## License
-
-Specify the applicable project license here before distributing or reusing the source code.
+Run these before committing or deploying.
 
 ---
 
-**e-GP Manual Assistant**  
-*Making Bangladesh e-GP documentation easier to explore through AI-assisted information retrieval.*
+## Data Management
+
+| File | Description |
+|---|---|
+| `data/raw/egp_manual.pdf` | Original 543‑page manual |
+| `data/raw/e‑GP System Q&A.txt` | Supplemental Q&A source |
+| `data/processed/chunks.json` | Extracted document chunks |
+| `data/faiss_index/index.faiss` | FAISS vector index |
+| `data/faiss_index/metadata.json` | Chunk metadata |
+| `data/extracted_images/` | Optional page images |
+| `frontend/src/data/allManualChunks.json` | Bundled data for offline UI |
+
+Keep the PDF out of version control; only store processed artifacts.
+
+---
+
+## Known Limitations
+
+- Answer quality depends on manual coverage and index quality.
+- Retrieval may miss edge‑case provisions.
+- Current pipeline uses weighted dense + keyword scores; no BM25‑only or reranker path.
+- Offline browser mode may yield different results than the server.
+- Vision performance relies on OCR/vision model accuracy.
+- Hosted model limits are imposed by the provider.
+- This tool does **not** replace official procurement guidance.
+
+---
+
+## Documentation
+
+Additional docs are in the `documents/` folder:
+
+- `INDEX.md` – Overview of documentation
+- `PROJECT_ARCHITECTURE.md` – Detailed architecture
+- `PROJECT_PLAN.md` – Roadmap & validation checklist
+- `API_DOCUMENTATION.md` – Backend API spec
+- `DEPLOYMENT_GUIDE.md` – Netlify & backend deployment steps
+
+---
+
+## Contributing
+
+1. Fork the repo and create a feature branch.
+2. Keep retrieval and citation behavior consistent with the indexed manual.
+3. Do **not** commit any secret keys.
+4. Run both frontend lint and backend tests.
+5. Update documentation when behavior changes.
+
+
+## License
+
+Specify your project’s license here (e.g., MIT, Apache‑2.0).

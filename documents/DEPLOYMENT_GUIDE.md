@@ -1,86 +1,120 @@
 # Deployment Guide
 
-## Deployment layout
+## Overview
 
-Deploy the Vite frontend as a static site on Netlify. Deploy FastAPI separately: Netlify's static build does not run `frontend/server.ts`, host the FAISS index as a query service, or provide the local source PDF.
+This guide details how to deploy the **e‑GP Manual Assistant** – a FastAPI backend providing hybrid FAISS + BM25 retrieval and multimodal inference using **Qwen 2.5‑VL‑3B‑Instruct**, and a Vite/React frontend hosted on Netlify (or any static‑hosting provider).
 
-The frontend can use bundled manual data for local fallback, but hosted model answers, server retrieval, full-PDF download, and PDF-rendered page images require the FastAPI backend and its data files to be available.
+## 1. Backend deployment
 
-## Prepare the backend
+### 1.1 Prerequisites
+- Python 3.10+ with `pip`.
+- Access to the FAISS index (`data/faiss_index/index.faiss`) and its metadata (`metadata.json`).
+- The original manual PDF (`data/raw/e‑GP System User Manual.pdf`).
+- A server capable of running a persistent Python process (Render, Fly.io, Railway, VPS, Docker, etc.).
 
-Deploy the repository's `backend/` application to a Python service that can access:
-
-- `data/faiss_index/index.faiss`
-- `data/faiss_index/metadata.json`
-- `data/raw/e-GP System Q&A.txt` and, if available, `data/raw/e-GP System Q&A .docx` for supplemental question-and-answer retrieval.
-- The official manual PDF under `data/raw/` if PDF download or PDF-rendered page images are required.
-- Any extracted page images used by the manual viewer.
-
-The PDF and some data files are not tracked by Git. Ensure they are present in the backend deployment artifact or mounted from approved persistent storage. The current backend uses local filesystem paths; ephemeral storage must be restored on each deploy/start or replaced with persistent storage.
-
-Install `backend/requirements.txt`. Configure the host to start FastAPI on its provided port, for example:
-
-```sh
-python -m uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port "${PORT:-8000}"
+### 1.2 Repository layout
+```
+backend/
+│   app/
+│   ├── api/      # chat, health, manual, sync routes
+│   ├── core/     # config, security, CORS
+│   ├── prompts/  # system_prompt.txt
+│   ├── schemas/  # Pydantic request/response models
+│   └── services/ # retrieval, embeddings, vision, LLM, citations
+│   main.py       # FastAPI entry point
+│   requirements.txt
+scripts/            # ingestion, index‑building utilities
 ```
 
-Set these backend environment variables in the backend host's secret/configuration settings:
+### 1.3 Environment variables (`.env`)
+```
+# Core configuration
+VECTOR_DB=faiss
+EMBEDDING_MODEL=BAAI/bge-m3
+USE_LOCAL_LLM=true                # Load Qwen2.5‑VL‑3B‑Instruct locally if GPU is present
+LOCAL_LLM_MODEL=Qwen/Qwen2.5-VL-3B-Instruct
 
-| Variable | Value |
-|---|---|
-| `GROQ_API_KEY` | Required for hosted E1/E2 answer generation; add the secret in the backend host's environment settings |
-| `GROQ_TEXT_MODEL` | E1 text model; defaults to `openai/gpt-oss-20b` |
-| `GROQ_VISION_MODEL` | E2 vision model and E1 image-question model; defaults to `qwen/qwen3.8-27b` |
-| `HF_TOKEN` | Optional Hugging Face token for embedding generation; not used for answer generation |
-| `LOCAL_LLM_MODEL` | Optional local Transformers model name; used only when `USE_LOCAL_LLM=true` |
-| `GEMINI_API_KEY` | Optional fallback for text and screenshot answers if Groq inference fails |
-| `GEMINI_MODEL` | Optional Gemini model name; defaults to `gemini-flash-latest` |
-| `CORS_ORIGINS` | Comma-separated exact Netlify production and custom-domain origins, e.g. `https://example.netlify.app,https://assistant.example.org` |
-| `DATA_RAW_DIR` | Directory containing the manual PDF; defaults to `data/raw` relative to the project root |
-| `QA_DATA_PATH` | Supplemental Q&A text path; defaults to `data/raw/e-GP System Q&A.txt` |
-| `QA_DOCX_PATH` | Optional Word copy of the supplemental Q&A; defaults to `data/raw/e-GP System Q&A .docx` |
-| `FAISS_INDEX_PATH` | FAISS index path; defaults to `data/faiss_index/index.faiss` |
-| `FAISS_METADATA_PATH` | FAISS metadata path; defaults to `data/faiss_index/metadata.json` |
+# Hosted inference (fallback when local unavailable)
+GROQ_API_KEY=your_groq_key
+GROQ_TEXT_MODEL=openai/gpt-oss-20b
+GROQ_VISION_MODEL=Qwen/Qwen2.5-VL-3B-Instruct
 
-Keep all AI tokens on the backend. Do not configure provider credentials as `VITE_*` variables.
+# Optional Gemini fallback
+GEMINI_API_KEY=your_gemini_key
+GEMINI_MODEL=gemini-flash-latest
 
-E1 uses the configured Groq text model for text questions and the Groq vision model when a screenshot is attached. E2 always uses the Groq vision model. If Groq inference fails and `GEMINI_API_KEY` is configured, Gemini is tried as a fallback; otherwise, the backend uses manual-grounded offline synthesis. The `/api/chat/health` and `/api/health` endpoints report whether Groq is configured and the active default model names. Set `GROQ_API_KEY` in Render's backend environment variables and redeploy; setting it in Netlify or a local `.env` does not configure Render.
+# Data locations (relative to project root)
+DATA_RAW_DIR=data/raw
+FAISS_INDEX_PATH=data/faiss_index/index.faiss
+FAISS_METADATA_PATH=data/faiss_index/metadata.json
+QA_DATA_PATH=data/raw/e‑GP System Q&A.txt
 
-Hugging Face embedding-provider access is separate from answer-model credentials; without embedding access, retrieval switches to keyword-only mode.
+# CORS – comma‑separated list of allowed origins
+CORS_ORIGINS=https://my-frontend.netlify.app,https://mydomain.com
+```
+Never expose these secrets to the client side.
 
-The Q&A text and optional Word copy are parsed into numbered question/answer records at backend startup, deduplicated by question number and question text, and indexed as sparse TF-IDF vectors with term postings. If both files contain the same records, the text-file wording is retained and both filenames are recorded. The PDF continues to use its existing FAISS vector index. A clear Q&A match returns its answer verbatim; citations identify its module and question number, not a PDF page. Include the source files in the backend deployment artifact or configure the paths above.
+### 1.4 Install & start
+```bash
+# Clone and enter the repo
+git clone <repo-url>
+cd e‑gp‑project‑manual
 
-Before connecting Netlify, verify:
+# Virtual environment
+python -m venv .venv
+source .venv/bin/activate   # Windows: .\.venv\Scripts\activate
 
-- `GET https://<backend-host>/api/health` reports the retrieval index ready.
-- `GET https://<backend-host>/api/manual/download` downloads the PDF if the file is configured.
-- The backend allows the exact public Netlify origin in `CORS_ORIGINS`.
+# Install backend deps
+pip install -r backend/requirements.txt
 
-## Deploy the frontend to Netlify
+# Verify FAISS files exist
+ls data/faiss_index/
+# should show index.faiss and metadata.json
 
-1. Push the repository to the Git provider connected to Netlify. Keep `.env`, tokens, and private data out of Git.
-2. Create a Netlify site from the repository. The root `netlify.toml` configures the `frontend` base directory, `npm run build`, `dist` publish directory, Node.js 22, and SPA fallback to `index.html`.
-3. In **Site configuration → Environment variables**, add:
+# Run the server (adjust host/port as needed)
+uvicorn backend/app/main:app --host 0.0.0.0 --port ${PORT:-8000}
+```
+The API will be reachable at `http://<host>:8000/api`.
 
-   ```text
-   VITE_API_BASE_URL=https://<backend-host>
-   ```
+### 1.5 Health check
+```bash
+curl http://localhost:8000/api/health
+```
+You should receive a JSON payload with `status: "healthy"`, index readiness, and model names.
 
-   Use the backend origin only, without a trailing slash and without `/api`. This value is public and embedded in the frontend bundle; never put secrets in it.
-4. Trigger a new deploy. Vite reads `VITE_API_BASE_URL` at build time, so changing it requires a new build/deploy.
-5. Add the final Netlify site URL and any custom domain to backend `CORS_ORIGINS`, then restart/redeploy the backend if needed.
-6. Test the live site:
-   - Ask a manual question and confirm a grounded backend response.
-   - Confirm references and manual page images load.
-   - Confirm **Download Full Manual** downloads a PDF.
-   - Upload an image and verify the backend/model behavior.
-   - Check the browser console and network panel for CORS or failed API requests.
+## 2. Frontend deployment (Netlify)
 
-API requests go directly from the browser to the configured FastAPI origin; they are not proxied through Netlify. Deploy previews have distinct origins. Add preview origins to `CORS_ORIGINS` only if they need backend access, using an intentional controlled list.
+### 2.1 Prerequisites
+- Node 22 (or latest LTS) and npm.
+- Netlify account linked to the Git repository.
 
-## Operational checks and limitations
+### 2.2 Netlify configuration (`netlify.toml`)
+```toml
+[build]
+  base = "frontend"
+  command = "npm install && npm run build"
+  publish = "dist"
 
-- FastAPI `/docs` is useful for diagnostics but should be restricted or disabled if required by the deployment.
-- During local development, the frontend can fall back to local retrieval if the backend is unavailable. This does not provide hosted model inference or server-only PDF functions.
-- In production, chat requests fail visibly instead of silently returning a lower-quality offline answer when the API is missing or unreachable.
-- Re-run `npm run build` and the backend test suite before release. A successful static build does not test backend model credentials, data availability, CORS, or provider availability.
+[context.production.environment]
+  VITE_API_BASE_URL = "https://<backend‑host>"
+```
+Only the public API URL is stored here; no secrets.
+
+### 2.3 Deploy steps
+1. Push the repo to GitHub (or your VCS).
+2. In Netlify, **Add new site → Import an existing project** and select the repo.
+3. Netlify reads `netlify.toml`, installs dependencies, builds, and publishes `frontend/dist`.
+4. After a successful build, add the Netlify site URL to the backend’s `CORS_ORIGINS` and redeploy the backend.
+
+### 2.4 Runtime verification
+- Open the site and ask a sample question.
+- Verify citations, page images, and the vision model work when you upload a screenshot.
+
+## 3. Operational notes
+- **GPU requirement:** The local Qwen model needs a CUDA‑enabled GPU. If missing, set `USE_LOCAL_LLM=false` to fall back to Groq.
+- **Rate limits:** Monitor 429 responses from Groq/Gemini and consider a higher plan if needed.
+- **Index updates:** When the manual PDF changes, re‑run the ingestion scripts and redeploy the backend.
+- **Security:** Keep all provider tokens (`GROQ_API_KEY`, `HF_TOKEN`, `GEMINI_API_KEY`) in the host’s secret manager, never in client‑side env.
+- **Monitoring:** Use `/api/health` and `/api/chat/health` for liveness probes.
+
+

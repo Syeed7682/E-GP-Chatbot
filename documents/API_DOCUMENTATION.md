@@ -1,85 +1,81 @@
 # API Documentation
 
-The FastAPI application exposes chat, manual, health, and synchronization routes under `/api`.
+The FastAPI backend exposes a small set of routes under `/api` that power the e‑GP Manual Assistant. All endpoints return JSON and are documented in the OpenAPI UI at `http://127.0.0.1:8000/docs`.
 
-- Local base URL: `http://127.0.0.1:8000/api`
-- OpenAPI UI: `http://127.0.0.1:8000/docs`
-- Implementation: `backend/app/api/`
+## Common configuration
+- **Base URL (local)**: `http://127.0.0.1:8000/api`
+- **CORS**: Controlled via the `CORS_ORIGINS` environment variable. By default only `http://localhost:3000` (Vite dev) is allowed.
 
-The React development server on port 3000 proxies `/api` requests to FastAPI. Hosted frontends must be configured to use the deployed backend URL.
-Set the backend's `CORS_ORIGINS` environment variable to a comma-separated list of exact frontend origins. The default allows local development origins only.
-
-### `GET /api/health`
-
-Returns general service status, retrieval-index readiness, chunk count, and configured model names.
+## Health & status
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/health` | Returns overall service health, index readiness, and the names of the active text and vision models. |
+| `GET` | `/api/chat/health` | Same as above but names the endpoint used by the chat UI. |
 
 ## Chat
-
 ### `POST /api/chat`
-
-Ask a question grounded in the e-GP manual and the supplemental Q&A text, optionally including a screenshot.
-
-Request:
-
+Accepts a question (or screenshot) and returns a grounded answer.
 ```json
 {
   "question": "How do I create an Annual Procurement Plan?",
   "previous_question": null,
   "image_base64": null,
   "image_mime": "image/png",
-  "image_name": null,
   "top_k": 5,
   "use_alt_model": false
 }
 ```
+- **`question`** – mandatory text query.
+- **`previous_question`** – optional short follow‑up (used for step‑by‑step clarification).
+- **`image_base64` / `image`** – optional screenshot for OCR / vision processing.
+- **`top_k`** – number of retrieved chunks (1‑20).
+- **`use_alt_model`** – when `true` forces the vision model (`Qwen/Qwen2.5‑VL‑3B‑Instruct`) even for text‑only queries.
 
-`question` is required by the request schema. `previous_question` supports short follow-ups such as asking for steps. An image may be supplied in `image_base64` or the compatibility field `image`. `top_k` is between 1 and 20. E1 uses the configured Groq text model for text questions and the Groq vision model for questions with an image. Setting `use_alt_model` selects the Groq vision model (E2), including for text-only questions.
+**Response** (JSON):
+```json
+{
+  "question": "How do I create an Annual Procurement Plan?",
+  "answer": "... grounded answer with citations ...",
+  "sources": [
+    {
+      "source": "e‑GP System Manual",
+      "page": 34,
+      "chunk_id": 12,
+      "score": 0.92,
+      "snippet": "...",
+      "screen_reference": "Screen A2",
+      "image_path": "https://…/page34.png",
+      "source_type": "manual",
+      "source_files": [],
+      "question_number": null,
+      "module": null
+    }
+  ],
+  "portal_screens": ["Screen A2"],
+  "model_used": "Qwen/Qwen2.5‑VL‑3B‑Instruct (e‑GP Grounded)",
+  "was_offline": false
+}
+```
+- `model_used` reflects the actual model that generated the answer (text‑only, vision, Gemini fallback or offline synthesis).
+- `was_offline` is `true` only when the answer came from the deterministic offline synthesizer.
 
-Successful responses contain `question`, `answer`, `sources`, `portal_screens`, `model_used`, and `was_offline`. Each source may include `source`, `source_files`, `page`, `chunk_id`, `score`, `snippet`, `screen_reference`, `image_path`, `source_type`, `module`, and `question_number`. Manual sources have a PDF page. Q&A sources identify their module and question number and have no PDF page. When a Q&A entry clearly matches the question, `answer` is returned verbatim from that entry. `model_used` identifies the actual answer source/model, and `was_offline` reflects whether offline synthesis produced the answer.
+## Manual handling
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/manual/page/{page_num}` | Returns page metadata, the list of chunks belonging to that page, and a URL for the rendered PNG image (generated on‑the‑fly if a pre‑extracted image is missing). |
+| `GET` | `/api/manual/page/{page_num}/image` | Serves a pre‑extracted page image, falling back to on‑the‑fly rendering via PyMuPDF. |
+| `GET` | `/api/manual/download` | Streams the original 543‑page PDF. |
+| `GET` | `/api/manual/search?q={query}&limit=10` | Simple case‑insensitive substring search over chunk titles and text (non‑semantic). |
 
-### `GET /api/chat/health`
+## Synchronisation (client cache)
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/sync/version` | Returns a hash, timestamp and total chunk count – useful for client‑side cache invalidation. |
+| `GET` | `/api/sync/chunks` | Returns the full metadata list for all chunks (used by the offline IndexedDB cache). |
+| `POST` | `/api/sync/push` | Accepts client‑side mutation records – **note:** the current implementation does not persist these records.
 
-Returns whether the FAISS retrieval index is loaded, its available metadata count, configured text and vision model names, and whether Groq is configured. Configuration does not guarantee that the hosted provider is currently reachable.
-
-### `GET /api/chat/chunks?limit=10`
-
-Returns a preview of indexed metadata. `limit` is between 1 and 50.
-
-## Manual
-
-### `GET /api/manual/page/{page_num}`
-
-Returns page metadata and chunks for a page from 1 to 543, plus whether an image can be served and its URL.
-
-### `GET /api/manual/page/{page_num}/image`
-
-Serves an extracted page image when one is available. Otherwise, renders that page from the local source PDF as PNG. PDF rendering requires the source file and PyMuPDF.
-
-### `GET /api/manual/download`
-
-Downloads the complete source PDF as an attachment. FastAPI looks in `data/raw/` for the supported manual filenames. Returns `404` when the PDF is unavailable.
-
-### `GET /api/manual/search?q={query}&limit=10`
-
-Performs case-insensitive substring matching against chunk titles and text. `q` must contain at least two characters. This is a simple keyword search, not semantic retrieval.
-
-## Synchronization
-
-### `GET /api/sync/version`
-
-Returns the server dataset version, a hash, metadata count, and timestamp.
-
-### `GET /api/sync/chunks`
-
-Returns all currently loaded chunk metadata for client caching.
-
-### `POST /api/sync/push`
-
-Accepts client mutation records and returns their IDs as processed. The current FastAPI implementation does not persist these records or perform durable conflict resolution; do not treat the success response as an audit-log guarantee.
-
-## Errors and operational notes
-
-- Invalid manual page numbers return `404`.
-- The PDF download endpoint returns `404` if no supported source PDF is present.
-- Model/provider and vector-index readiness are separate concerns. Check provider configuration and server logs when a chat request fails despite a loaded index.
-- Keep Hugging Face and other provider credentials on the server in the root `.env`; never expose them in client-side environment variables.
+## Errors & operational notes
+- 404 for invalid manual page numbers or missing PDF.
+- 400 for malformed request bodies (e.g., missing `question`).
+- Model‑provider errors are surfaced as a generic 500 with a short message; the UI falls back to the offline synthesizer when this occurs.
+- Keep all provider tokens (`GROQ_API_KEY`, `HF_TOKEN`, `GEMINI_API_KEY`) in the backend `.env`; never expose them via `VITE_*` variables.
