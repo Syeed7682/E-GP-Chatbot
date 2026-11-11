@@ -10,7 +10,10 @@ import {
 } from 'lucide-react';
 import { SyncState } from '../types/egp';
 import { API_BASE, fetchQuestionSuggestions, QuestionSuggestion } from '../services/api';
-import { searchQuestionSuggestions } from '../utils/qaQuestionSuggestions';
+import {
+  deduplicateQuestionSuggestions,
+  searchQuestionSuggestions,
+} from '../utils/qaQuestionSuggestions';
 
 interface GovtOfficialSidebarProps {
   syncState: SyncState;
@@ -58,16 +61,21 @@ export const GovtOfficialSidebar: React.FC<GovtOfficialSidebarProps> = ({
     };
   }, []);
 
+  const deduplicatedQuestions = useMemo(
+    () => deduplicateQuestionSuggestions(questions),
+    [questions],
+  );
+
   const matchingSuggestions = useMemo(
     () => searchQuestionSuggestions(suggestionQuery, questions),
     [suggestionQuery, questions],
   );
   const visibleSuggestions = hasQuery
     ? matchingSuggestions.slice(0, 30)
-    : questions.slice(0, 12);
+    : deduplicatedQuestions;
   const totalVisibleCount = hasQuery
     ? matchingSuggestions.length
-    : questions.length;
+    : deduplicatedQuestions.length;
 
   return (
     <>
@@ -116,7 +124,7 @@ export const GovtOfficialSidebar: React.FC<GovtOfficialSidebarProps> = ({
             <span>{language === 'en' ? 'Questions from e-GP Q&A' : 'e-GP প্রশ্নোত্তর থেকে প্রশ্ন'}</span>
           </div>
           <span className="text-[10px] font-mono font-bold text-slate-500 bg-slate-200/60 px-1.5 py-0.2 rounded">
-            {language === 'en' ? `${questions.length} questions` : `${questions.length}টি প্রশ্ন`}
+            {language === 'en' ? `${deduplicatedQuestions.length} questions` : `${deduplicatedQuestions.length}টি প্রশ্ন`}
           </span>
         </div>
 
@@ -150,8 +158,8 @@ export const GovtOfficialSidebar: React.FC<GovtOfficialSidebarProps> = ({
               ? `${totalVisibleCount} matching suggestions${totalVisibleCount > 30 ? ' · showing first 30' : ''}`
               : `${totalVisibleCount}টি মিলেছে${totalVisibleCount > 30 ? ' · প্রথম ৩০টি দেখানো হচ্ছে' : ''}`
             : language === 'en'
-              ? `Browse ${questions.length} questions from the Q&A file`
-              : `প্রশ্নোত্তর ফাইলের ${questions.length}টি প্রশ্ন দেখুন`}
+              ? `Browse ${deduplicatedQuestions.length} questions from the Q&A file`
+              : `প্রশ্নোত্তর ফাইলের ${deduplicatedQuestions.length}টি প্রশ্ন দেখুন`}
         </p>
 
         <div className="max-h-64 space-y-1.5 overflow-y-auto pt-0.5 pr-1">
