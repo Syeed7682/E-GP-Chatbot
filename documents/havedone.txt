@@ -371,3 +371,9 @@ ALL DELIVERABLES SUCCESSFULLY COMPLETED AND VERIFIED.
         - Authored 'documents/SIMPLE_ARCHITECTURE.puml' showing high-level end-to-end query flow, failover hierarchy, and Helpdesk escalation.
     [x] Master Documentation Synchronization:
         - Updated 'documents/API_DOCUMENTATION.md', 'DEPLOYMENT_GUIDE.md', 'EMBEDDINGS.md', 'PROJECT_ARCHITECTURE.md', 'PROJECT_PLAN.md', 'INDEX.md', 'thinking_process.txt', and 'havedone.txt'.
+
+28. RENDER FASTAPI MULTIPART DEPENDENCY RESOLUTION (November 2026)
+    [x] Form / Multipart Parsing Fix:
+        - Root Cause: FastAPI requires 'python-multipart' when routing endpoints with 'UploadFile' or 'File(...)'/'Form(...)'. On Render's fresh Python 3.14 container, 'from app.api.upload import router' threw: 'Form data requires "python-multipart" to be installed.'
+        - Solution: Added 'python-multipart>=0.0.9' to 'backend/requirements.txt' and created root 'requirements.txt' linking to it.
+        - Verified import: 'import multipart' succeeds without error.

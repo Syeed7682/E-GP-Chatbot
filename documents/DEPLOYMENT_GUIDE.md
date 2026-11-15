@@ -141,7 +141,7 @@ Depending on whether your Render Web Service Root Directory is set to `backend` 
 **Option A: Root Directory = `backend` (Standard Render Web Service)**
 - **Root Directory**: `backend`
 - **Environment**: Python 3.12 / 3.14
-- **Build Command**: `pip install -r requirements.txt`
+- **Build Command**: `pip install -r requirements.txt` (includes `fastapi`, `uvicorn`, `python-multipart>=0.0.9`, `faiss-cpu`, etc.)
 - **Start Command**: `python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 - **Health Check Path**: `/health`
 
