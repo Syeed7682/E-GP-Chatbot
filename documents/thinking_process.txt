@@ -97,3 +97,9 @@ The e‑GP Manual Assistant must provide **accurate, grounded answers** to user 
 
 13. **Immutable Versioned Indexing**
     - **Decision**: Decouple index builds from active serving using version directories (`data/indexes/v001/`, `v002/`) and an atomic pointer file (`active_version.json`). The web server reads `active_version.json` at startup or reload, allowing offline re-indexing jobs without service downtime or index corruption.
+
+
+14. **Render Deployment Permission Resilience & Fallback Discovery**
+    - **Problem**: When deploying on Render as a containerized web service with `EGP_DATA_DIR=/var/data/egp`, standard unprivileged container user `render` (UID 1000) does not have root permissions to create `/var/data` unless a persistent disk is explicitly mounted at that mount point. This caused `app/config.py` to abort at import time with `PermissionError: [Errno 13] Permission denied: '/var/data'`.
+    - **Decision**: Implemented `_resolve_data_dir()` in `backend/app/config.py` that actively checks candidate directories with a temporary touch test. If a PermissionError or OSError occurs, it logs a warning and falls back cleanly to the project repository's committed `data/` directory (or `/tmp/egp_data`). Directory creation loops are also guarded by exception handlers, preventing crashes regardless of host environment constraints.
+    - **PlantUML Architecture Specs**: Created formal PlantUML models (`PROJECT_ARCHITECTURE.puml` and `SIMPLE_ARCHITECTURE.puml`) to maintain unified visual specifications of components, endpoints, and failover chains across all development and production tiers.

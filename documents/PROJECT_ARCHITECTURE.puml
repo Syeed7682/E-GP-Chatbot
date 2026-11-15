@@ -1,0 +1,105 @@
+@startuml PROJECT_ARCHITECTURE
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam roundCorner 8
+skinparam shadowing false
+skinparam componentStyle uml2
+
+title Bangladesh e-GP Assistant - Full System Architecture
+
+package "Presentation Tier (Frontend - React 19 / Netlify)" {
+    [GovtOfficialSidebar] as Sidebar
+    [GovtChatArea] as ChatArea
+    [ManualPreviewModal] as Modal
+    [Tesseract OCR (Client)] as ClientOCR
+    [offlineVectorEngine] as OfflineEngine
+}
+
+package "API Gateway & Security (FastAPI :8000)" {
+    [CORS & Rate Limiter] as SecGate
+    [Router: /api/chat] as ChatRoute
+    [Router: /api/chat/vision] as VisionRoute
+    [Router: /api/manual] as ManualRoute
+    [Router: /api/rag] as RagRoute
+    [Health & Diagnostics] as HealthRoute
+}
+
+package "RAG Orchestration & Retrieval Engine" {
+    [Query Router & Intent Parser] as Router
+    [BGE-M3 Dense Retriever\n(1024-dim)] as DenseRet
+    [BM25Okapi Lexical Retriever\n(Sparse Keywords)] as SparseRet
+    [SigLIP Visual Retriever\n(768-dim Visual Features)] as VisionRet
+    [Reciprocal Rank Fusion\n(RRF k=60)] as RRF
+    [BGE-Reranker-v2-m3\n(Cross-Encoder)] as Reranker
+    [Context & Citation Builder] as ContextBuilder
+}
+
+package "Inference & Grounded Synthesis" {
+    [Groq: openai/gpt-oss-20b\n(Primary Text)] as GroqText
+    [Groq: qwen/qwen3.8-27b\n(Multimodal Vision)] as GroqVision
+    [Google Gemini Flash\n(Hosted Failover)] as GeminiFlash
+    [Offline Grounded Synthesizer\n+ Helpdesk Escalation] as OfflineSynth
+}
+
+package "Storage & Versioned Indexes (Disk /var/data or local)" {
+    file "active_version.json" as ActivePointer
+    folder "v001/ Index Store" as IndexV001 {
+        database "pdf_text.faiss\n(1,188 vectors)" as FaissDB
+        file "bm25.pkl\n(Lexical Index)" as BM25DB
+        database "metadata.db\n(SQLite Chunks & Images)" as SQLiteDB
+        file "manifest.json\n(Cryptographic Hashes)" as Manifest
+    }
+    folder "data/extracted_images/chunks/" as ImageStore {
+        file "chunk_{id}_page_{p}_{order}_{slug}.png\n(1,096 Cropped Diagrams)" as ChunkImgs
+    }
+    folder "data/raw/" as RawStore {
+        file "egp_manual.pdf (543 pages)" as ManualPDF
+        file "e-GP System Q&A.txt (1,000 Q&A)" as QAFile
+    }
+}
+
+' Client interactions
+Sidebar --> SecGate : Suggested Q&A
+ChatArea --> SecGate : Query / Screenshot
+ClientOCR --> ChatArea : Extracted Text
+OfflineEngine ..> ChatArea : Fallback Answers
+
+' Routing
+SecGate --> ChatRoute
+SecGate --> VisionRoute
+SecGate --> ManualRoute
+SecGate --> RagRoute
+SecGate --> HealthRoute
+
+' RAG flow
+ChatRoute --> Router
+VisionRoute --> Router
+Router --> DenseRet : Vector Search
+Router --> SparseRet : Keyword Search
+Router --> VisionRet : Visual Match
+
+DenseRet --> RRF
+SparseRet --> RRF
+VisionRet --> RRF
+RRF --> Reranker
+Reranker --> ContextBuilder
+
+' Storage connections
+ActivePointer ..> IndexV001 : Pointer Resolution
+DenseRet --> FaissDB
+SparseRet --> BM25DB
+ContextBuilder --> SQLiteDB
+ManualRoute --> ChunkImgs : /api/manual/chunk/{id}/image
+ManualRoute --> ManualPDF : /api/manual/download
+
+' Inference failover
+ContextBuilder --> GroqText : Prompt + Grounded Context
+ContextBuilder --> GroqVision : Multimodal Payload
+GroqText ..> GeminiFlash : Failover
+GroqVision ..> GeminiFlash : Failover
+GeminiFlash ..> OfflineSynth : Offline Failover
+OfflineSynth --> ChatArea : Structured Guidance +\nHelpdesk Info (16575)
+
+@enduml
+

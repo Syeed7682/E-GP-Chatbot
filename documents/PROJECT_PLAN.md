@@ -80,7 +80,8 @@ Build and maintain an enterprise-grade multimodal Retrieval-Augmented Generation
   - Helpdesk fallback: Automatically provides official Bangladesh e-GP Helpdesk contact channels (Hotline: `16575`, Phone: `+880 9609112233`, Email: `helpdesk@eprocure.gov.bd`).
   - Q&A Suggestion deduplication: `qaQuestionSuggestions.ts` single-escaped normalization collapses procedural question families into 1 entry per type.
   - Production launchers: Fixed Windows `run.bat` and added `backend\run.bat` for one-click startup.
-  - Persistent disk specification for Render deployment (`/var/data`).
+  - Render deployment resilience: `_resolve_data_dir()` in `backend/app/config.py` safely catches `PermissionError` when `/var/data` is unmounted and gracefully defaults to local repository data.
+  - Architecture modeling: Authored complete and simplified PlantUML diagrams (`PROJECT_ARCHITECTURE.puml`, `SIMPLE_ARCHITECTURE.puml`).
 
 ---
 

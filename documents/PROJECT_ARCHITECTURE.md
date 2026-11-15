@@ -6,7 +6,9 @@ This document details the production architecture of the **Bangladesh e-GP Offic
 
 ## 1. System Architecture Overview
 
-A complete PlantUML source file is available at [`PROJECT_ARCHITECTURE.puml`](file:///e:/E-gp%20Project%20manual/documents/PROJECT_ARCHITECTURE.puml).
+Architecture diagrams are available in both full component and simplified sequence formats:
+- Full System Component Diagram: [`PROJECT_ARCHITECTURE.puml`](file:///e:/E-gp%20Project%20manual/documents/PROJECT_ARCHITECTURE.puml)
+- Simplified Sequence & Failover Diagram: [`SIMPLE_ARCHITECTURE.puml`](file:///e:/E-gp%20Project%20manual/documents/SIMPLE_ARCHITECTURE.puml)
 
 ```mermaid
 flowchart TD

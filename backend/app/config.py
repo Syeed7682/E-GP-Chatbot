@@ -2,31 +2,69 @@
 Global Configuration for e-GP Manual RAG System.
 Configures data directories, models, indexing parameters, and retrieval settings.
 Supports both persistent disk deployment (Render: /var/data/egp) and local dev.
+Includes graceful fallback if /var/data is not mounted or has permission restrictions.
 """
+import logging
 import os
+import tempfile
 from pathlib import Path
 from dotenv import load_dotenv
+
+logger = logging.getLogger("app.config")
 
 # Base project root
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent
 load_dotenv(ROOT_DIR / ".env")
 
-# Base data directory: Render persistent disk or local fallback
-DEFAULT_DATA_DIR = ROOT_DIR / "data"
-EGP_DATA_DIR_ENV = os.getenv("EGP_DATA_DIR")
-if EGP_DATA_DIR_ENV:
-    DATA_DIR = Path(EGP_DATA_DIR_ENV)
-else:
-    DATA_DIR = DEFAULT_DATA_DIR
+
+def _resolve_data_dir() -> Path:
+    """
+    Safely resolves the data directory.
+    If EGP_DATA_DIR (e.g. /var/data/egp on Render) is configured but not accessible
+    (e.g. no persistent disk mounted), it gracefully falls back to the repository's
+    local data directory without crashing the application on startup.
+    """
+    env_dir = os.getenv("EGP_DATA_DIR", "").strip()
+    if env_dir:
+        candidate = Path(env_dir)
+        try:
+            candidate.mkdir(parents=True, exist_ok=True)
+            # Verify write permissions with a temporary touch
+            test_file = candidate / ".perm_check"
+            test_file.touch(exist_ok=True)
+            test_file.unlink(missing_ok=True)
+            return candidate
+        except (PermissionError, OSError) as e:
+            logger.warning(
+                "Configured EGP_DATA_DIR '%s' is not accessible (%s). Falling back to project data directory.",
+                candidate,
+                e,
+            )
+
+    default_dir = ROOT_DIR / "data"
+    try:
+        default_dir.mkdir(parents=True, exist_ok=True)
+        return default_dir
+    except (PermissionError, OSError) as e:
+        tmp_dir = Path(tempfile.gettempdir()) / "egp_data"
+        tmp_dir.mkdir(parents=True, exist_ok=True)
+        logger.warning("Default data directory '%s' inaccessible (%s). Using fallback: %s", default_dir, e, tmp_dir)
+        return tmp_dir
+
+
+DATA_DIR = _resolve_data_dir()
 
 RAW_DIR = DATA_DIR / "raw"
 PROCESSED_DIR = DATA_DIR / "processed"
 INDEX_DIR = DATA_DIR / "indexes"
 IMAGE_DIR = DATA_DIR / "images"
 
-# Ensure directories exist
+# Ensure directories exist safely without raising PermissionError
 for d in (RAW_DIR, PROCESSED_DIR, INDEX_DIR, IMAGE_DIR):
-    d.mkdir(parents=True, exist_ok=True)
+    try:
+        d.mkdir(parents=True, exist_ok=True)
+    except (PermissionError, OSError) as e:
+        logger.debug("Notice: directory %s could not be created: %s", d, e)
 
 # Models and Dimensions
 TEXT_MODEL = os.getenv("TEXT_MODEL", "BAAI/bge-m3")
@@ -50,4 +88,3 @@ FINAL_CONTEXT_K = int(os.getenv("FINAL_CONTEXT_K", "7"))
 
 # Active index version
 INDEX_VERSION = os.getenv("INDEX_VERSION", "active")
-

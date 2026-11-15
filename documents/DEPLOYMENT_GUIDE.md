@@ -135,10 +135,26 @@ Because the e-GP manual contains 543 pages and over 1,000 diagrams, **never rebu
 | **Active Version Pointer** | `/var/data/egp/indexes/active_version.json` |
 
 ### 4.2 Render Service Settings
-- **Environment**: Python 3.12
-- **Build Command**: `pip install -r backend/requirements.txt`
-- **Start Command**: `uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT`
+
+Depending on whether your Render Web Service Root Directory is set to `backend` or the repository root:
+
+**Option A: Root Directory = `backend` (Standard Render Web Service)**
+- **Root Directory**: `backend`
+- **Environment**: Python 3.12 / 3.14
+- **Build Command**: `pip install -r requirements.txt`
+- **Start Command**: `python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 - **Health Check Path**: `/health`
+
+**Option B: Root Directory = `.` (Repository Root)**
+- **Root Directory**: `.`
+- **Environment**: Python 3.12 / 3.14
+- **Build Command**: `pip install -r backend/requirements.txt`
+- **Start Command**: `python -m uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT`
+- **Health Check Path**: `/health`
+
+> [!NOTE]
+> **Resilient Data Directory Fallback (`_resolve_data_dir()`)**
+> If `EGP_DATA_DIR=/var/data/egp` is configured in `.env` but no persistent disk is mounted (e.g. during initial testing or on ephemeral free-tier instances), the server automatically catches `PermissionError: [Errno 13]` during directory probe checks and safely falls back to the committed `data/` directory (or `/tmp/egp_data`), guaranteeing that `uvicorn` boots cleanly without crashing.
 
 ### 4.3 Maintenance & Indexing Workflow
 To build or upgrade an index version in production without interrupting active users:

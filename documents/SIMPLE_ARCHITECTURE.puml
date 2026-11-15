@@ -1,0 +1,36 @@
+@startuml SIMPLE_ARCHITECTURE
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam roundCorner 8
+skinparam shadowing false
+
+title Bangladesh e-GP Assistant - High-Level Architecture
+
+actor "User / Official" as User
+participant "React Frontend\n(Netlify UI)" as UI
+participant "FastAPI Service\n(Render / Local)" as API
+participant "RAG Engine\n(FAISS + BM25)" as RAG
+participant "Knowledge Store\n(v001 Indexes & Images)" as Data
+participant "LLM Providers\n(Groq / Gemini / Offline)" as LLM
+
+User -> UI: Ask Question / Upload Screenshot
+UI -> API: POST /api/chat
+API -> RAG: Query Pipeline
+RAG -> Data: Search Vectors, Keywords & Chunks
+Data --> RAG: Retrieved Chunks & Image Paths
+RAG -> LLM: Grounded Prompt + Evidence
+LLM --> API: Structured Synthesized Response
+API --> UI: Answer + Citations + Exact Chunk Diagram
+UI --> User: Display Formatted Guidance
+
+note right of LLM
+  Failover Chain:
+  1. Groq (gpt-oss-20b / qwen3.8-27b)
+  2. Gemini Flash
+  3. Offline Synthesizer
+  4. Helpdesk Fallback (16575)
+end note
+
+@enduml
+

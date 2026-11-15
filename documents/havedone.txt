@@ -358,3 +358,16 @@ ALL DELIVERABLES SUCCESSFULLY COMPLETED AND VERIFIED.
        - Fixed regex in 'frontend/src/utils/qaQuestionSuggestions.ts' using single-escaped normalization to deduplicate "Procedure Part 1–N" families.
        - Fixed 'run.bat' on Windows to resolve correct Python executable path; added standalone 'backend\run.bat'.
        - Verified full pytest test suite: 34 passed (`test_chat.py`, `test_citations.py`, `test_offline.py`).
+
+
+27. RENDER DEPLOYMENT PERMISSION FALLBACK & PLANTUML MODELING (November 2026)
+    [x] Render Data Directory Permission Resilience:
+        - Root Cause: Unprivileged container user 'render' (UID 1000) crashed on startup with 'PermissionError: [Errno 13] Permission denied: /var/data' when 'EGP_DATA_DIR=/var/data/egp' was set without an attached disk.
+        - Solution: Implemented '_resolve_data_dir()' in 'backend/app/config.py'.
+        - Probes candidate directory write permissions with a temporary touch check; safely falls back to repository 'ROOT_DIR / data' or '/tmp/egp_data' if permission is denied.
+        - Directory creation in 'app/config.py' wrapped in try/except blocks to eliminate crash hazards on server boot.
+    [x] PlantUML Architecture Specifications:
+        - Authored 'documents/PROJECT_ARCHITECTURE.puml' covering presentation, API gateway, multi-channel RAG, failover inference, and storage tiers.
+        - Authored 'documents/SIMPLE_ARCHITECTURE.puml' showing high-level end-to-end query flow, failover hierarchy, and Helpdesk escalation.
+    [x] Master Documentation Synchronization:
+        - Updated 'documents/API_DOCUMENTATION.md', 'DEPLOYMENT_GUIDE.md', 'EMBEDDINGS.md', 'PROJECT_ARCHITECTURE.md', 'PROJECT_PLAN.md', 'INDEX.md', 'thinking_process.txt', and 'havedone.txt'.
