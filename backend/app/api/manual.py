@@ -73,14 +73,48 @@ async def get_page_image(page_num: int):
     )
 
 
+@router.get("/chunk/{chunk_id}/image", summary="Get extracted screenshot image of a specific manual chunk")
+async def get_chunk_image(chunk_id: str):
+    """Serves the exact extracted diagram or portal screenshot mapped to this chunk."""
+    import re
+    cid = re.sub(r"^[a-zA-Z]+:", "", str(chunk_id)).strip()
+    chunks_dir = settings.EXTRACTED_IMAGES_DIR / "chunks"
+
+    if chunks_dir.exists():
+        matches = list(chunks_dir.glob(f"chunk_{cid}_page_*.*"))
+        if matches:
+            img_path = matches[0]
+            with img_path.open("rb") as f:
+                sig = f.read(8)
+            media_type = "image/png" if sig.startswith(b"\x89PNG") else "image/jpeg"
+            return FileResponse(img_path, media_type=media_type)
+
+    raise HTTPException(status_code=404, detail=f"No image mapped to chunk {chunk_id}.")
+
+
+@router.get("/images/{filename:path}", summary="Get extracted image asset by filename")
+async def get_manual_image(filename: str):
+    """Serves any extracted chunk or portal screenshot by filename."""
+    safe_name = Path(filename).name
+    chunks_dir = settings.EXTRACTED_IMAGES_DIR / "chunks"
+    candidate = chunks_dir / safe_name
+    if not candidate.is_file():
+        candidate = settings.EXTRACTED_IMAGES_DIR / safe_name
+    if not candidate.is_file():
+        raise HTTPException(status_code=404, detail=f"Image {filename} not found.")
+
+    with candidate.open("rb") as f:
+        sig = f.read(8)
+    media_type = "image/png" if sig.startswith(b"\x89PNG") else "image/jpeg"
+    return FileResponse(candidate, media_type=media_type)
+
+
 def _page_image_candidates(page_num: int) -> List[Path]:
-    return [
+    chunks_dir = settings.EXTRACTED_IMAGES_DIR / "chunks"
+    chunk_matches = list(chunks_dir.glob(f"chunk_*_page_{page_num}_*.*")) if chunks_dir.exists() else []
+    return chunk_matches + [
         settings.EXTRACTED_IMAGES_DIR / f"page_{page_num}.jpg",
         settings.EXTRACTED_IMAGES_DIR / f"page_{page_num}.png",
-        settings.EXTRACTED_IMAGES_DIR / f"page_{page_num}_img_0.jpg",
-        settings.EXTRACTED_IMAGES_DIR / f"page_{page_num}_img_0.png",
-        settings.EXTRACTED_IMAGES_DIR / "page_images" / f"page_{page_num}.jpg",
-        settings.EXTRACTED_IMAGES_DIR / "page_images" / f"page_{page_num}.png",
     ]
 
 

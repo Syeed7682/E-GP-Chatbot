@@ -322,3 +322,39 @@ ALL DELIVERABLES SUCCESSFULLY COMPLETED AND VERIFIED.
    [x] Added Official e-GP Debarment List Knowledge Chunk:
        - Added 'Screen - DEB-01' and Chunk 382 ('Debarment List & Blacklisted Contractor Verification under PPR Rule 127') to 'manualChunks.ts'.
        - Accurately identifies the banner "This debarment list has been generated considering only e-GP Tender" and provides step-by-step instructions on verifying debarred firms before opening bids or issuing NOA.
+
+
+26. ENTERPRISE MULTIMODAL RAG UPGRADE & CHUNK IMAGE ARCHITECTURE (November 2026)
+   [x] Versioned Index Architecture & Manifest Management:
+       - Created 'backend/app/indexing/index_manager.py' supporting immutable versions ('v001', 'v002') with atomic 'active_version.json' pointer.
+       - Built and activated 'data/indexes/v001/' containing:
+         * 'pdf_text.faiss' (1,188 vectors, 1,024-dim BGE-M3 IndexIDMap2)
+         * 'bm25.pkl' (BM25Okapi lexical index)
+         * 'metadata.db' (SQLite relational database with indexed page/category lookups)
+         * 'manifest.json' (Cryptographic SHA-256 provenance hashes)
+       - Implemented 9-point validation suite in 'backend/scripts/validate_indexes.py' (all 9 checks passing).
+   [x] Structure-Aware Chunk Image Rebuild:
+       - Created 'backend/scripts/rebuild_chunk_images.py'.
+       - Extracted 1,096 high-resolution raster images from 'egp_manual.pdf' into 'data/extracted_images/chunks/'.
+       - Structured file naming: 'chunk_{chunk_id}_page_{page}_{order}_{slug}.png'.
+       - Mapped each image to its exact owning Chunk ID, Page ID, Screen Reference, and Related Sentence.
+       - Built 'data/extracted_images/images_manifest.json' recording all 1,096 images.
+       - Synchronized 580 verified multimodal chunks across 'chunks.json', 'metadata.json', and 'metadata.db'.
+       - Deleted 537 legacy indiscriminate 'page_*.jpg' full-page captures and empty legacy folders.
+   [x] Chunk Image API & Serving:
+       - Added 'GET /api/manual/chunk/{chunk_id}/image' to serve exact diagrams/screenshots mapped to any retrieved chunk.
+       - Added 'GET /api/manual/images/{filename}' to serve extracted assets directly.
+       - Updated 'citation_service.py' and 'chat.py' so 'image_path' resolves to '/api/manual/chunk/{chunk_id}/image'.
+       - Live verified: querying tender preparation returns '/api/manual/chunk/145/image' (HTTP 200).
+   [x] System Prompt & Official Helpdesk Escalation:
+       - Removed rigid disclaimer phrase ("The provided manual extract does not specify this information").
+       - Updated 'system_prompt.txt', 'system_prompt.py', and 'llm_service.py' to generate comprehensive, synthesized answers in Proca's own words.
+       - When no answer is found in manual records, the system politely declines to invent facts and recommends official Bangladesh e-GP Helpdesk contact channels:
+         * Hotline: 16575 (from any mobile network in Bangladesh)
+         * Phone: +880 9609112233 / +880 1762625528–31
+         * Email: helpdesk@eprocure.gov.bd / e-gphelpdesk@cptu.gov.bd
+         * Portal: https://www.eprocure.gov.bd
+   [x] Q&A Suggestion Deduplication & Launcher Fix:
+       - Fixed regex in 'frontend/src/utils/qaQuestionSuggestions.ts' using single-escaped normalization to deduplicate "Procedure Part 1–N" families.
+       - Fixed 'run.bat' on Windows to resolve correct Python executable path; added standalone 'backend\run.bat'.
+       - Verified full pytest test suite: 34 passed (`test_chat.py`, `test_citations.py`, `test_offline.py`).

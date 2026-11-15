@@ -8,8 +8,8 @@ echo.
 
 cd /d "%~dp0"
 
-IF EXIST ".venv\Scripts\python.exe" (
-    set "PY_EXE=.venv\Scripts\python.exe"
+IF EXIST "%~dp0.venv\Scripts\python.exe" (
+    set "PY_EXE=%~dp0.venv\Scripts\python.exe"
 ) ELSE (
     set "PY_EXE=python"
 )
@@ -23,24 +23,24 @@ set /p opt="Enter choice [1, 2, or 3] (default 1): "
 
 if "%opt%"=="3" (
     echo Starting FastAPI Backend on http://127.0.0.1:8000...
-    cd backend
-    ..\%PY_EXE% -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+    cd /d "%~dp0backend"
+    "%PY_EXE%" -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
     goto end
 )
 
 if "%opt%"=="2" (
     echo Starting React Frontend on http://localhost:3000...
-    cd frontend
+    cd /d "%~dp0frontend"
     npm run dev
     goto end
 )
 
 :: Default: Full Stack
-echo Starting Python FastAPI Backend in background...
-start "e-GP FastAPI Backend" cmd /k "cd backend && ..\%PY_EXE% -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload"
+echo Starting Python FastAPI Backend in background window...
+start "e-GP FastAPI Backend (:8000)" cmd /k "cd /d "%~dp0backend" && "%PY_EXE%" -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload"
 
 echo Starting React Frontend...
-cd frontend
+cd /d "%~dp0frontend"
 npm run dev
 
 :end

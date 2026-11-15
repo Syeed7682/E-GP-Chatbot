@@ -548,7 +548,8 @@ class RetrievalService:
                 "chunk_id": chunk.get("chunk_id", 0),
                 "score": round(score, 2),
                 "snippet": text[:250] + ("..." if len(text) > 250 else ""),
-                "image_path": image_path
+                "image_path": image_path,
+                "related_sentence": chunk.get("related_sentence"),
             })
 
         full_context_str = "\n\n---\n\n".join(context_parts)

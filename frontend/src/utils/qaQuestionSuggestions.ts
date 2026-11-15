@@ -11,21 +11,36 @@ const STOP_WORDS = new Set([
  * Normalizes a question to a canonical key identifying its underlying question type/template.
  * Questions that belong to the same procedural family (e.g. Procedure Part 1, Procedure Part 7)
  * produce the same key so suggestions show only one representative question per type.
+ *
+ * Strategy:
+ *  1. Strip " - Procedure Part N" embedded anywhere (with optional trailing phrase)
+ *  2. Strip standalone "Procedure Part N" / "Part N" / "Step N" / "Phase N"
+ *  3. Remove all remaining digits
+ *  4. Collapse punctuation & whitespace
  */
 export function getQuestionTypeKey(suggestion: QuestionSuggestion): string {
-  const q = suggestion.question.trim().toLowerCase();
-  const qNorm = q
-    .replace(/[-\s]*(?:operational\s+workflow\s+for|procedure|part|step|phase)\s*#?\d+.*?(in the e-gp system\??|$)/gi, ' in the e-gp system')
-    .replace(/-\s*procedure\s+part\s+\d+.*?(in the e-gp system\??|$)/gi, ' in the e-gp system')
-    .replace(/procedure\s+part\s+\d+/gi, '')
-    .replace(/part\s+\d+/gi, '')
-    .replace(/step\s+\d+/gi, '')
-    .replace(/\d+/g, '')
+  let q = suggestion.question.trim().toLowerCase();
+
+  // Strip " - Procedure Part N <optional trailing phrase up to end or 'in the e-gp system'>"
+  // Covers: "Portal Access... - Procedure Part 7 in the e-GP system?"
+  q = q.replace(/\s*[-\u2013]\s*procedure\s+part\s+\d+(\s+in\s+the\s+e[-\s]?gp\s+system\??)?/gi, ' in the e-gp system');
+
+  // Strip remaining "Procedure Part N" anywhere
+  q = q.replace(/procedure\s+part\s+\d+/gi, '');
+
+  // Strip standalone Part/Step/Phase/Section N
+  q = q.replace(/\b(?:part|step|phase|section)\s+\d+/gi, '');
+
+  // Remove all digits
+  q = q.replace(/\d+/g, '');
+
+  // Normalize punctuation and whitespace
+  q = q
     .replace(/[^\p{L}\p{N}\s]+/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 
-  return `${suggestion.module.trim().toLowerCase()}:::${qNorm}`;
+  return `${suggestion.module.trim().toLowerCase()}:::${q}`;
 }
 
 /**

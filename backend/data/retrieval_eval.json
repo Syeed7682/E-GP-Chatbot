@@ -1,0 +1,38 @@
+[
+  {
+    "id": "delete-tender",
+    "question": "How do I delete a tender?",
+    "source_type": "manual",
+    "pages": [178, 191]
+  },
+  {
+    "id": "debarment",
+    "question": "What is debarment?",
+    "source_type": "manual",
+    "pages": [342, 343, 344, 345, 346, 347, 348]
+  },
+  {
+    "id": "portal-login",
+    "question": "How do I log in to the e-GP portal?",
+    "source_type": "manual",
+    "pages": [6, 7, 8]
+  },
+  {
+    "id": "first-login-security",
+    "question": "What does the manual say is the crucial step during first login?",
+    "source_type": "manual",
+    "pages": [6]
+  },
+  {
+    "id": "paypoint-status",
+    "question": "What does Paypoint Accept DDO Bill mean?",
+    "source_type": "manual",
+    "pages": [388]
+  },
+  {
+    "id": "verify-nid",
+    "question": "How to Verify National ID (NID) for PE and Vendor User Accounts?",
+    "source_type": "qa",
+    "question_numbers": [1]
+  }
+]

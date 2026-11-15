@@ -138,7 +138,8 @@ async def ask_question(request: ChatRequest) -> ChatResponse:
     portal_screens = set()
     for s in raw_sources:
         page = s["page"]
-        img_url = citation_service.resolve_screenshot_path(page) if page is not None else None
+        chunk_id = s.get("chunk_id")
+        img_url = citation_service.resolve_chunk_image_path(chunk_id, page)
         
         # Collect screen references
         snippet = s["snippet"]
@@ -150,11 +151,12 @@ async def ask_question(request: ChatRequest) -> ChatResponse:
             SourceDocument(
                 source=s["source"],
                 page=page,
-                chunk_id=s["chunk_id"],
+                chunk_id=chunk_id,
                 score=s["score"],
                 snippet=snippet,
                 screen_reference=sc_matches[0] if sc_matches else None,
                 image_path=img_url,
+                related_sentence=s.get("related_sentence"),
                 source_type=s.get("source_type", "manual"),
                 source_files=s.get("source_files", []),
                 question_number=s.get("question_number"),

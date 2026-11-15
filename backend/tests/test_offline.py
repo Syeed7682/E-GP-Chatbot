@@ -36,7 +36,9 @@ def test_offline_debarment_definition_does_not_invent_missing_evidence():
         "Chapter 7 Debarment",
     )
 
-    assert answer == "The provided manual extract does not specify this information."
+    assert "couldn't find" in answer.lower()
+    assert "helpdesk" in answer.lower()
+    assert "16575" in answer
 
 
 def test_offline_debarment_procedure_question_returns_procedure():

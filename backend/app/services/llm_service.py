@@ -61,6 +61,16 @@ LLM_MODEL = GROQ_TEXT_MODEL
 USE_LOCAL_LLM = os.getenv("USE_LOCAL_LLM", "false").lower() in ("true", "1", "yes")
 SYSTEM_PROMPT_PATH = os.path.join(os.path.dirname(__file__), "../prompts/system_prompt.txt")
 
+HELPDESK_CONTACT_INFO = (
+    "\n\n---\n"
+    "📞 **Official Bangladesh e-GP Helpdesk Contact Information:**\n"
+    "- 📱 **Toll-Free Hotline:** 16575 (accessible from any mobile network in Bangladesh)\n"
+    "- ☎️ **Telephone Support:** +880 9609112233 / +880 1762625528–31\n"
+    "- ✉️ **Email Support:** helpdesk@eprocure.gov.bd / e-gphelpdesk@cptu.gov.bd\n"
+    "- 🌐 **Official Portal:** [eprocure.gov.bd](https://www.eprocure.gov.bd)\n"
+    "- 🏢 **Authority:** Bangladesh Public Procurement Authority (BPPA) / CPTU, IMED, Ministry of Planning"
+)
+
 
 def _image_data_url(image: Optional[str], image_mime: str) -> Optional[str]:
     if not image:
@@ -102,6 +112,10 @@ def is_procedure_steps_request(question: str) -> bool:
     return bool(re.search(r"\b(?:steps?|step by step|procedure)\b", question, re.IGNORECASE))
 
 
+def is_concise_numbered_steps_request(question: str) -> bool:
+    return bool(re.search(r"\b(?:provide\s+concise\s+numbered\s+steps|concise\s+numbered\s+steps)\b", question, re.IGNORECASE))
+
+
 def load_system_prompt() -> str:
     """Loads system instructions from prompts/system_prompt.txt."""
     if os.path.exists(SYSTEM_PROMPT_PATH):
@@ -112,10 +126,13 @@ def load_system_prompt() -> str:
             print(f"[llm_service] Error reading system prompt: {e}")
 
     return (
-        "You are the official assistant for the electronic Government Procurement (e-GP) system. "
-        "Answer using only supplied official manual passages and supplemental e-GP Q&A context; politely decline questions unrelated "
-        "to e-GP or public procurement. Preserve all values as written. If context is incomplete or unclear, state "
-        "'The provided manual extract does not specify this information.' Format multi-part answers with headings, "
+        "You are Proca, an expert AI assistant for the Bangladesh e-GP (Electronic Government Procurement) system. "
+        "Always provide a clear, descriptive, helpful answer using the retrieved context in your own words. "
+        "Never say 'The provided manual extract does not specify this information' when relevant context is present. "
+        "If the question cannot be answered from the retrieved records, state clearly that you couldn't find the answer "
+        "and suggest contacting the official e-GP Helpdesk (Hotline: 16575, Phone: +880 9609112233, Email: helpdesk@eprocure.gov.bd). "
+        "Politely decline only questions entirely unrelated to e-GP or public procurement. "
+        "Preserve all official values as written. Format multi-part answers with headings, numbered steps, "
         "tables or bullets as appropriate, add a Summary when useful, and include a Source line only when section "
         "numbers are present in the context. Do not invent facts or citations."
     )
@@ -249,8 +266,9 @@ class LLMService:
 
         if not context or "No relevant context" in context or "No manual index" in context:
             return (
-                "I could not retrieve a supporting manual passage for this question, so I cannot verify an official "
-                "e-GP rule or portal procedure. The provided manual extract does not specify this information."
+                "I couldn't find an answer to your question in the official e-GP manual or Q&A records.\n\n"
+                "Please verify your query or contact the official e-GP Helpdesk for technical assistance:"
+                + HELPDESK_CONTACT_INFO
             )
 
         if is_procedure_steps_request(question):
@@ -293,7 +311,8 @@ class LLMService:
                     "tenderer. The manual says HOPE must complete it within **42 calendar days**; after approval, "
                     "the tenderer's details appear in the **Debarred Tenderer List**."
                 )
-            return "The provided manual extract does not specify this information."
+            # Fall through to general context synthesis if specific pattern not found
+            pass
 
         has_document_fee_table = bool(
             re.search(
@@ -764,7 +783,12 @@ class LLMService:
         relevant_sentences.sort(key=lambda item: item[0], reverse=True)
         answer_sentences = [sentence for _, sentence in relevant_sentences[:3]]
         if not answer_sentences:
-            return "I could not find enough information in the manual to answer that."
+            return (
+                "I couldn't find enough specific information in the official e-GP records to answer your question.\n\n"
+                "You can try rephrasing with specific terms (such as module name, tender ID, or workflow stage), "
+                "or reach out to the official e-GP Helpdesk for direct guidance:"
+                + HELPDESK_CONTACT_INFO
+            )
         return " ".join(answer_sentences)
 
     @staticmethod
@@ -818,7 +842,11 @@ class LLMService:
             key=lambda item: tuple(int(part) for part in item[0].split(".")),
         )
         if not ordered_steps:
-            return "I could not identify numbered steps in the retrieved manual text. Please refine the process or ask about a specific stage."
+            return (
+                "I couldn't identify specific step-by-step instructions in the retrieved records for this request.\n\n"
+                "Please verify the module or process name, or contact the official e-GP Helpdesk for operational guidance:"
+                + HELPDESK_CONTACT_INFO
+            )
 
         return "\n".join(
             f"{index}. {step.rstrip('.')}."
@@ -986,7 +1014,7 @@ class LLMService:
             and "No manual index" not in context
         )
 
-        if context_available and is_procedure_steps_request(question):
+        if context_available and is_concise_numbered_steps_request(question):
             return self._steps_answer_from_context(question, context), "e-GP Assistant", True
 
         # E2 always uses its configured multimodal model; E1 switches to it for images.
@@ -1029,6 +1057,9 @@ class LLMService:
         )
         if gemini_answer:
             return gemini_answer, "Gemini", False
+
+        if context_available and is_procedure_steps_request(question):
+            return self._steps_answer_from_context(question, context), "Offline procedure extractor", True
 
         return self._offline_answer_generator(question, context), "Offline grounded synthesis", True
 

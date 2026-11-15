@@ -79,3 +79,21 @@ The e‑GP Manual Assistant must provide **accurate, grounded answers** to user 
 3. Deploy backend to Render/Fly.io, update `CORS_ORIGINS` with the Netlify site URL.
 4. Add Prometheus metrics to monitor request latency and model usage.
 5. Conduct WCAG AA accessibility audit on the React UI.
+
+
+## Enterprise Multimodal RAG & Chunk-Image Architecture Decisions (November 2026)
+
+11. **Structure-Aware Chunk Image Architecture**
+    - **Problem**: Previously, 1,144 out of 1,188 chunks were indiscriminately mapped to whole-page renders (`page_X.jpg`). Chunks discussing early steps on a page were receiving a screenshot of a completely different step or a small footer logo.
+    - **Decision**: Extract all 1,096 embedded raster objects from the PDF using PyMuPDF. Link each image to its exact owning Chunk ID, Page ID, Screen Reference (e.g. `Screen - D1`, `Screen - D50`), and the surrounding descriptive sentence in that chunk.
+    - **Storage**: Structured files in `data/extracted_images/chunks/` with convention `chunk_{chunk_id}_page_{page}_{order}_{slug}.png`.
+    - **Serving**: Added `GET /api/manual/chunk/{chunk_id}/image` so citations directly display the exact screenshot corresponding to the retrieved chunk rather than an ambiguous full page.
+    - **Cleanup**: Deleted 537 old `page_*.jpg` files to eliminate redundant storage and prevent stale image shadowing.
+
+12. **Grounded Synthesis & Helpdesk Escalation Strategy**
+    - **Problem**: The system prompt previously instructed: *"If the context is incomplete or unclear, state: 'The provided manual extract does not specify this information.'"* This caused the LLM to give up prematurely even when rich context was present, producing stiff, unhelpful one-liners.
+    - **Decision**: Removed the rigid disclaimer. Instruct the LLM to read all retrieved evidence and synthesize comprehensive, descriptive, step-by-step guidance in its own words with Markdown tables, bold terms, and clear action items.
+    - **Helpdesk Escalation**: When a question genuinely cannot be answered from manual or Q&A records, the system must never invent facts. Instead, it clearly states that the information could not be located in official records and immediately provides the official Bangladesh e-GP Helpdesk channels (Hotline 16575, Phone +880 9609112233, Email helpdesk@eprocure.gov.bd).
+
+13. **Immutable Versioned Indexing**
+    - **Decision**: Decouple index builds from active serving using version directories (`data/indexes/v001/`, `v002/`) and an atomic pointer file (`active_version.json`). The web server reads `active_version.json` at startup or reload, allowing offline re-indexing jobs without service downtime or index corruption.
