@@ -9,7 +9,7 @@ interface ChatMessageProps {
 }
 
 export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onOpenPage }) => {
-  const isUser = message.role === 'user';
+  const isUser = message.sender === 'user';
 
   return (
     <div className={`flex gap-3 ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
@@ -35,7 +35,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onOpenPage })
 
         {/* Message Content */}
         <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap leading-relaxed text-sm">
-          {message.content}
+          {message.text}
         </div>
 
         {/* Citations */}
@@ -48,7 +48,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onOpenPage })
           <div className="mt-2.5 flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-100 dark:border-slate-800/60 pt-1.5">
             <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
               <CheckCircle2 className="w-3 h-3" />
-              {message.model_used || 'e-GP PE Manual Grounded'}
+              {'e-GP Manual Grounded'}
             </span>
             <span>{new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
           </div>

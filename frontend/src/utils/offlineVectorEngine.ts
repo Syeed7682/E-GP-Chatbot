@@ -313,10 +313,10 @@ export function generateOfflineAnswer(
   if (normQ === 'who are you' || normQ.includes('who are you') || normQ.includes('what can you do')) {
     return {
       question,
-      answer: `I am **Proca**, the official e-GP (electronic Government Procurement) Manual Assistant for Procuring Entity (PE) officers.\n\nI provide step-by-step guidance based strictly on the official **543-page Procuring Entity User Manual**, covering:\n• 🔑 User login & PE account setup\n• 📋 Annual Procurement Plan (APP) preparation\n• 📢 Tender preparation, notice publication & evaluation\n• 🔄 Approval workflow routing & digital signatures\n• ⚠️ Portal error diagnostics and PPR rule compliance\n\nPlease ask a question related to e-GP procurement guidelines or upload a portal screenshot!`,
+      answer: `I am **Proca**, the official e-GP (electronic Government Procurement) Assistant for both **Procuring Entities (PE)** and **Tenderers & Contractors**.\n\nI provide authoritative step-by-step guidance covering:\n• 🔑 User login, Tenderer/PE registration & NID/OTP verification\n• 📋 Annual Procurement Plan (APP) preparation & package management\n• 📢 Tender preparation, document purchase, e-Payment & bid submission\n• 🛡️ Bank Guarantee (e-BG) mapping & tender security\n• 🔄 Approval workflow routing & TOC/TEC evaluation procedures\n• 📑 Contract administration (e-CMS), measurement books & invoicing\n\nPlease ask any question related to e-GP procurement guidelines or upload a portal screenshot!`,
       sources: [],
       portal_screens: [],
-      model_used: 'e-GP PE Manual Grounded',
+      model_used: 'e-GP Manual Grounded',
       was_offline: true
     };
   }
@@ -324,10 +324,10 @@ export function generateOfflineAnswer(
   if (normQ === 'hi' || normQ === 'hello' || normQ === 'hey' || normQ === 'salam') {
     return {
       question,
-      answer: `Greetings! I am the official e-GP Manual Assistant.\n\nHow can I assist you with your procurement tasks today? You can ask about:\n• Logging into the portal\n• Creating a PE account\n• Preparing an Annual Procurement Plan (APP)\n• Deleting or modifying a draft tender\n• Resolving portal error messages`,
+      answer: `Greetings! I am **Proca**, the official e-GP Assistant for both Procuring Entities and Tenderers/Contractors.\n\nHow can I assist you with your procurement tasks today? You can ask about:\n• Contractor registration & company profile verification\n• Logging into the portal & password resets\n• Purchasing tender documents & e-Payment\n• Preparing an Annual Procurement Plan (APP)\n• Submitting encrypted bids & BOQ price schedules\n• Evaluation, NOA, and contract management (e-CMS)`,
       sources: [],
       portal_screens: [],
-      model_used: 'e-GP PE Manual Grounded',
+      model_used: 'e-GP Manual Grounded',
       was_offline: true
     };
   }

@@ -17,7 +17,19 @@ class PDFLoader:
                 self.pdf_path = alt_path
 
     def load_pages(self, start_page: int = 1, end_page: Optional[int] = None) -> List[Dict[str, Any]]:
-        """Extracts text per page using PyMuPDF (fitz) or pypdf."""
+        """Extracts text per page using CSV (if available) or PyMuPDF (fitz) or pypdf."""
+        # Check if CSV-extracted manual data is available first
+        if hasattr(settings, "EGP_MANUAL_CSV") and settings.EGP_MANUAL_CSV.is_file():
+            try:
+                from app.services.csv_loader import csv_loader
+                all_csv_pages = csv_loader.load_manual_pages(settings.EGP_MANUAL_CSV)
+                if all_csv_pages:
+                    total = len(all_csv_pages)
+                    last = end_page if end_page and end_page <= total else total
+                    return [p for p in all_csv_pages if start_page <= p["page_number"] <= last]
+            except Exception as e_csv:
+                print(f"[pdf_loader] Notice: CSV load fallback to PDF: {e_csv}")
+
         pages = []
         if not os.path.exists(self.pdf_path):
             print(f"[pdf_loader] Manual PDF not found at: {self.pdf_path}")

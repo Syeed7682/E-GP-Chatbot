@@ -118,17 +118,94 @@ def parse_pdf_with_fitz(pdf_path: Path, output_dir: Path) -> Dict[str, Any]:
     }
 
 
-def parse_pdf(pdf_path: str | Path, output_dir: str | Path) -> Dict[str, Any]:
+def parse_pdf_from_csv(csv_path: str | Path, output_dir: str | Path) -> Dict[str, Any]:
     """
-    Main entry point for PDF parsing.
-    Attempts Docling first; falls back to PyMuPDF if Docling is unavailable.
+    High-speed, authoritative extraction from extracted CSV data source.
+    Loads structured pages, extracts screen codes and sections, and exports document.json and document.md.
     """
-    pdf_p = Path(pdf_path)
+    import csv
+
+    csv_p = Path(csv_path)
     out_p = Path(output_dir)
     out_p.mkdir(parents=True, exist_ok=True)
 
+    screen_pattern = re.compile(r"Screen\s*[–—-]\s*([A-Za-z0-9_.-]+)", re.IGNORECASE)
+    section_pattern = re.compile(r"^(\d+(?:\.\d+)+)\s+(.+)$")
+
+    pages_data: List[Dict[str, Any]] = []
+    full_markdown_lines: List[str] = []
+
+    with open(csv_p, "r", encoding="utf-8-sig", errors="replace") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            page_num = int(row.get("page_number", 0))
+            text = row.get("text_content", "").strip()
+            section = row.get("detected_section", "General Overview").strip()
+
+            lines = [l.strip() for l in text.splitlines() if l.strip()]
+            page_headings = [section] if section else []
+            page_screens = []
+
+            for line in lines:
+                s_match = screen_pattern.search(line)
+                if s_match:
+                    page_screens.append(s_match.group(0))
+
+                sec_match = section_pattern.match(line)
+                if sec_match:
+                    page_headings.append(f"{sec_match.group(1)} {sec_match.group(2).strip()}")
+
+            page_record = {
+                "page": page_num,
+                "section": section,
+                "section_number": "1.0",
+                "headings": list(dict.fromkeys(page_headings)),
+                "screens": list(set(page_screens)),
+                "text": text,
+                "has_images": int(row.get("image_count") or 0) > 0,
+            }
+            pages_data.append(page_record)
+            full_markdown_lines.append(f"\n\n<!-- PAGE {page_num} -->\n## Page {page_num} — {section}\n\n")
+            full_markdown_lines.append(text)
+
+    doc_json_path = out_p / "document.json"
+    doc_json_path.write_text(json.dumps(pages_data, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    md_path = out_p / "document.md"
+    md_path.write_text("\n".join(full_markdown_lines), encoding="utf-8")
+
+    logger.info("Successfully loaded %d pages from CSV: %s", len(pages_data), csv_p)
+    return {
+        "engine": "csv",
+        "json_path": str(doc_json_path),
+        "markdown_path": str(md_path),
+        "page_count": len(pages_data),
+        "pages": pages_data,
+    }
+
+
+def parse_pdf(pdf_path: str | Path, output_dir: str | Path, csv_path: Optional[str | Path] = None) -> Dict[str, Any]:
+    """
+    Main entry point for manual parsing.
+    Checks CSV data source first; falls back to Docling or PyMuPDF if CSV is absent.
+    """
+    out_p = Path(output_dir)
+    out_p.mkdir(parents=True, exist_ok=True)
+
+    # 1. Prefer CSV data source if available
+    csv_candidates = [
+        Path(csv_path) if csv_path else None,
+        Path("csv_files/egp_manual_extracted.csv"),
+        out_p.parent.parent / "csv_files" / "egp_manual_extracted.csv",
+    ]
+    for c in csv_candidates:
+        if c and c.is_file():
+            logger.info("Using extracted CSV as primary data source: %s", c)
+            return parse_pdf_from_csv(c, out_p)
+
+    pdf_p = Path(pdf_path)
     if not pdf_p.exists():
-        raise FileNotFoundError(f"PDF file not found at: {pdf_p}")
+        raise FileNotFoundError(f"Neither CSV nor PDF file found at: {pdf_p}")
 
     try:
         import importlib

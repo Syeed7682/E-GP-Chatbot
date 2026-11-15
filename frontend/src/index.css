@@ -18,6 +18,15 @@
     padding: 0;
     -webkit-font-smoothing: antialiased;
   }
+
+  button, input, textarea {
+    font: inherit;
+  }
+
+  button:focus-visible, input:focus-visible, textarea:focus-visible {
+    outline: 3px solid rgba(53, 104, 212, 0.28);
+    outline-offset: 2px;
+  }
 }
 
 .chat-answer {
@@ -49,6 +58,11 @@
 
 .govt-border {
   border-color: #D5DEE7;
+}
+
+::selection {
+  background: #cfe1ff;
+  color: #12304A;
 }
 
 /* Subtle clean scrollbars */

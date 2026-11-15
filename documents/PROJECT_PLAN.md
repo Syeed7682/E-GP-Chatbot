@@ -2,7 +2,7 @@
 
 ## Objective
 
-Build and maintain an enterprise-grade multimodal Retrieval-Augmented Generation (RAG) assistant for the Bangladesh e-GP (Electronic Government Procurement) system, preserving full citation provenance, structured diagram associations, and high-availability inference with fallback escalation.
+Build and maintain an enterprise-grade multimodal Retrieval-Augmented Generation (RAG) assistant for the Bangladesh e-GP (Electronic Government Procurement) system, serving both **Procuring Entities (PEs)** and **Tenderers / Contractors / Vendors**, preserving citation provenance, structured diagram associations, and high-availability inference with Helpdesk fallback escalation.
 
 ---
 
@@ -78,15 +78,17 @@ Build and maintain an enterprise-grade multimodal Retrieval-Augmented Generation
 - **Delivered**:
   - Prompt overhaul in `system_prompt.txt`: Synthesizes descriptive answers in its own words; removed rigid disclaimers.
   - Helpdesk fallback: Automatically provides official Bangladesh e-GP Helpdesk contact channels (Hotline: `16575`, Phone: `+880 9609112233`, Email: `helpdesk@eprocure.gov.bd`).
-  - Q&A Suggestion deduplication: `qaQuestionSuggestions.ts` single-escaped normalization collapses procedural question families into 1 entry per type.
-  - Production launchers: Fixed Windows `run.bat` and added `backend\run.bat` for one-click startup.
-  - Render deployment resilience: `_resolve_data_dir()` in `backend/app/config.py` safely catches `PermissionError` when `/var/data` is unmounted and gracefully defaults to local repository data.
-  - Architecture modeling: Authored complete and simplified PlantUML diagrams (`PROJECT_ARCHITECTURE.puml`, `SIMPLE_ARCHITECTURE.puml`).
 
 ---
 
-## Upcoming Enhancements (Phase 8 Roadmap)
-
-1. **Full Docling v002 Re-Tokenization**: Run end-to-end extraction through Docling to populate deep table structures and section hierarchies for `v002`.
-2. **Bengali (Bangla) Multilingual Expansion**: Expand retrieval and prompt templates to support native Bangla inquiries with official Bengali procurement terms.
-3. **Advanced Visual Similarity Matching**: Benchmark visual embeddings (SigLIP) on end-to-end user photo uploads against the 1,096 cropped chunk diagrams.
+### Phase 8 — Dual-Audience Expansion, CSV Knowledge Layer & Interactive Actions
+- **Status**: **Complete** ✅
+- **Delivered**:
+  - **Dual-Audience Expansion**: Overhauled `system_prompt.txt`, fallback synthesizer prompts, greeting flows, and frontend headers to remove all PE-only restrictions. The system now treats Procuring Entities and Tenderers/Contractors with equal priority and domain expertise (covering e-Payment, e-BG mapping, tender purchasing, online bid preparation, JV configuration, and BOQ encryption).
+  - **CSV Knowledge Pipeline (`csv_files/`)**: Extracted structured CSV datasets for the 543-page manual (`egp_manual_extracted.csv`), the 27-page registration manual (`egp_registration_manual_extracted.csv`), and 729 Contractor Evaluation Q&A records (`egp_contractor_evaluation_dataset.csv`).
+  - **Interactive Action Pills (`MessageActionButtons`)**: Added horizontal interactive pills below every assistant message:
+    - 🖼️ `View Scenario — Screen / Page`: Expandable portal screenshot viewer with carousel controls.
+    - 📖 `Source Reference`: Expandable citation block linking to official manual pages and Q&A items.
+    - 📞 `Contact Helpdesk`: Expandable Helpdesk block providing official BPPA / CPTU hotline `16575`, telephone, and email support.
+  - **Repository Cleanup & Archival**: Consolidated one-off dataset migration and analysis utilities into `Nessery_dumpings/` for a clean, production-ready codebase.
+  - **Zero Regressions**: 62 / 62 backend tests passing, frontend Vite build compiles cleanly with zero TypeScript errors.

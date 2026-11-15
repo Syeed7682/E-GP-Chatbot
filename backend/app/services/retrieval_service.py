@@ -124,10 +124,26 @@ class RetrievalService:
 
         return text
 
-    def __init__(self, emb_service=embedding_service, f_service=faiss_service, q_service=qa_service):
+    def __init__(
+        self,
+        emb_service=embedding_service,
+        f_service=faiss_service,
+        q_service=qa_service,
+        csv_q_service=None,
+    ):
         self.embedding_service = emb_service
         self.faiss_service = f_service
         self.qa_service = q_service
+        if csv_q_service is not None:
+            self.csv_qa_service = csv_q_service
+        elif q_service is qa_service:
+            try:
+                from app.services.qa_service import csv_qa_service
+                self.csv_qa_service = csv_qa_service
+            except Exception:
+                self.csv_qa_service = None
+        else:
+            self.csv_qa_service = None
 
     @staticmethod
     def _format_qa_matches(matches: List[Dict]) -> Tuple[str, List[Dict]]:
@@ -136,14 +152,15 @@ class RetrievalService:
         for match in matches:
             record = match["record"]
             score = match["score"]
-            source_files = record.get("source_files", [record["source"]])
+            source_files = record.get("source_files", [record.get("source", "e-GP System Q&A.txt")])
+            src_name = record.get("source", "e-GP System Q&A.txt")
             context_parts.append(
                 f"[Supplemental Q&A: {', '.join(source_files)} | Module: {record['module']} | "
                 f"Question {record['question_number']} | Relevance: {score:.2f}]\n"
                 f"Q: {record['question']}\nA:\n{record['answer']}"
             )
             sources.append({
-                "source": "e-GP System Q&A.txt",
+                "source": src_name,
                 "source_files": source_files,
                 "source_type": "qa",
                 "page": None,
@@ -385,6 +402,18 @@ class RetrievalService:
             - sources: List of structured source metadata dicts with image_path.
         """
         qa_matches = self.qa_service.search(question, limit=min(max(top_k, 1), 3))
+
+        # Check contractor evaluation CSV dataset if baseline has no direct match and not a procedure steps request
+        is_steps_query = bool(re.search(r"\b(?:steps?|step by step|procedure)\b", question, re.IGNORECASE))
+        if self.csv_qa_service and not is_steps_query and not any(m.get("direct_match") for m in qa_matches):
+            csv_matches = self.csv_qa_service.search(question, limit=min(max(top_k, 1), 3))
+            if any(m.get("direct_match") for m in csv_matches):
+                qa_matches = [m for m in csv_matches if m.get("direct_match")]
+            elif not qa_matches and csv_matches:
+                top_csv = [m for m in csv_matches if m.get("score", 0.0) >= 0.60]
+                if top_csv:
+                    qa_matches = top_csv
+
         qa_context, qa_sources = self._format_qa_matches(qa_matches)
 
         if not self.load_index_if_needed():

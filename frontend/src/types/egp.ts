@@ -6,7 +6,7 @@
 export interface ManualChunk {
   chunk_id: number;
   section_title: string;
-  category: 'authentication' | 'app_planning' | 'tender_creation' | 'workflow' | 'evaluation' | 'contract' | 'troubleshooting';
+  category: 'authentication' | 'app_planning' | 'tender_creation' | 'workflow' | 'evaluation' | 'contract' | 'troubleshooting' | 'procurement_process';
   page_number: number;
   source: string;
   content: string;

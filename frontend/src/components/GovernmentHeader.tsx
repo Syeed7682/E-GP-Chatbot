@@ -129,7 +129,7 @@ export const GovernmentHeader: React.FC<GovernmentHeaderProps> = ({
         <div className="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap">
           <span className="font-bold text-amber-400 shrink-0">PORTAL NOTICE:</span>
           <span className="truncate">
-            Official Procuring Entity User Manual (543 pages) indexed • Offline-First vector caching active • Checksum verification SHA-256 compliant.
+            e-GP PE & Tenderer Manuals (570 pages) indexed • Offline-First vector caching active • Checksum verification SHA-256 compliant.
           </span>
         </div>
         <div className="hidden lg:flex items-center gap-3 shrink-0 text-emerald-400/70 text-[10px]">

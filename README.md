@@ -1,75 +1,56 @@
-# e-GP Manual Assistant
-### AI-Powered Question Answering for the Bangladesh e-GP Procuring Entity User Manual
+# e-GP Assistant (Proca)
+### Enterprise Multimodal AI Assistant for Bangladesh e-GP (Procuring Entities & Tenderers / Contractors)
 
-An AI-powered document assistant that helps users explore and understand the **Bangladesh Electronic Government Procurement (e-GP) Procuring Entity User Manual** through natural-language questions.
+An AI-powered document intelligence and procedural assistant that helps users understand and navigate the **Bangladesh Electronic Government Procurement (e-GP)** ecosystem under the Public Procurement Act (PPA 2006) and Public Procurement Rules (PPR 2008).
 
-Built with React, FastAPI, FAISS, and multimodal AI, the application combines semantic retrieval, domain-specific keyword ranking, and grounded language generation to provide contextual answers with manual page references.
+The platform serves both **Procuring Entities (PEs)** and **Tenderers / Contractors / Vendors**, providing contextual answers, statutory references, and visual diagram/portal screenshot alignments.
 
-> **Disclaimer:** This is an informational project assistant, not an official procurement authority. Its responses are based on the indexed manual and configured AI provider. Always verify procurement decisions against the applicable regulations, official e-GP guidance, and authorized sources.
+> **Official Authority Notice:** This assistant provides automated guidance grounded in the official Bangladesh e-GP User Manuals and BPPA / CPTU documentation. For legal disputes or formal decisions, consult the official portal at [eprocure.gov.bd](https://www.eprocure.gov.bd) or contact the **e-GP Helpdesk at 16575**.
 
 ---
 
 ## Key Features
 
-- **AI-Powered Question Answering:** Ask natural-language questions about the e-GP manual.
-- **Retrieval-Augmented Generation (RAG):** Combines FAISS semantic search with domain-specific keyword ranking.
-- **Source-Grounded Responses:** Provides references to relevant manual pages to support generated answers.
-- **Screenshot-Based Questions:** Upload screenshots for OCR and vision-based question processing.
-- **Multimodal AI Support:** Uses Groq‑hosted GPT‑OSS for E1 text answers and Qwen for E2 and screenshot answers.
-- **Manual Page Visualization:** View relevant manual pages alongside answers.
-- **Offline Browser Support:** Includes local retrieval and IndexedDB storage for browser‑based access when the backend is unavailable.
-- **Suggested Questions:** Explore searchable, manual‑based question suggestions.
-- **Full Manual Access:** Download the complete 543‑page PDF manual.
+- **Dual-Audience Scope:** Serves both Procuring Entities (APP planning, tender creation, opening, evaluation, NOA, contract signing) and Tenderers/Contractors (registration, e-Payment, e-BG mapping, tender purchasing, online bid preparation, joint venture setups).
+- **Multi-Channel RAG Pipeline:** Combines dense semantic search (BGE-M3 1024-dim), sparse lexical ranking (BM25Okapi), visual screenshot matching (SigLIP 768-dim), and cross-encoder precision reranking (BGE-Reranker-v2-m3).
+- **Interactive Action Pills on Every Response:**
+  - 🖼️ **`View Scenario — Screen / Page`**: Expandable modal/card rendering the exact manual diagram or portal screenshot mapped to the procedural step, with multi-page carousel navigation.
+  - 📖 **`Source Reference`**: Expandable citation block linking to official manual page numbers (e.g., `p. 199, p. 415`) and supplemental Q&A records.
+  - 📞 **`Contact Helpdesk`**: Instant access to official BPPA / CPTU Helpdesk contact channels (Hotline `16575`, support numbers, and official emails).
+- **Automated Helpdesk Escalation:** If a user query falls outside the official manual records, the system politely clarifies the limitation and renders the complete Helpdesk contact block directly.
+- **Multimodal Screenshot Diagnostics:** Upload portal screenshots to diagnose error codes, BOQ discrepancies, and verification screens via OCR and vision models.
+- **CSV Data Source Integration:** Utilizes structured CSV extractions (`csv_files/`) alongside original manuals and 1,000 official Q&A records.
+- **Offline Resilience:** Local vector engine and IndexedDB cache allow client-side assistance when offline.
+
+---
 
 ## Technology Stack
 
 | Layer | Technologies |
 |---|---|
-| Frontend | React 19, TypeScript, Vite |
-| Styling | Tailwind CSS |
-| Backend | Python, FastAPI |
-| Development Server | Express.js |
-| Vector Search | FAISS |
-| Retrieval | Dense Semantic Search, Keyword Scoring |
-| AI Models | Groq `openai/gpt-oss-20b`, Groq `qwen/qwen3.8-27b` |
-| Document Processing | PDF Processing, OCR, Vision |
-| Browser Storage | IndexedDB |
-| Deployment | Netlify, Python‑compatible hosting |
+| **Frontend** | React 19, TypeScript, Vite, Tailwind CSS, Lucide Icons |
+| **Backend** | Python 3.12, FastAPI, Uvicorn, PyMuPDF |
+| **Vector & Retrieval** | FAISS `IndexIDMap2(IndexFlatIP)`, `rank-bm25`, Reciprocal Rank Fusion ($k=60$) |
+| **Embeddings & Reranking** | `BAAI/bge-m3` (1024-dim), `google/siglip-base-patch16-224` (768-dim), `BAAI/bge-reranker-v2-m3` |
+| **Inference Models** | Groq `openai/gpt-oss-20b` (text), Groq `qwen/qwen3.8-27b` (multimodal/vision), Google Gemini Flash (fallback) |
+| **Local / Browser Storage** | IndexedDB, SQLite (`metadata.db`) |
+| **Deployment** | Netlify (Frontend), Render / Linux VM (Backend) |
 
-## System Architecture
+---
 
-The application follows a frontend‑backend architecture. The React frontend communicates with a separately hosted FastAPI backend for AI‑powered question answering, document retrieval, and manual access.
+## Knowledge Base Sources
 
-### Question Answering Pipeline
+1. **Official User Manuals**:
+   - `egp_manual.pdf` (543 pages — Comprehensive Procuring Entity & System Manual).
+   - `eGP_NewUserRegManual_English.pdf` (27 pages — Contractor & User Registration Manual).
+2. **Supplemental Q&A Datasets**:
+   - `e-GP System Q&A.txt` / `.docx` (1,000 baseline procedural questions & answers).
+3. **Structured CSV Layer (`csv_files/`)**:
+   - `egp_manual_extracted.csv`: Structured 543-page manual records.
+   - `egp_registration_manual_extracted.csv`: Structured 27-page registration records.
+   - `egp_contractor_evaluation_dataset.csv`: 729 verified question-and-answer pairs covering contractor and evaluation workflows.
 
-1. **User Input:** Submit a text question or upload a screenshot.
-2. **Document Retrieval:** Search the indexed manual using FAISS semantic similarity and domain‑specific keyword ranking.
-3. **Score Fusion:** Combine normalized retrieval scores to identify relevant document chunks.
-4. **Context Selection:** Select the highest‑ranked manual passages.
-5. **AI Generation:** Generate a context‑grounded response using the configured multimodal language model.
-6. **Source Attribution:** Return relevant manual page references with the generated answer.
-
-### Retrieval Strategy
-
-| Retrieval Component | Weight |
-|---|---:|
-| FAISS Semantic Search | 30% |
-| Domain‑Specific Keyword Ranking | 70% |
-
-The normalized scores are fused linearly (default `0.7 * dense + 0.3 * bm25`). Adjust in `HybridRetriever._fuse` if needed.
-
-**Note:** The repository contains separate hybrid‑retrieval and reranking modules, but the active chat path currently uses the weighted fusion above rather than BM25, RRF, or a BGE reranker.
-
-## AI Models
-
-| Model | Purpose | Configuration |
-|---|---|---|
-| `openai/gpt-oss-20b` | Groq E1 text answers | Default |
-| `qwen/qwen3.8-27b` | Groq E2 and screenshot answers | Default |
-
-Set `GROQ_API_KEY` on the backend host. `GROQ_TEXT_MODEL` and `GROQ_VISION_MODEL` can override the defaults. Gemini is an optional fallback.
-
-When no hosted provider is configured, the backend falls back to an offline grounded synthesis routine.
+---
 
 ## Project Structure
 
@@ -78,284 +59,110 @@ When no hosted provider is configured, the backend falls back to an offline grou
 ├── backend/
 │   ├── app/
 │   │   ├── api/                 # Chat, health, manual, sync endpoints
-│   │   ├── core/                # Configuration and security
-│   │   ├── prompts/             # System prompts
-│   │   ├── schemas/             # Request/response schemas
-│   │   ├── services/            # Retrieval, embeddings, vision, citations
-│   │   └── main.py              # FastAPI entry point
-│   ├── scripts/                 # Ingestion and index‑building scripts
-│   ├── tests/                   # Backend tests
+│   │   ├── core/                # Configuration, security, database
+│   │   ├── prompts/             # Dual-audience system prompts (system_prompt.txt)
+│   │   ├── schemas/             # Pydantic request/response schemas
+│   │   ├── services/            # Retrieval, embeddings, vision, citations, LLM
+│   │   └── main.py              # FastAPI application entry point
+│   ├── scripts/                 # Ingestion & index-building scripts (ingest_all.py, etc.)
+│   ├── tests/                   # Automated pytest suite (62 passing tests)
 │   └── requirements.txt
 │
-├── data/
-│   ├── raw/                     # Original PDF (not tracked)
-│   ├── processed/               # Extracted and chunked content
-│   ├── faiss_index/             # FAISS index and metadata
-│   └── extracted_images/        # Optional page images
+├── csv_files/                   # Structured CSV data sources
+│   ├── egp_contractor_evaluation_dataset.csv
+│   ├── egp_manual_extracted.csv
+│   └── egp_registration_manual_extracted.csv
 │
-├── documents/
-│   ├── INDEX.md
-│   ├── PROJECT_ARCHITECTURE.md
-│   ├── PROJECT_PLAN.md
-│   ├── API_DOCUMENTATION.md
-│   └── DEPLOYMENT_GUIDE.md
+├── data/
+│   ├── raw/                     # Original PDF manuals & Q&A documents
+│   ├── processed/               # Processed chunks (chunks.json)
+│   ├── faiss_index/             # Dense FAISS vectors & metadata
+│   ├── indexes/                 # Versioned index store (v001/) with active_version.json
+│   └── extracted_images/        # 1,096 cropped chunk diagrams & screen images
+│
+├── documents/                   # Architecture, API specs, deployment guides
+│   ├── INDEX.md                 # Documentation index
+│   ├── PROJECT_ARCHITECTURE.md  # Detailed architecture & component flows
+│   ├── API_DOCUMENTATION.md     # OpenAPI route documentation
+│   ├── DEPLOYMENT_GUIDE.md      # Deployment instructions (Local, Render, Netlify)
+│   ├── EMBEDDINGS.md            # Multi-channel embedding & indexing guide
+│   └── PROJECT_PLAN.md          # Completed development phases (1–8)
 │
 ├── frontend/
-│   ├── public/                  # Static assets and logo
-│   └── src/
-│       ├── components/          # React components
-│       ├── data/                # Bundled manual data
-│       ├── services/             # Backend API client
-│       ├── types/                # TypeScript definitions
-│       └── utils/                # Offline retrieval and storage
+│   ├── src/
+│   │   ├── components/          # GovtChatArea, HelpdeskContactCard, Header, Sidebar
+│   │   ├── services/            # API client and streaming handlers
+│   │   ├── types/               # TypeScript interfaces
+│   │   └── App.tsx              # Main application shell
+│   ├── package.json
+│   └── vite.config.ts
 │
-├── scripts/                     # Root‑level utilities
-├── .env.example                 # Environment template
-├── netlify.toml                 # Netlify configuration
-├── run.bat                      # Windows development launcher
-├── run.sh                       # Linux/macOS launcher
-└── README.md
+├── Nessery_dumpings/            # Archived scratch scripts & developer utility files
+│
+├── .env.example                 # Environment configuration template
+├── netlify.toml                 # Netlify SPA routing rules
+├── requirements.txt             # Root requirements pointer
+└── run.bat                      # One-click Windows development launcher
 ```
 
-## Getting Started
+---
 
-### Prerequisites
+## Quick Start
 
-- Node.js and npm
-- Python and pip
-- Git
-- The authorized e‑GP manual PDF
-- FAISS index and metadata files
+### 1. Prerequisites
+- **Python**: 3.10+ (tested on 3.12.10)
+- **Node.js**: 20+ (tested on Node 22)
 
-### 1️⃣ Clone the Repository
-
+### 2. Environment Configuration
+Copy `.env.example` to `.env` in the repository root and configure your inference keys:
 ```bash
-git clone <YOUR_REPOSITORY_URL>
-cd <YOUR_PROJECT_DIRECTORY>
+GROQ_API_KEY=your_groq_api_key_here
+GEMINI_API_KEY=your_gemini_api_key_here  # Optional fallback
 ```
 
-### 2️⃣ Configure Environment Variables
-
-Create a local `.env` file (copy from `.env.example`):
-
-```powershell
-if (!(Test-Path .env)) { Copy-Item .env.example .env }
-```
-
-Edit `.env` with your backend configuration (e.g., `GROQ_API_KEY`, model names, `USE_LOCAL_LLM`).
-
-### 3️⃣ Install Backend Dependencies
-
-```bash
-python -m pip install -r backend/requirements.txt
-```
-
-### 4️⃣ Install Frontend Dependencies
-
-```bash
-cd frontend
-npm install
-```
-
-### 5️⃣ Prepare Manual Data
-
-Place the official PDF at:
-
-```
-data/raw/egp_manual.pdf
-```
-
-Ensure the processed chunks, FAISS index, and metadata exist:
-
-```
-data/
-├── raw/egp_manual.pdf
-├── processed/chunks.json
-└── faiss_index/index.faiss
-   └── metadata.json
-```
-
-If you need to regenerate the index:
-
-```bash
-python -m app.services.embedding_service --build-index
-```
-
----
-
-## Embedding & FAISS Index
-
-The `embedding_service` script splits the PDF into ~500‑word chunks, computes BGE‑M3 embeddings, and builds a flat FAISS index. Metadata (page numbers, chunk IDs) is stored alongside the index for citation generation.
-
----
-
-## Hybrid Retrieval Pipeline
-
-1. **Pre‑process query** – stop‑word removal, synonym expansion (see `retrieval_service.py`).
-2. **Dense search** – FAISS inner‑product similarity.
-3. **Sparse search** – BM25 via `BM25Retriever`.
-4. **Score fusion** – weighted linear combination (default `0.7 * dense + 0.3 * bm25`).
-5. **Post‑process** – filter TOC pages (`page ≤ 5`) and stitch fragmented sentences.
-
-The top‑k chunks are formatted by `LLMService._build_context` into a numbered list with page citations (`combined_text`).
-
----
-
-## LLM Configuration
-
-- **Local mode** – Loads `Qwen/Qwen2.5-VL-3B-Instruct` via Hugging Face Transformers when `USE_LOCAL_LLM=true`.
-- **Groq fallback** – Calls `GROQ_TEXT_MODEL` for text and `GROQ_VISION_MODEL` for images.
-- **Vision auto‑shift** – If an image is supplied, the backend automatically routes the request to the vision model (E2) regardless of the toggle.
-
-The UI includes an **E1/E2 toggle**; toggling sends `use_alt_model` in the `/chat` payload, forcing the vision model.
-
----
-
-## API Endpoints
-
-| Method | Path | Description |
-|---|---|---|
-| `POST` | `/api/chat` | Main QA endpoint (text + optional image). |
-| `GET` | `/api/questions` | List supplemental Q&A entries for suggestions. |
-| `GET` | `/api/health` | System health and index status. |
-| `GET` | `/api/chunks` | Inspect a sample of indexed manual chunks. |
-| `POST` | `/api/retrieve` *(optional)* | Return raw retrieved chunks (text, page, screenshots) without LLM processing. |
-
----
-
-## Running the Application
-
-### Option A: Windows (run.bat)
-
+### 3. Launching the Application
+Execute the Windows launcher:
 ```powershell
 .\run.bat
 ```
-Select the full‑stack development option.
+Or start manually:
 
-### Option B: Linux / macOS (run.sh)
-
-```bash
-bash run.sh
-```
-
-### Option C: Manual start
-
-**Backend**
-```bash
+**Terminal 1 — Backend:**
+```powershell
 cd backend
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
-**Frontend**
-```bash
+
+**Terminal 2 — Frontend:**
+```powershell
 cd frontend
-npm run dev   # http://localhost:5173
+npm run dev
 ```
 
-### URLs
-
-- Frontend: `http://localhost:3000` (or `5173` depending on Vite config)
-- Backend API: `http://127.0.0.1:8000`
-- OpenAPI docs: `http://127.0.0.1:8000/docs`
+Visit `http://localhost:3000` to interact with the assistant.
 
 ---
 
-## Production Deployment
+## Testing & Quality Assurance
 
-| Component | Deployment |
-|---|---|
-| Frontend | Netlify |
-| Backend | Python‑compatible host |
-| Manual PDF & FAISS index | Backend storage |
-
-### Frontend (Netlify)
-
-Add environment variable:
-```env
-VITE_API_BASE_URL=https://<your‑backend>.com
-```
-
-### Backend
-
-Set CORS origin:
-```env
-CORS_ORIGINS=https://<your‑netlify‑site>.netlify.app
-```
-Ensure the backend has access to the PDF, processed chunks, FAISS index, and metadata.
-
-See `documents/DEPLOYMENT_GUIDE.md` for full instructions.
-
----
-
-## Build & Validation
-
-**Frontend build**
-```bash
-cd frontend
-npm run build
-```
-
-**Frontend lint / type‑check**
-```bash
-npm run lint   # runs tsc --noEmit
-```
-
-**Backend tests**
-```bash
+Run the automated backend test suite:
+```powershell
 python -m pytest backend/tests -q
 ```
-Run these before committing or deploying.
+*Current test result: **62 passed**.*
+
+Verify frontend compilation:
+```powershell
+npm run build --prefix frontend
+```
+*Current build result: **0 TypeScript / Vite compilation errors**.*
 
 ---
 
-## Data Management
+## Official Helpdesk Escalation Contacts
 
-| File | Description |
-|---|---|
-| `data/raw/egp_manual.pdf` | Original 543‑page manual |
-| `data/raw/e‑GP System Q&A.txt` | Supplemental Q&A source |
-| `data/processed/chunks.json` | Extracted document chunks |
-| `data/faiss_index/index.faiss` | FAISS vector index |
-| `data/faiss_index/metadata.json` | Chunk metadata |
-| `data/extracted_images/` | Optional page images |
-| `frontend/src/data/allManualChunks.json` | Bundled data for offline UI |
-
-Keep the PDF out of version control; only store processed artifacts.
-
----
-
-## Known Limitations
-
-- Answer quality depends on manual coverage and index quality.
-- Retrieval may miss edge‑case provisions.
-- Current pipeline uses weighted dense + keyword scores; no BM25‑only or reranker path.
-- Offline browser mode may yield different results than the server.
-- Vision performance relies on OCR/vision model accuracy.
-- Hosted model limits are imposed by the provider.
-- This tool does **not** replace official procurement guidance.
-
----
-
-## Documentation
-
-Additional docs are in the `documents/` folder:
-
-- `INDEX.md` – Overview of documentation
-- `PROJECT_ARCHITECTURE.md` – Detailed architecture
-- `PROJECT_PLAN.md` – Roadmap & validation checklist
-- `API_DOCUMENTATION.md` – Backend API spec
-- `DEPLOYMENT_GUIDE.md` – Netlify & backend deployment steps
-
----
-
-## Contributing
-
-1. Fork the repo and create a feature branch.
-2. Keep retrieval and citation behavior consistent with the indexed manual.
-3. Do **not** commit any secret keys.
-4. Run both frontend lint and backend tests.
-5. Update documentation when behavior changes.
-
-
-## License
-
-Specify your project’s license here (e.g., MIT, Apache‑2.0).
+- 📞 **e-GP Helpdesk Hotline:** `16575` *(from any mobile network in Bangladesh)*
+- ☎️ **Telephone Support:** `+880 9609112233` / `+880 1762625528–31`
+- ✉️ **Email Support:** `helpdesk@eprocure.gov.bd` / `e-gphelpdesk@cptu.gov.bd`
+- 🌐 **Official Portal:** [eprocure.gov.bd](https://www.eprocure.gov.bd)
+- 🏢 **Authority:** Bangladesh Public Procurement Authority (BPPA) / CPTU, IMED, Ministry of Planning

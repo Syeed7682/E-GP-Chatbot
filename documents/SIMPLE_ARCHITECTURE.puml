@@ -5,32 +5,62 @@ skinparam defaultFontName Arial
 skinparam roundCorner 8
 skinparam shadowing false
 
-title Bangladesh e-GP Assistant - High-Level Architecture
+title Bangladesh e-GP Assistant - End-to-End Retrieval & Inference Flow
 
-actor "User / Official" as User
-participant "React Frontend\n(Netlify UI)" as UI
-participant "FastAPI Service\n(Render / Local)" as API
-participant "RAG Engine\n(FAISS + BM25)" as RAG
-participant "Knowledge Store\n(v001 Indexes & Images)" as Data
+actor "Procuring Entity / Contractor" as User
+participant "React 19 Frontend\n(GovtChatArea + Action Pills)" as UI
+participant "FastAPI Service\n(app/api/chat.py)" as API
+participant "Retrieval Engine\n(app/services/retrieval_service.py)" as RAG
+participant "Q&A Knowledge Store\n(Baseline + Contractor CSV)" as QAStore
+participant "Manual Knowledge Store\n(FAISS 1024-dim + BM25 + Images)" as ManualStore
 participant "LLM Providers\n(Groq / Gemini / Offline)" as LLM
 
 User -> UI: Ask Question / Upload Screenshot
-UI -> API: POST /api/chat
-API -> RAG: Query Pipeline
-RAG -> Data: Search Vectors, Keywords & Chunks
-Data --> RAG: Retrieved Chunks & Image Paths
-RAG -> LLM: Grounded Prompt + Evidence
-LLM --> API: Structured Synthesized Response
-API --> UI: Answer + Citations + Exact Chunk Diagram
-UI --> User: Display Formatted Guidance
+UI -> API: POST /api/chat (question, top_k, optional screenshot)
 
-note right of LLM
-  Failover Chain:
-  1. Groq (gpt-oss-20b / qwen3.8-27b)
-  2. Gemini Flash
-  3. Offline Synthesizer
-  4. Helpdesk Fallback (16575)
-end note
+API -> RAG: retrieve(question, top_k, image)
+
+group 1. Dual-Tier Q&A Search
+    RAG -> QAStore: Search Baseline Q&A (1,000 items)
+    alt Exact Direct Match Found
+        QAStore --> RAG: Return Baseline Q&A Match
+    else No Direct Match
+        RAG -> QAStore: Search Contractor Evaluation CSV (729 items)
+        QAStore --> RAG: Return Contractor Q&A Match (if score >= threshold)
+    end
+end
+
+group 2. Hybrid Manual Search (FAISS + Keyword)
+    RAG -> ManualStore: Dense Semantic Search (BGE-M3 FAISS)
+    RAG -> ManualStore: Domain Keyword & Intent Scoring (Synonyms & Rules)
+    ManualStore --> RAG: Candidate Chunks (Pages > 5)
+    RAG -> RAG: Score Fusion: 70% Keyword + 30% FAISS
+    RAG -> ManualStore: Resolve Cropped Screenshots (e.g. Screen D1 / Screen E12)
+    ManualStore --> RAG: Attached Diagram Image Paths
+end
+
+RAG --> API: Assembled Evidence Context + Sources + Images
+
+group 3. Grounded LLM Inference & Failover
+    API -> LLM: Grounded Prompt (Dual-Audience System Prompt + Evidence Context)
+    alt Primary Provider (Groq Cloud)
+        LLM --> API: openai/gpt-oss-20b (Text) or qwen3.8-27b (Vision)
+    else Failover 1 (Google Gemini)
+        LLM --> API: gemini-flash-latest Response
+    else Failover 2 (Offline Synthesizer)
+        LLM --> API: Offline Grounded Template Response
+    else No Grounded Context Available
+        LLM --> API: Helpdesk Escalation Contact Block (16575)
+    end
+end
+
+API --> UI: JSON (Answer, Sources, Screen References, Image URLs)
+
+group 4. Presentation & Interactive Actions
+    UI --> User: Formatted Markdown Answer
+    UI --> User: [View Scenario — Screen E12] (Collapsible Diagram Carousel)
+    UI --> User: [Source Reference] (Collapsible Manual & Q&A Citation)
+    UI --> User: [Contact Helpdesk] (Collapsible Official 16575 Contacts)
+end
 
 @enduml
-

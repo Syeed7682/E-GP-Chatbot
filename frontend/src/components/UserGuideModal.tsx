@@ -69,7 +69,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({
                 {language === 'en' ? 'e-GP Manual User Guide' : 'ই-জিপি ম্যানুয়াল ব্যবহার নির্দেশিকা'}
               </h3>
               <p className="text-[11px] text-blue-200">
-                Official Procuring Entity User Manual Overview (543 pages)
+                Official PE & Tenderer User Manuals Overview (570 pages)
               </p>
             </div>
           </div>
@@ -85,8 +85,8 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({
         <div className="p-6 overflow-y-auto space-y-4 text-xs">
           <p className="leading-relaxed text-slate-600">
             {language === 'en'
-              ? 'The e-GP Manual Chatbot indexes the complete official Procuring Entity (PE) User Manual. Click any topic below to automatically ask the Assistant:'
-              : 'ই-জিপি ম্যানুয়াল চ্যাটবটে ক্রয়কারী সত্তার (PE) ৫৪৩ পৃষ্ঠার পুরো নির্দেশিকা ইন্ডেক্স করা রয়েছে। যেকোনো বিষয়ে ক্লিক করে সরাসরি সহায়তা নিন:'}
+              ? 'The e-GP Manual Chatbot indexes official guidance for both Procuring Entities (PE) and Tenderers/Contractors. Click any topic below to automatically ask the Assistant:'
+              : 'ই-জিপি ম্যানুয়াল চ্যাটবটে ক্রয়কারী সত্তা (PE) এবং দরপত্রদাতা/ঠিকাদারদের সম্পূর্ণ নির্দেশিকা সংযুক্ত রয়েছে। যেকোনো বিষয়ে ক্লিক করে সরাসরি সহায়তা নিন:'}
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">

@@ -121,11 +121,17 @@ def parse_qa_text(text: str) -> List[Dict]:
 class QAService:
     """Builds sparse TF-IDF vectors and inverted indexes for supplemental Q&A documents."""
 
-    def __init__(self, path: Optional[Path] = None, docx_path: Optional[Path] = None):
+    def __init__(
+        self,
+        path: Optional[Path] = None,
+        docx_path: Optional[Path] = None,
+        csv_path: Optional[Path] = None,
+    ):
         self.path = path or settings.QA_DATA_PATH
         self.docx_path = docx_path if path is None else None
         if path is None and self.docx_path is None:
             self.docx_path = settings.QA_DOCX_PATH
+        self.csv_path = csv_path
         self.records: List[Dict] = []
         self._question_tokens: List[Set[str]] = []
         self._answer_tokens: List[Set[str]] = []
@@ -136,7 +142,24 @@ class QAService:
         self._document_frequency: Counter[str] = Counter()
         self._load()
 
+    def load_csv(self, csv_path: Optional[Path] = None) -> int:
+        """Dynamically load or reload Q&A from CSV dataset."""
+        target = csv_path or self.csv_path or getattr(settings, "EGP_EVAL_CSV", None)
+        if not target or not Path(target).is_file():
+            logger.warning("CSV file not found: %s", target)
+            return 0
+        from app.services.csv_loader import csv_loader
+
+        self.records = csv_loader.load_qa_records(target)
+        self._build_index()
+        logger.info("Indexed %d records from CSV %s", len(self.records), target)
+        return len(self.records)
+
     def _load(self) -> None:
+        if self.csv_path and Path(self.csv_path).is_file():
+            self.load_csv(self.csv_path)
+            return
+
         parsed_sources = []
         for path in (self.path, self.docx_path):
             if path is None:
@@ -277,3 +300,4 @@ class QAService:
 
 
 qa_service = QAService()
+csv_qa_service = QAService(csv_path=getattr(settings, "EGP_EVAL_CSV", None))

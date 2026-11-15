@@ -63,11 +63,10 @@ SYSTEM_PROMPT_PATH = os.path.join(os.path.dirname(__file__), "../prompts/system_
 
 HELPDESK_CONTACT_INFO = (
     "\n\n---\n"
-    "📞 **Official Bangladesh e-GP Helpdesk Contact Information:**\n"
-    "- 📱 **Toll-Free Hotline:** 16575 (accessible from any mobile network in Bangladesh)\n"
+    "- 📞 **e-GP Helpdesk Hotline:** 16575 (from any mobile network in Bangladesh)\n"
     "- ☎️ **Telephone Support:** +880 9609112233 / +880 1762625528–31\n"
     "- ✉️ **Email Support:** helpdesk@eprocure.gov.bd / e-gphelpdesk@cptu.gov.bd\n"
-    "- 🌐 **Official Portal:** [eprocure.gov.bd](https://www.eprocure.gov.bd)\n"
+    "- 🌐 **Official Portal:** https://www.eprocure.gov.bd\n"
     "- 🏢 **Authority:** Bangladesh Public Procurement Authority (BPPA) / CPTU, IMED, Ministry of Planning"
 )
 
@@ -126,7 +125,8 @@ def load_system_prompt() -> str:
             print(f"[llm_service] Error reading system prompt: {e}")
 
     return (
-        "You are Proca, an expert AI assistant for the Bangladesh e-GP (Electronic Government Procurement) system. "
+        "You are Proca, an expert AI assistant for the Bangladesh e-GP (Electronic Government Procurement) system, "
+        "dedicated to serving both Procuring Entities (PEs) and Tenderers / Contractors. "
         "Always provide a clear, descriptive, helpful answer using the retrieved context in your own words. "
         "Never say 'The provided manual extract does not specify this information' when relevant context is present. "
         "If the question cannot be answered from the retrieved records, state clearly that you couldn't find the answer "
@@ -997,15 +997,17 @@ class LLMService:
         greetings = {"hi", "hello", "hey", "greetings", "good morning", "good afternoon", "good evening", "assalamu alaikum", "salam"}
         if q_clean in greetings or (len(tokens) <= 2 and any(t in greetings for t in tokens)):
             return (
-                "Hey there! 👋 I'm **Proca**, your friendly e-GP Manual Assistant.\n\n"
-                "I know the official **Bangladesh e-GP Procuring Entity User Manual** (all 543 pages!) inside and out, "
-                "so I'm here to help you with things like:\n\n"
-                "- 🔑 **Account setup & login** issues\n"
-                "- 📋 **Annual Procurement Plan (APP)** preparation\n"
-                "- 📢 **Tender creation, publishing & evaluation**\n"
-                "- 🔄 **Workflow approvals** (Checker/Approver steps)\n"
-                "- 📑 **Contract management (CMS)** procedures\n\n"
-                "What would you like to know today? Just ask away! 😊"
+                "Hey there! 👋 I'm **Proca**, your friendly Bangladesh e-GP Assistant.\n\n"
+                "I have complete knowledge of the official e-GP guidelines, manuals, and procurement rules — "
+                "supporting both **Procuring Entities (PE)** and **Tenderers & Contractors**! I'm here to help you with:\n\n"
+                "- 🔑 **Account setup, NID/OTP verification & profile management**\n"
+                "- 📋 **Annual Procurement Plan (APP)** preparation & package workflows\n"
+                "- 📢 **Tender preparation, publishing, tracking & opening**\n"
+                "- 💼 **Tender document purchase, e-Payment & bid submission**\n"
+                "- 🛡️ **Tender / Performance security & Bank Guarantee (e-BG) mapping**\n"
+                "- 🔄 **Workflow approvals & evaluation** (TOC/TEC processes)\n"
+                "- 📑 **Contract management (e-CMS)**, measurement books & invoicing\n\n"
+                "Are you working as a **Procuring Entity** or a **Tenderer / Contractor**? Ask me anything! 😊"
             ), "e-GP Assistant", True
 
         context_available = bool(

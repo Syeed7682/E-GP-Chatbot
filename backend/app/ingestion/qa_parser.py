@@ -90,10 +90,58 @@ def parse_qa_text(text: str) -> List[Dict[str, Any]]:
     return records
 
 
-def parse_qa_corpus(txt_path: Optional[Path] = None, docx_path: Optional[Path] = None) -> List[Dict[str, Any]]:
+def parse_qa_from_csv(csv_path: Path) -> List[Dict[str, Any]]:
     """
-    Parses Q&A records from TXT or DOCX files.
+    Parses Q&A records directly from the evaluation CSV dataset.
     """
+    import csv
+
+    records: List[Dict[str, Any]] = []
+    with open(csv_path, "r", encoding="utf-8-sig", errors="replace") as f:
+        reader = csv.DictReader(f)
+        for idx, row in enumerate(reader):
+            qid = row.get("id", f"EGP-{idx + 1:04d}").strip()
+            num_match = re.search(r"\d+", qid)
+            q_num = int(num_match.group(0)) if num_match else idx + 1
+
+            category = row.get("category", "General Procurement").strip()
+            question = row.get("question", "").strip()
+            ground_truth = row.get("ground_truth", "").strip()
+
+            if not question or not ground_truth:
+                continue
+
+            records.append({
+                "id": qid,
+                "question_number": q_num,
+                "category": category,
+                "module": category,
+                "title": question,
+                "question": question,
+                "answer": ground_truth,
+                "expected_citation": row.get("expected_citation", "").strip(),
+                "retrieval_text": f"Category: {category}\nQuestion: {question}",
+                "source_type": "qa",
+                "source_file": csv_path.name,
+            })
+
+    logger.info("Loaded %d Q&A records from CSV %s", len(records), csv_path)
+    return records
+
+
+def parse_qa_corpus(
+    txt_path: Optional[Path] = None,
+    docx_path: Optional[Path] = None,
+    csv_path: Optional[Path] = None,
+) -> List[Dict[str, Any]]:
+    """
+    Parses Q&A records. Checks CSV dataset first; falls back to TXT or DOCX files.
+    """
+    # 1. Check CSV data source first
+    target_csv = csv_path or Path("csv_files/egp_contractor_evaluation_dataset.csv")
+    if target_csv and target_csv.is_file():
+        return parse_qa_from_csv(target_csv)
+
     records: List[Dict[str, Any]] = []
 
     if txt_path and txt_path.exists():

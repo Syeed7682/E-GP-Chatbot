@@ -89,7 +89,7 @@ export const GovtOfficialSidebar: React.FC<GovtOfficialSidebarProps> = ({
     )}
     <aside
       aria-label="Manual topics and actions"
-      className={`fixed inset-y-0 left-0 z-50 flex w-[min(20rem,88vw)] shrink-0 select-none flex-col gap-4 overflow-y-auto border-r border-white/60 bg-white/95 p-4 pt-[max(1rem,env(safe-area-inset-top))] text-xs shadow-2xl backdrop-blur-xl transition-transform duration-200 md:static md:z-auto md:h-auto md:min-h-0 md:w-80 md:translate-x-0 md:bg-white/30 md:pt-4 md:shadow-none ${
+      className={`fixed inset-y-0 left-0 z-50 flex w-[min(20rem,88vw)] shrink-0 select-none flex-col gap-4 overflow-y-auto border-r border-slate-200 bg-[#f8fbff]/95 p-4 pt-[max(1rem,env(safe-area-inset-top))] text-xs shadow-2xl backdrop-blur-xl transition-transform duration-200 md:static md:z-auto md:h-auto md:min-h-0 md:w-80 md:translate-x-0 md:bg-white/65 md:pt-5 md:shadow-none ${
       isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
     }`}>
       <div className="flex items-center justify-between border-b border-slate-200 pb-2 md:hidden">
@@ -109,7 +109,7 @@ export const GovtOfficialSidebar: React.FC<GovtOfficialSidebarProps> = ({
           onNewChat();
           onCloseMobile();
         }}
-        className="w-full flex items-center justify-center gap-2 py-2.5 px-3 bg-gradient-to-r from-[#0B4F8A] to-[#12304A] hover:from-[#083c6b] hover:to-[#0f2438] text-white rounded-lg font-semibold text-xs shadow-sm transition-all cursor-pointer hover:scale-101 active:scale-99"
+        className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0B4F8A] to-[#12304A] px-3 py-3 text-xs font-semibold text-white shadow-md shadow-blue-900/10 transition-all hover:from-[#083c6b] hover:to-[#0f2438] hover:-translate-y-0.5 active:translate-y-0"
         aria-label="Start a new chat session"
       >
         <Plus className="w-4 h-4" />
@@ -117,8 +117,8 @@ export const GovtOfficialSidebar: React.FC<GovtOfficialSidebarProps> = ({
       </button>
 
       {/* 2. Suggested Questions */}
-      <div className="border border-white/70 rounded-xl bg-white/40 backdrop-blur-md p-3.5 space-y-2.5 shadow-2xs">
-        <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+      <div className="space-y-2.5 rounded-2xl border border-slate-200/80 bg-white/80 p-3.5 shadow-sm">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-2">
           <div className="flex items-center gap-1.5 font-bold text-[#0F172A]">
             <Search className="w-3.5 h-3.5 text-[#0B4F8A]" />
             <span>{language === 'en' ? 'Questions from e-GP Q&A' : 'e-GP প্রশ্নোত্তর থেকে প্রশ্ন'}</span>
@@ -141,7 +141,7 @@ export const GovtOfficialSidebar: React.FC<GovtOfficialSidebarProps> = ({
             onChange={(event) => setSuggestionQuery(event.target.value)}
             placeholder={language === 'en' ? 'Search by word or question...' : 'শব্দ বা প্রশ্ন দিয়ে খুঁজুন...'}
             aria-label="Search suggested manual questions"
-            className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white/80 px-2.5 py-2 text-[11px] text-slate-800 outline-none placeholder:text-slate-400 focus:border-[#0B4F8A] focus:ring-2 focus:ring-blue-500/20"
+            className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 text-[11px] text-slate-800 outline-none placeholder:text-slate-400 focus:border-[#0B4F8A] focus:bg-white focus:ring-2 focus:ring-blue-500/20"
           />
           <button
             type="submit"
@@ -171,7 +171,7 @@ export const GovtOfficialSidebar: React.FC<GovtOfficialSidebarProps> = ({
                   onSelectSuggestedQuestion(suggestion.question);
                   onCloseMobile();
                 }}
-                className="w-full text-left p-2.5 rounded-lg bg-white hover:bg-blue-50/70 border border-slate-200 hover:border-[#0B4F8A] text-slate-700 hover:text-[#0B4F8A] font-medium transition-all flex items-start gap-2 cursor-pointer leading-snug shadow-2xs hover:scale-101"
+                className="w-full text-left rounded-xl border border-slate-100 bg-slate-50/80 p-2.5 text-slate-700 transition-all flex items-start gap-2 cursor-pointer leading-snug hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50/70 hover:text-[#0B4F8A] hover:shadow-sm"
               >
                 <ChevronRight className="w-3.5 h-3.5 text-[#0B4F8A] shrink-0 mt-0.5" />
                 <span className="text-[11.5px]">

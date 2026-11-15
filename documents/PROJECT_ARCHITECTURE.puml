@@ -6,11 +6,12 @@ skinparam roundCorner 8
 skinparam shadowing false
 skinparam componentStyle uml2
 
-title Bangladesh e-GP Assistant - Full System Architecture
+title Bangladesh e-GP Assistant - Full System Architecture & Retrieval Pipeline
 
 package "Presentation Tier (Frontend - React 19 / Netlify)" {
     [GovtOfficialSidebar] as Sidebar
     [GovtChatArea] as ChatArea
+    [MessageActionButtons\n(Scenario | Source | Helpdesk)] as ActionButtons
     [ManualPreviewModal] as Modal
     [Tesseract OCR (Client)] as ClientOCR
     [offlineVectorEngine] as OfflineEngine
@@ -27,10 +28,11 @@ package "API Gateway & Security (FastAPI :8000)" {
 
 package "RAG Orchestration & Retrieval Engine" {
     [Query Router & Intent Parser] as Router
+    [Dual-Tier Q&A Search\n(Baseline + Contractor CSV)] as QASearch
     [BGE-M3 Dense Retriever\n(1024-dim)] as DenseRet
     [BM25Okapi Lexical Retriever\n(Sparse Keywords)] as SparseRet
     [SigLIP Visual Retriever\n(768-dim Visual Features)] as VisionRet
-    [Reciprocal Rank Fusion\n(RRF k=60)] as RRF
+    [Hybrid Score Fusion\n(70% Keyword + 30% FAISS)] as FusionEngine
     [BGE-Reranker-v2-m3\n(Cross-Encoder)] as Reranker
     [Context & Citation Builder] as ContextBuilder
 }
@@ -57,10 +59,16 @@ package "Storage & Versioned Indexes (Disk /var/data or local)" {
         file "egp_manual.pdf (543 pages)" as ManualPDF
         file "e-GP System Q&A.txt (1,000 Q&A)" as QAFile
     }
+    folder "csv_files/" as CSVStore {
+        file "egp_contractor_evaluation_dataset.csv (729 Q&A)" as ContractorCSV
+        file "egp_manual_extracted.csv" as ManualCSV
+        file "egp_registration_manual_extracted.csv" as RegCSV
+    }
 }
 
 ' Client interactions
 Sidebar --> SecGate : Suggested Q&A
+ChatArea --> ActionButtons : Collapsible Triggers
 ChatArea --> SecGate : Query / Screenshot
 ClientOCR --> ChatArea : Extracted Text
 OfflineEngine ..> ChatArea : Fallback Answers
@@ -75,21 +83,27 @@ SecGate --> HealthRoute
 ' RAG flow
 ChatRoute --> Router
 VisionRoute --> Router
-Router --> DenseRet : Vector Search
-Router --> SparseRet : Keyword Search
-Router --> VisionRet : Visual Match
+Router --> QASearch : 1. Baseline & CSV Q&A
+Router --> DenseRet : 2. Dense Vector Search
+Router --> SparseRet : 3. Domain Keyword Match
+Router --> VisionRet : 4. Visual Screenshot Match
 
-DenseRet --> RRF
-SparseRet --> RRF
-VisionRet --> RRF
-RRF --> Reranker
+QASearch --> QAFile : Baseline Records
+QASearch --> ContractorCSV : 729 Contractor Records
+
+DenseRet --> FusionEngine
+SparseRet --> FusionEngine
+VisionRet --> FusionEngine
+FusionEngine --> Reranker
 Reranker --> ContextBuilder
+QASearch --> ContextBuilder
 
 ' Storage connections
 ActivePointer ..> IndexV001 : Pointer Resolution
 DenseRet --> FaissDB
 SparseRet --> BM25DB
 ContextBuilder --> SQLiteDB
+ContextBuilder --> ChunkImgs : Attach Diagram URLs
 ManualRoute --> ChunkImgs : /api/manual/chunk/{id}/image
 ManualRoute --> ManualPDF : /api/manual/download
 
@@ -102,4 +116,3 @@ GeminiFlash ..> OfflineSynth : Offline Failover
 OfflineSynth --> ChatArea : Structured Guidance +\nHelpdesk Info (16575)
 
 @enduml
-

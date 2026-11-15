@@ -68,14 +68,20 @@ def main():
     logger.info("=== Starting e-GP Manual Ingestion Pipeline ===")
 
     # 1. Validate Source Documents
+    csv_candidates = [
+        BACKEND_DIR.parent / "csv_files" / "egp_manual_extracted.csv",
+        Path("csv_files/egp_manual_extracted.csv"),
+    ]
+    csv_manual_path = next((p for p in csv_candidates if p.exists()), None)
+
     pdf_candidates = [
         RAW_DIR / "egp_manual.pdf",
         DATA_DIR / "raw" / "egp_manual.pdf",
         BACKEND_DIR.parent / "data" / "raw" / "egp_manual.pdf",
     ]
     pdf_path = next((p for p in pdf_candidates if p.exists()), None)
-    if not pdf_path:
-        logger.error("Could not find egp_manual.pdf in any raw directory!")
+    if not pdf_path and not csv_manual_path:
+        logger.error("Could not find egp_manual.pdf or egp_manual_extracted.csv in any directory!")
         sys.exit(1)
 
     qa_txt_candidates = [

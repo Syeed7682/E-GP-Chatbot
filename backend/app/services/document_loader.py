@@ -100,6 +100,48 @@ def load_pdf(file_path: str, extract_images: bool = True, images_dir: str = "dat
 
     return documents
 
+def load_from_csv(file_path: str = None) -> List[Dict]:
+    """
+    Loads extracted page text directly from a CSV file.
+    
+    Args:
+        file_path: Path to the CSV file (e.g. csv_files/egp_manual_extracted.csv).
+        
+    Returns:
+        List of dictionaries with keys:
+            - source: name of the file
+            - page: page number (1-indexed)
+            - text: extracted text
+            - image_path: path to primary extracted image on that page (if any)
+    """
+    import csv
+    from app.core.config import settings
+
+    target_path = file_path or str(settings.EGP_MANUAL_CSV)
+    if not os.path.exists(target_path):
+        raise FileNotFoundError(f"CSV file not found: {target_path}")
+
+    filename = os.path.basename(target_path)
+    documents = []
+    print(f"[document_loader] Reading pages directly from CSV '{filename}'...")
+    with open(target_path, "r", encoding="utf-8-sig", errors="replace") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            page_num = int(row.get("page_number", 0))
+            raw_text = row.get("text_content", "")
+            cleaned = clean_text(raw_text)
+            source = row.get("source_file", filename)
+            img_path = f"data/extracted_images/page_{page_num}.jpg"
+
+            documents.append({
+                "source": source,
+                "page": page_num,
+                "text": cleaned,
+                "image_path": img_path if os.path.exists(img_path) else None,
+            })
+    print(f"[document_loader] Finished CSV '{filename}': {len(documents)} pages loaded.")
+    return documents
+
 def load_all_documents(raw_dir: str = "data/raw") -> List[Dict]:
     """
     Scans the raw directory and loads all supported PDF files.

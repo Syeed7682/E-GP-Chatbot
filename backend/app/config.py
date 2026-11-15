@@ -58,6 +58,10 @@ RAW_DIR = DATA_DIR / "raw"
 PROCESSED_DIR = DATA_DIR / "processed"
 INDEX_DIR = DATA_DIR / "indexes"
 IMAGE_DIR = DATA_DIR / "images"
+CSV_DIR = ROOT_DIR / "csv_files"
+EGP_MANUAL_CSV = CSV_DIR / "egp_manual_extracted.csv"
+EGP_REG_MANUAL_CSV = CSV_DIR / "egp_registration_manual_extracted.csv"
+EGP_EVAL_CSV = CSV_DIR / "egp_contractor_evaluation_dataset.csv"
 
 # Ensure directories exist safely without raising PermissionError
 for d in (RAW_DIR, PROCESSED_DIR, INDEX_DIR, IMAGE_DIR):

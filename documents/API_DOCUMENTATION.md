@@ -1,6 +1,8 @@
 # API Documentation
 
-The Bangladesh e-GP Manual Assistant backend is powered by FastAPI. All endpoints return JSON or binary image streams and are documented interactively in OpenAPI / Swagger UI at `http://127.0.0.1:8000/docs`.
+The Bangladesh e-GP Manual Assistant backend is powered by FastAPI. It supports natural language question answering, visual screenshot matching, manual page retrieval, and official Helpdesk escalation for both **Procuring Entities (PEs)** and **Tenderers / Contractors / Vendors**.
+
+All endpoints return JSON or binary image streams and are documented interactively in OpenAPI / Swagger UI at `http://127.0.0.1:8000/docs`.
 
 ---
 
@@ -27,12 +29,12 @@ The Bangladesh e-GP Manual Assistant backend is powered by FastAPI. All endpoint
 ## 3. Chat & Vision Endpoints
 
 ### 3.1 `POST /api/chat`
-Standard conversation endpoint for text queries and optional base64 screenshots.
+Standard conversation endpoint for text queries and optional base64 screenshots. Handles queries from both Procuring Entities (e.g. tender creation, evaluation, approval) and Contractors (e.g. registration, e-Payment, e-BG mapping, bid submission).
 
 **Request Payload:**
 ```json
 {
-  "question": "How do I create a tender in e-GP?",
+  "question": "How do I map an e-Bank Guarantee (e-BG) during tender submission?",
   "previous_question": null,
   "image_base64": null,
   "image_mime": "image/png",
@@ -52,25 +54,25 @@ Standard conversation endpoint for text queries and optional base64 screenshots.
 **Response (JSON):**
 ```json
 {
-  "question": "How do I create a tender in e-GP?",
-  "answer": "Here is the official procedure for a Procuring Entity (PE) to create and place a new tender...\n\n1. Navigate to Tender >> Create Tender...\n2. Search and select approved APP package...",
+  "question": "How do I map an e-Bank Guarantee (e-BG) during tender submission?",
+  "answer": "To map an e-Bank Guarantee (e-BG) for tender security as a Tenderer/Contractor in e-GP:\n\n1. Ensure your issuing scheduled bank has generated and submitted the e-BG directly into the e-GP portal under your firm's identification.\n2. Navigate to Tender >> My Active Tenders >> Prepare Tender Submission.\n3. In the Tender Security section, select 'e-Bank Guarantee (e-BG)'.\n4. Enter the e-BG Reference Number and Bank Code to fetch and map the security instrument.\n5. Verify that the guarantee validity period and instrument amount meet the tender requirements prior to final encryption and submission.",
   "sources": [
     {
-      "source": "e-GP System User Manual - Procuring Entity User 1 February 2026.pdf",
-      "page": 54,
-      "chunk_id": 145,
-      "score": 0.88,
-      "snippet": "published on e-GP Portal). (As shown in Screen – D1)...",
-      "screen_reference": "Screen – D1",
-      "image_path": "/api/manual/chunk/145/image",
-      "related_sentence": "(As shown in Screen – D1) Screen – D1 4.1.2 “Steps for tender Preparation” button...",
+      "source": "Official e-GP Manual",
+      "page": 199,
+      "chunk_id": 210,
+      "score": 0.89,
+      "snippet": "Tender Security submission through e-BG (Bank Guarantee) mapping...",
+      "screen_reference": "Screen – E12",
+      "image_path": "/api/manual/chunk/210/image",
+      "related_sentence": "(As shown in Screen – E12) e-BG verification screen...",
       "source_type": "manual",
       "source_files": [],
       "question_number": null,
-      "module": null
+      "module": "Tender Security & Bank Guarantee"
     }
   ],
-  "portal_screens": ["Screen – D1"],
+  "portal_screens": ["Screen – E12"],
   "model_used": "openai/gpt-oss-20b (e-GP Grounded)",
   "was_offline": false
 }
@@ -93,7 +95,7 @@ Dedicated multipart file upload endpoint for portal screenshot diagnostics.
 ---
 
 ### 3.3 `GET /api/chat/questions`
-Returns all 1,000 supplemental Q&A question suggestions categorized by procurement module.
+Returns supplemental Q&A question suggestions categorized by procurement module across PE and Contractor workflows.
 
 **Response (JSON):**
 ```json
@@ -129,14 +131,14 @@ Returns all 1,000 supplemental Q&A question suggestions categorized by procureme
 | Method | Path | Description |
 |---|---|---|
 | `GET` | `/api/sync/version` | Returns active index version hash and total chunk count for client-side cache invalidation. |
-| `GET` | `/api/sync/chunks` | Returns full metadata array for all 1,188 chunks for IndexedDB offline storage. |
+| `GET` | `/api/sync/chunks` | Returns full metadata array for all chunks for IndexedDB offline storage. |
 | `POST` | `/api/sync/push` | Accepts client mutation audit events. |
 
 ---
 
 ## 6. Official Helpdesk Fallback Information
 
-When a user query cannot be answered from the official manual passages or supplemental Q&A records, the system responds with a clear statement and provides the **official Bangladesh e-GP Helpdesk contact channels**:
+When a user query cannot be answered from the official manuals or supplemental Q&A records, the system responds with a clear statement and provides the **official Bangladesh e-GP Helpdesk contact channels**:
 
 - 📞 **e-GP Helpdesk Hotline:** `16575` *(from any mobile network in Bangladesh)*
 - ☎️ **Telephone Support:** `+880 9609112233` / `+880 1762625528–31`
