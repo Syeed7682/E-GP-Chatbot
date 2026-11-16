@@ -153,24 +153,15 @@ export const FormattedGovtText: React.FC<{ text: string; onOpenScreenModal?: (sc
       return;
     }
 
-    if (trimmed.startsWith('### ')) {
+    const headingMatch = trimmed.match(/^(#{1,6})\s+(.+)$/);
+    if (headingMatch) {
       flushList();
-      const title = trimmed.replace(/^###\s+/, '');
+      const title = headingMatch[2];
+      const Heading = headingMatch[1].length <= 2 ? 'h3' : 'h4';
       elements.push(
-        <h4 key={`h3-${idx}`} className="font-semibold text-sm text-slate-800">
+        <Heading key={`heading-${idx}`} className="font-semibold text-sm text-slate-800">
           {renderInlineStyles(title)}
-        </h4>
-      );
-      return;
-    }
-
-    if (trimmed.startsWith('#### ')) {
-      flushList();
-      const title = trimmed.replace(/^####\s+/, '');
-      elements.push(
-        <h5 key={`h4-${idx}`} className="font-semibold text-slate-800">
-          {renderInlineStyles(title)}
-        </h5>
+        </Heading>
       );
       return;
     }
@@ -222,12 +213,28 @@ export const FormattedGovtText: React.FC<{ text: string; onOpenScreenModal?: (sc
       const stepNum = numMatch[1];
       const stepContent = numMatch[2];
       elements.push(
-        <p key={`step-${idx}`} className="text-sm text-slate-700 leading-relaxed">
-          <span className="font-medium text-slate-800">{stepNum}. </span>
-          <span>
+        <div key={`step-${idx}`} className="flex items-start gap-3 rounded-xl border border-[#D8E3D8] bg-[#F8FBF8] px-3 py-2.5 shadow-[0_2px_8px_rgba(24,49,83,0.04)]">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#193653] text-xs font-bold text-white">
+            {stepNum}
+          </span>
+          <span className="min-w-0 pt-0.5 text-sm leading-6 text-slate-700">
             {renderInlineStyles(stepContent)}
           </span>
-        </p>
+        </div>
+      );
+      return;
+    }
+
+    const calloutMatch = trimmed.match(/^(Note|Important|Warning|Requirement|Tip)\s*:\s*(.+)$/i);
+    if (calloutMatch) {
+      flushList();
+      const label = calloutMatch[1];
+      const isWarning = /warning|important/i.test(label);
+      elements.push(
+        <div key={`callout-${idx}`} className={`rounded-xl border px-3 py-2.5 text-sm leading-6 ${isWarning ? 'border-amber-200 bg-amber-50 text-amber-950' : 'border-[#B9DCC4] bg-[#F1FAF3] text-[#183153]'}`}>
+          <span className="mr-1.5 font-bold">{label}:</span>
+          {renderInlineStyles(calloutMatch[2])}
+        </div>
       );
       return;
     }
@@ -248,7 +255,7 @@ export const FormattedGovtText: React.FC<{ text: string; onOpenScreenModal?: (sc
 
   flushList();
 
-  return <div className="min-w-0 space-y-1 break-words [overflow-wrap:anywhere]">{elements}</div>;
+  return <div className="min-w-0 space-y-2 break-words [overflow-wrap:anywhere]">{elements}</div>;
 };
 
 const ManualAnswerImage: React.FC<{ sources: ChatSourceCitation[] }> = ({ sources }) => {
@@ -665,10 +672,10 @@ export const GovtChatArea: React.FC<GovtChatAreaProps> = ({
                 </div>
               )}
               <div
-                className={`min-w-0 max-w-[94%] space-y-2 rounded-2xl px-4 py-3.5 shadow-sm sm:max-w-[85%] sm:px-5 ${
+                className={`min-w-0 max-w-[96%] space-y-2 rounded-2xl px-4 py-3.5 shadow-sm sm:max-w-[780px] sm:px-5 ${
                   isUser
                     ? 'rounded-tr-md bg-[#183153] text-white shadow-[#183153]/10'
-                    : 'rounded-tl-md border border-[#183153]/10 bg-white text-[#183153]'
+                    : 'rounded-tl-md border border-[#D8E3D8] bg-white text-[#183153] shadow-[0_8px_24px_rgba(24,49,83,0.06)]'
                 }`}
               >
                 {/* Uploaded Screenshot if any */}
@@ -693,11 +700,13 @@ export const GovtChatArea: React.FC<GovtChatAreaProps> = ({
 
                 {!isUser && (
                   <>
-                    <div className="flex items-center gap-2 border-t border-[#183153]/10 pt-2 text-[10px] font-semibold uppercase tracking-wide text-[#176B3A]">
-                      <span className="h-1.5 w-1.5 rounded-full bg-[#8BC34A]" />
-                      Grounded in official manual
+                    <div className="mt-3 border-t border-[#D8E3D8] pt-2.5">
+                      <div className="mb-2 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-[#176B3A]">
+                        <span className="h-1.5 w-1.5 rounded-full bg-[#8BC34A]" />
+                        Grounded in official manual
+                      </div>
+                      <MessageActionButtons sources={msg.sources} msgId={msg.id} />
                     </div>
-                    <MessageActionButtons sources={msg.sources} msgId={msg.id} />
                   </>
                 )}
               </div>
