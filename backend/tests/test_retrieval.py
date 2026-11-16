@@ -53,6 +53,22 @@ def test_debarment_retrieval():
     print(f"[PASS] Debarment retrieved pages: {pages}")
     assert any(p in (342, 343, 344, 345, 346, 347, 348) for p in pages)
 
+
+def test_plain_language_contractor_ban_query_retrieves_debarment_pages(monkeypatch):
+    retrieval_service.load_index_if_needed()
+    monkeypatch.setattr(embedding_service, "_mode", "offline_multimodal_fallback")
+
+    context, sources = retrieval_service.retrieve("How to ban a contractor?", top_k=5)
+
+    pages = [source["page"] for source in sources]
+    assert set(pages[:3]) == {342, 343, 344}
+    assert 343 in pages
+    assert "Initiate Suspension" in context
+    assert "Suspension Reason" in context
+    assert "42 calendar days" in context
+    assert "HOPE" in context
+
+
 def test_vague_question_falls_back_to_relevant_keyword_matches(monkeypatch):
     retrieval_service.load_index_if_needed()
     monkeypatch.setattr(embedding_service, "_mode", "offline_multimodal_fallback")

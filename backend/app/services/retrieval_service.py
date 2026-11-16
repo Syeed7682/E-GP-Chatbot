@@ -77,6 +77,14 @@ AUTHENTICATION_TERMS = re.compile(
     re.IGNORECASE,
 )
 
+DEBARMENT_ACTION_TERMS = re.compile(
+    r"\b(?:ban|bar|block|blacklist|disqualif\w*|exclude)\b.{0,40}"
+    r"\b(?:contractor|tenderer|bidder|vendor)\b|"
+    r"\b(?:contractor|tenderer|bidder|vendor)\b.{0,40}"
+    r"\b(?:ban|bar|block|blacklist|disqualif\w*|exclude)\b",
+    re.IGNORECASE,
+)
+
 
 class RetrievalService:
     def _repair_leading_chunk_fragment(self, chunk: Dict[str, Any]) -> str:
@@ -275,7 +283,9 @@ class RetrievalService:
 
         is_debarment_intent = any(k in q_lower for k in [
             "debar", "debarment", "suspension", "blacklist", "blacklisted", "deb-01"
-        ])
+        ]) or bool(DEBARMENT_ACTION_TERMS.search(q_lower))
+        if is_debarment_intent:
+            expanded.extend(["debarment", "suspension", "tenderer", "hope"])
 
         for c in chunks:
             raw_text = c.get("text", "").lower()
@@ -448,6 +458,10 @@ class RetrievalService:
         is_login_procedure = bool(
             re.search(r"\b(?:login|log\s+in|sign\s+in)\b", normalized_question, re.IGNORECASE)
         )
+        is_debarment_query = bool(
+            re.search(r"\b(?:debar|debarment|suspension|blacklist|blacklisted)\b", question, re.IGNORECASE)
+            or DEBARMENT_ACTION_TERMS.search(question)
+        )
         is_authentication_query = is_login_procedure or bool(
             re.search(r"\b(?:password|captcha)\b", normalized_question, re.IGNORECASE)
         )
@@ -513,7 +527,33 @@ class RetrievalService:
 
         # Sort and take top_k
         ranked = sorted(combined_scores.values(), key=lambda x: x["score"], reverse=True)
-        if is_login_procedure:
+        if is_debarment_query:
+            revision_query = bool(
+                re.search(r"\b(?:revise|revision|court|petition)\b", question, re.IGNORECASE)
+            )
+            priority_pages = (345, 346, 347) if revision_query else (342, 343, 344)
+            page_matches = []
+            seen_pages = set()
+            for priority_page in priority_pages:
+                page_match = next(
+                    (
+                        item for item in ranked
+                        if item["chunk"].get("page") == priority_page
+                    ),
+                    None,
+                )
+                if page_match:
+                    page_matches.append(page_match)
+                    seen_pages.add(priority_page)
+            for item in ranked:
+                page = item["chunk"].get("page")
+                if page not in seen_pages:
+                    seen_pages.add(page)
+                    page_matches.append(item)
+                if len(page_matches) == top_k:
+                    break
+            top_matches = page_matches[:top_k]
+        elif is_login_procedure:
             page_matches = []
             seen_pages = set()
             for item in ranked:

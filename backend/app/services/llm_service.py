@@ -216,6 +216,9 @@ class LLMService:
             f"Context from e-GP Manuals:\n{context}\n\n"
             f"User Question: {question}\n\n"
             f"Follow the system instructions for answer structure. Use only supplied manual and supplemental Q&A content. "
+            f"Interpret the user's wording semantically: match synonyms, paraphrases, abbreviations, and related workflow terms "
+            f"to the retrieved context before deciding that information is missing. Answer with the closest supported procedure "
+            f"and explain the official term when the user uses informal wording. "
             f"Include a Source line with section numbers only when the context provides them. "
             f"For fee tables, preserve the source's exact number formatting and keep fee categories separate."
         )
@@ -296,6 +299,14 @@ class LLMService:
         is_debar_topic = any(
             term in q_lower
             for term in ("debar", "suspension", "blacklist", "blacklisted")
+        ) or bool(
+            re.search(
+                r"\b(?:ban|bar|block|blacklist|disqualif\w*|exclude)\b.{0,40}"
+                r"\b(?:contractor|tenderer|bidder|vendor)\b|"
+                r"\b(?:contractor|tenderer|bidder|vendor)\b.{0,40}"
+                r"\b(?:ban|bar|block|blacklist|disqualif\w*|exclude)\b",
+                q_lower,
+            )
         )
         is_definition_question = bool(
             re.match(r"^(?:what\s+is|what\s+does|define|meaning\s+of)\b", q_lower)
@@ -468,38 +479,28 @@ class LLMService:
             and bool(re.search(r"\b(?:how|steps?|procedure|process|initiat(?:e|ing)|revise)\b", q_lower))
         )
         if is_debar_query:
+            normalized_context = re.sub(r"\s+", " ", context).lower()
+            if (
+                re.search(r"initiate suspension", normalized_context)
+                and re.search(r"42 calendar days", normalized_context)
+                and re.search(r"suspension shall be automatically lifted", normalized_context)
+            ):
+                return (
+                    "The manual handles this through suspension followed by a possible debarment decision:\n\n"
+                    "1. A PE opens **Debarment → Suspension**, selects **Initiate Suspension**, and searches for "
+                    "the tenderer by email ID or company name.\n"
+                    "2. The PE selects a suspension reason, sets a start date (the system calculates the end date "
+                    "for the **42-calendar-day** suspension), enters a description, and submits. After confirming, "
+                    "the PE uploads the supporting document for the HOPE's decision.\n"
+                    "3. During suspension, the tenderer cannot participate in tenders or accept an NOA. If the "
+                    "HOPE intends to debar the tenderer, the manual says the decision must be completed within "
+                    "those 42 days; otherwise, the suspension is automatically lifted. Approved debarment details "
+                    "appear in the Debarred Tenderer List.\n\n"
+                    "**Source:** Sections 7.1.1–7.1.9, pages 342–344."
+                )
             return (
-                "Under Public Procurement Rules (PPR-2008 Rule 127) and the official e-GP guidelines, "
-                "**Debarment and Suspension** are statutory enforcement mechanisms used against non-compliant, "
-                "fraudulent, or defaulting tenderers/contractors. ⚖️\n\n"
-                "### 🔍 1. How Debarment Works in the e-GP Portal\n\n"
-                "**Step 1 — Access the Debarment Module**\n"
-                "From the PE dashboard top navigation bar, click on **'Debarment'** and select either **'Suspension'** "
-                "or **'Debarment'** *(Section 7.1 & 7.2, Pages 342–344)*.\n\n"
-                "**Step 2 — Search the Debarment / Suspension List**\n"
-                "The portal provides an official verification interface *(Screen DEB-01 / Page 342)* with filter criteria:\n"
-                "- 🏛️ **Select Ministry / Division / Organization**\n"
-                "- 🏢 **Search For**: Company or Individual\n"
-                "- 📝 **Company Name**: Filter by Equals, Contains, or Starts With\n"
-                "- 📅 **Debar Period (Date From)**\n"
-                "- 🌍 **Country**\n"
-                "- ⏳ **Debarment Status**: *Ongoing* or *Expired*\n\n"
-                "**Step 3 — Initiating Suspension / Debarment**\n"
-                "When a contractor commits procurement fraud, fails to sign a contract, or abandons works, "
-                "the PE user initiates the debarment proposal by providing specific allegations, documentary evidence, "
-                "and the proposed period of debarment *(Section 7.1.5, Page 343)*.\n\n"
-                "**Step 4 — Send to HOPE for Electronic Approval**\n"
-                "Click **'Send to HOPE'**. An alert confirmation message appears: *'Are you sure to send to HOPE for approval?'* *(Section 7.10, Page 347)*.\n\n"
-                "**Step 5 — Approval & System-Wide Enforcement**\n"
-                "After the Head of Procuring Entity (HOPE) approves the debarment, the debarment details are automatically "
-                "published to the national central database *(Section 7.1.9, Page 344)*. The debarred tenderer is "
-                "electronically blocked across all e-GP tenders nationwide during the active debarment period.\n\n"
-                "**Step 6 — Revision of Decision**\n"
-                "By clicking on the **'Revise Decision'** link, the PE can review or modify the debarment start date, "
-                "end date, or status if ordered by an administrative review or court *(Section 7.4, Page 345)*.\n\n"
-                "---\n"
-                "📖 *Source: e-GP System User Manual (Procuring Entity User), Chapter 7 — Debarment & Suspension (Sections 7.1–7.10), Pages 342–347 (Screens DEB-01, DEB-02)*\n\n"
-                "Would you like guidance on verifying contractor eligibility during tender evaluation (TEC)? 😊"
+                "The supplied manual context does not include enough detail to describe the suspension and debarment "
+                "procedure. Please provide the relevant manual passage or ask about a specific e-GP step."
             )
 
         # 3. Annual Procurement Plan (APP)
@@ -877,6 +878,9 @@ class LLMService:
                 f"Retrieved e-GP manual and supplemental Q&A context (use as evidence; do not copy OCR artifacts):\n{context}\n\n"
                 f"User Question: {question}\n\n"
                 f"Follow the system instructions for answer structure and use only supplied manual and supplemental Q&A content. "
+                f"Interpret the question semantically rather than by exact keyword matching. Treat synonyms, paraphrases, "
+                f"abbreviations, and informal descriptions as possible references to retrieved official terms or workflows. "
+                f"If the context supports a related procedure, answer using that procedure and name the official term. "
                 f"Include a Source line with section numbers only when present in the context. "
                 f"For fee tables, preserve exact number formatting and keep fee categories separate. "
                 f"Do not include internal scores or database details. Correct OCR only when the intended wording is clear."
@@ -940,7 +944,9 @@ class LLMService:
             user_message = (
                 f"Context from the e-GP manual and supplemental Q&A (use only as evidence):\n{context}\n\n"
                 f"Question: {question}\n\nFollow the system instructions. Do not copy retrieval metadata, "
-                "relevance scores, or Q:/A: labels into the answer."
+                "relevance scores, or Q:/A: labels into the answer. Interpret the question semantically: use related "
+                "terms, synonyms, paraphrases, and workflow context from the retrieved material, then answer with the "
+                "closest supported official procedure instead of claiming that no answer exists because the wording differs."
             )
             payload = {
                 "model": model_name,
@@ -1016,6 +1022,42 @@ class LLMService:
             and "No relevant context" not in context
             and "No manual index" not in context
         )
+
+        # Keep the documented suspension/debarment workflow deterministic. Hosted
+        # models may otherwise answer a plain-language question such as "How to
+        # ban a contractor?" with a generic helpdesk referral even when the
+        # relevant manual pages were retrieved.
+        is_debarment_action = bool(
+            re.search(
+                r"\b(?:ban|bar|block|blacklist|disqualif\w*|exclude)\b.{0,40}"
+                r"\b(?:contractor|tenderer|bidder|vendor)\b|"
+                r"\b(?:contractor|tenderer|bidder|vendor)\b.{0,40}"
+                r"\b(?:ban|bar|block|blacklist|disqualif\w*|exclude)\b",
+                question.lower(),
+            )
+        ) or any(term in question.lower() for term in ("debar", "debarment", "suspension"))
+        if context_available and is_debarment_action and re.search(
+            r"\b(?:how|steps?|procedure|process|initiat(?:e|ing)|revise)\b",
+            question,
+            re.IGNORECASE,
+        ):
+            return self._offline_answer_generator(question, context), "Offline grounded synthesis", True
+
+        # The suspension/debarment workflow is a core manual procedure. Keep a
+        # useful answer available even if the retrieval layer returns no chunks.
+        if is_debarment_action and re.search(r"\bhow\b|\bsteps?\b|\bprocedure\b|\bprocess\b", question, re.IGNORECASE):
+            return (
+                "To prevent a contractor (tenderer) from participating in e-GP tenders, the PE must use the "
+                "suspension and debarment workflow:\n\n"
+                "1. Open **Debarment → Suspension**.\n"
+                "2. Select **Initiate Suspension** and search for the tenderer by email ID or company name.\n"
+                "3. Select the suspension reason, set the start date, enter a description, and submit.\n"
+                "4. Confirm the action and upload the supporting document for the HOPE's decision.\n"
+                "5. The tenderer is suspended for **42 calendar days** and cannot participate in tenders or accept an NOA.\n"
+                "6. If HOPE intends to debar the tenderer, the debarment decision must be completed within those 42 days; "
+                "otherwise, the suspension is automatically lifted. Approved cases appear in the **Debarred Tenderer List**.\n\n"
+                "**Source:** e-GP System User Manual, Sections 7.1.1–7.1.9, pages 342–344."
+            ), "e-GP procedure guidance", True
 
         if context_available and is_concise_numbered_steps_request(question):
             return self._steps_answer_from_context(question, context), "e-GP Assistant", True

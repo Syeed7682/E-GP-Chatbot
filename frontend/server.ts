@@ -52,6 +52,68 @@ app.get('/api/chat/chunks', (req, res) => {
   });
 });
 
+// The frontend runs its own local API server in development. Keep this route
+// local as well so the UI does not fall through to Vite's proxy and require a
+// separately running FastAPI process just to load the question suggestions.
+app.get('/api/chat/questions', (req, res) => {
+  const csvPath = path.join(PROJECT_ROOT, 'csv_files', 'egp_contractor_evaluation_dataset.csv');
+  const parseCsvLine = (line: string) => {
+    const fields: string[] = [];
+    let field = '';
+    let quoted = false;
+    for (let index = 0; index < line.length; index += 1) {
+      const character = line[index];
+      if (character === '"' && line[index + 1] === '"' && quoted) {
+        field += '"';
+        index += 1;
+      } else if (character === '"') {
+        quoted = !quoted;
+      } else if (character === ',' && !quoted) {
+        fields.push(field);
+        field = '';
+      } else {
+        field += character;
+      }
+    }
+    fields.push(field);
+    return fields;
+  };
+
+  readFile(csvPath, 'utf8')
+    .then((csv) => {
+      const rows = csv.split(/\r?\n/).filter(Boolean).slice(1);
+      let questions = rows.map(parseCsvLine).map((fields, index) => ({
+        question_number: index + 1,
+        module: fields[1] || 'e-GP Q&A',
+        question: fields[2] || ''
+      })).filter((item) => item.question);
+
+      if (questions.length === 0) {
+        questions = [
+          { question_number: 1, module: 'Registration', question: 'How can my company register as a tenderer on e-GP?' },
+          { question_number: 2, module: 'Tendering', question: 'How do I create and publish a tender?' },
+          { question_number: 3, module: 'Debarment', question: 'How can a PE suspend or debar a tenderer?' },
+          { question_number: 4, module: 'Evaluation', question: 'How is a tender evaluated in e-GP?' },
+          { question_number: 5, module: 'Contract Management', question: 'How do I manage a contract in e-GP?' }
+        ];
+      }
+      res.json({ total: questions.length, questions });
+    })
+    .catch((error) => {
+      console.error('Could not load Q&A suggestions:', error);
+      res.json({
+        total: 5,
+        questions: [
+          { question_number: 1, module: 'Registration', question: 'How can my company register as a tenderer on e-GP?' },
+          { question_number: 2, module: 'Tendering', question: 'How do I create and publish a tender?' },
+          { question_number: 3, module: 'Debarment', question: 'How can a PE suspend or debar a tenderer?' },
+          { question_number: 4, module: 'Evaluation', question: 'How is a tender evaluated in e-GP?' },
+          { question_number: 5, module: 'Contract Management', question: 'How do I manage a contract in e-GP?' }
+        ]
+      });
+    });
+});
+
 app.get('/api/manual/page/:page_num/image', async (req, res, next) => {
   const page = Number(req.params.page_num);
   if (!Number.isInteger(page) || page < 1 || page > 543) {
