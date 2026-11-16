@@ -140,7 +140,8 @@ export default function App() {
         image_mime: attached?.mime,
         image_name: attached?.name,
         top_k: 3,
-        use_alt_model: useAltModel
+        use_alt_model: useAltModel,
+        language
       });
 
       const assistantMessage: ChatMessage = {
@@ -201,7 +202,7 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-[radial-gradient(ellipse_at_top,_#dcecff_0%,_#eef4f7_45%,_#dfe8ef_100%)] text-[#334155] font-sans">
+    <div className="flex h-dvh flex-col overflow-hidden bg-[#F4F8F3] text-[#183153] font-sans">
       {/* 1. Government-Style Header */}
       <GovtOfficialHeader
         syncState={syncState}
@@ -220,7 +221,7 @@ export default function App() {
       />
 
       {/* 2. Main Content Container */}
-      <div className="mx-auto flex min-h-0 w-full min-w-0 max-w-[1750px] flex-1 flex-col overflow-hidden border-x border-white/60 bg-white/55 shadow-sm backdrop-blur-xl md:flex-row">
+      <div className="mx-auto flex min-h-0 w-full min-w-0 max-w-[1750px] flex-1 flex-col overflow-hidden border-x border-[#183153]/10 bg-[#F4F8F3] shadow-sm md:flex-row">
         {/* Navigation / Sidebar Panel */}
         <GovtOfficialSidebar
           syncState={syncState}

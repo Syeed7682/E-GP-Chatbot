@@ -21,6 +21,7 @@ export interface SendChatParams {
   image_name?: string;
   top_k?: number;
   use_alt_model?: boolean;
+  language?: 'en' | 'bn';
 }
 
 export interface QuestionSuggestion {
@@ -86,7 +87,7 @@ export async function fetchBackendChunks(): Promise<ManualChunk[]> {
  * Sends chat queries to FastAPI; offline fallback is limited to development.
  */
 export async function sendChatQuery(params: SendChatParams): Promise<ChatApiResponse> {
-  const { question, previous_question, image_base64, image_mime, image_name, top_k = 3, use_alt_model = false } = params;
+  const { question, previous_question, image_base64, image_mime, image_name, top_k = 3, use_alt_model = false, language = 'en' } = params;
 
   if (import.meta.env.PROD && !API_BASE) {
     throw new Error('The assistant backend is not configured for this site. Set VITE_API_BASE_URL in Netlify to your public FastAPI backend URL, then redeploy.');
@@ -106,7 +107,8 @@ export async function sendChatQuery(params: SendChatParams): Promise<ChatApiResp
         image_base64: image_base64 || null,
         image_mime: image_mime || 'image/png',
         image_name: image_name || null,
-        use_alt_model
+        use_alt_model,
+        language
       })
     });
 

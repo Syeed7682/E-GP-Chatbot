@@ -15,6 +15,7 @@ class ChatRequest(BaseModel):
     image_mime: Optional[str] = Field("image/png", description="MIME type of the uploaded image")
     top_k: Optional[int] = Field(5, description="Number of manual chunks to retrieve", ge=1, le=20)
     use_alt_model: bool = Field(False, description="Use the E2 Groq vision-language model")
+    language: str = Field("en", pattern="^(en|bn)$", description="Response language: English or Bangla")
 
 class SourceDocument(BaseModel):
     """Reference to a manual passage or supplemental Q&A entry."""

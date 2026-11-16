@@ -89,7 +89,7 @@ export const GovtOfficialSidebar: React.FC<GovtOfficialSidebarProps> = ({
     )}
     <aside
       aria-label="Manual topics and actions"
-      className={`fixed inset-y-0 left-0 z-50 flex w-[min(20rem,88vw)] shrink-0 select-none flex-col gap-4 overflow-y-auto border-r border-slate-200 bg-[#f8fbff]/95 p-4 pt-[max(1rem,env(safe-area-inset-top))] text-xs shadow-2xl backdrop-blur-xl transition-transform duration-200 md:static md:z-auto md:h-auto md:min-h-0 md:w-80 md:translate-x-0 md:bg-white/65 md:pt-5 md:shadow-none ${
+      className={`fixed inset-y-0 left-0 z-50 flex w-[min(20rem,88vw)] shrink-0 select-none flex-col gap-4 overflow-y-auto border-r border-[#183153]/10 bg-[#F4F8F3] p-4 pt-[max(1rem,env(safe-area-inset-top))] text-xs shadow-2xl backdrop-blur-xl transition-transform duration-200 md:static md:z-auto md:h-auto md:min-h-0 md:w-80 md:translate-x-0 md:bg-[#F4F8F3]/95 md:pt-5 md:shadow-none ${
       isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
     }`}>
       <div className="flex items-center justify-between border-b border-slate-200 pb-2 md:hidden">
@@ -109,7 +109,7 @@ export const GovtOfficialSidebar: React.FC<GovtOfficialSidebarProps> = ({
           onNewChat();
           onCloseMobile();
         }}
-        className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0B4F8A] to-[#12304A] px-3 py-3 text-xs font-semibold text-white shadow-md shadow-blue-900/10 transition-all hover:from-[#083c6b] hover:to-[#0f2438] hover:-translate-y-0.5 active:translate-y-0"
+        className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#176B3A] to-[#183153] px-3 py-3 text-xs font-semibold text-white shadow-md shadow-[#183153]/10 transition-all hover:from-[#12552e] hover:to-[#12253e] hover:-translate-y-0.5 active:translate-y-0"
         aria-label="Start a new chat session"
       >
         <Plus className="w-4 h-4" />
@@ -117,13 +117,13 @@ export const GovtOfficialSidebar: React.FC<GovtOfficialSidebarProps> = ({
       </button>
 
       {/* 2. Suggested Questions */}
-      <div className="space-y-2.5 rounded-2xl border border-slate-200/80 bg-white/80 p-3.5 shadow-sm">
+      <div className="space-y-2.5 rounded-2xl border border-[#183153]/10 bg-white/90 p-3.5 shadow-sm">
         <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-          <div className="flex items-center gap-1.5 font-bold text-[#0F172A]">
-            <Search className="w-3.5 h-3.5 text-[#0B4F8A]" />
+          <div className="flex items-center gap-1.5 font-bold text-[#183153]">
+            <Search className="w-3.5 h-3.5 text-[#176B3A]" />
             <span>{language === 'en' ? 'Questions from e-GP Q&A' : 'e-GP প্রশ্নোত্তর থেকে প্রশ্ন'}</span>
           </div>
-          <span className="text-[10px] font-mono font-bold text-slate-500 bg-slate-200/60 px-1.5 py-0.2 rounded">
+          <span className="text-[10px] font-mono font-bold text-[#183153] bg-[#8BC34A]/20 px-1.5 py-0.2 rounded">
             {language === 'en' ? `${deduplicatedQuestions.length} questions` : `${deduplicatedQuestions.length}টি প্রশ্ন`}
           </span>
         </div>
@@ -141,11 +141,11 @@ export const GovtOfficialSidebar: React.FC<GovtOfficialSidebarProps> = ({
             onChange={(event) => setSuggestionQuery(event.target.value)}
             placeholder={language === 'en' ? 'Search by word or question...' : 'শব্দ বা প্রশ্ন দিয়ে খুঁজুন...'}
             aria-label="Search suggested manual questions"
-            className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 text-[11px] text-slate-800 outline-none placeholder:text-slate-400 focus:border-[#0B4F8A] focus:bg-white focus:ring-2 focus:ring-blue-500/20"
+            className="min-w-0 flex-1 rounded-xl border border-[#183153]/15 bg-[#F4F8F3] px-2.5 py-2 text-[11px] text-[#183153] outline-none placeholder:text-slate-500 focus:border-[#176B3A] focus:bg-white focus:ring-2 focus:ring-[#8BC34A]/40"
           />
           <button
             type="submit"
-            className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-[#0B4F8A] px-2.5 py-2 text-[11px] font-semibold text-white transition-colors hover:bg-[#083c6b]"
+            className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-[#176B3A] px-2.5 py-2 text-[11px] font-semibold text-white transition-colors hover:bg-[#183153]"
           >
             <Search className="h-3.5 w-3.5" />
             <span>{language === 'en' ? 'Search' : 'খুঁজুন'}</span>
@@ -171,9 +171,9 @@ export const GovtOfficialSidebar: React.FC<GovtOfficialSidebarProps> = ({
                   onSelectSuggestedQuestion(suggestion.question);
                   onCloseMobile();
                 }}
-                className="w-full text-left rounded-xl border border-slate-100 bg-slate-50/80 p-2.5 text-slate-700 transition-all flex items-start gap-2 cursor-pointer leading-snug hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50/70 hover:text-[#0B4F8A] hover:shadow-sm"
+                className="w-full text-left rounded-xl border border-slate-100 bg-slate-50/80 p-2.5 text-slate-700 transition-all flex items-start gap-2 cursor-pointer leading-snug hover:-translate-y-0.5 hover:border-[#8BC34A] hover:bg-[#F4F8F3] hover:text-[#176B3A] hover:shadow-sm"
               >
-                <ChevronRight className="w-3.5 h-3.5 text-[#0B4F8A] shrink-0 mt-0.5" />
+                <ChevronRight className="w-3.5 h-3.5 text-[#176B3A] shrink-0 mt-0.5" />
                 <span className="text-[11.5px]">
                   {suggestion.question}
                   <span className="ml-1 block pt-0.5 text-[10px] font-normal text-slate-400">
@@ -207,7 +207,7 @@ export const GovtOfficialSidebar: React.FC<GovtOfficialSidebarProps> = ({
 
       <a
         href={`${API_BASE}/api/manual/download`}
-        className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#0B4F8A]/20 bg-white/70 px-3 py-2.5 text-xs font-semibold text-[#0B4F8A] shadow-2xs transition-colors hover:border-[#0B4F8A] hover:bg-blue-50"
+        className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#176B3A]/20 bg-white/70 px-3 py-2.5 text-xs font-semibold text-[#176B3A] shadow-2xs transition-colors hover:border-[#176B3A] hover:bg-[#F4F8F3]"
       >
         <Download className="h-4 w-4" />
         <span>{language === 'en' ? 'Download Full Manual' : 'সম্পূর্ণ ম্যানুয়াল ডাউনলোড'}</span>

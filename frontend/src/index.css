@@ -2,17 +2,17 @@
 
 @layer base {
   :root {
-    --color-primary-blue: #0B4F8A;
-    --color-dark-navy: #12304A;
-    --color-bg-light: #F3F6F9;
-    --color-border-gray: #D5DEE7;
+    --color-primary-green: #176B3A;
+    --color-dark-navy: #183153;
+    --color-bg-light: #F4F8F3;
+    --color-accent-green: #8BC34A;
+    --color-border-gray: #D8E3D8;
     --color-text-slate: #334155;
-    --color-bangla-green: #16834A;
   }
 
   body {
     font-family: Arial, 'Noto Sans Bengali', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background-color: #F3F6F9;
+    background-color: #F4F8F3;
     color: #334155;
     margin: 0;
     padding: 0;
@@ -24,7 +24,7 @@
   }
 
   button:focus-visible, input:focus-visible, textarea:focus-visible {
-    outline: 3px solid rgba(53, 104, 212, 0.28);
+    outline: 3px solid rgba(139, 195, 74, 0.55);
     outline-offset: 2px;
   }
 }
@@ -39,21 +39,21 @@
 
 /* Public-service government typography & clean border utilities */
 .govt-header-bg {
-  background-color: #12304A;
+  background-color: #183153;
 }
 
 .govt-primary-btn {
-  background-color: #0B4F8A;
+  background-color: #176B3A;
   color: #ffffff;
   transition: background-color 150ms ease-in-out;
 }
 
 .govt-primary-btn:hover {
-  background-color: #083c6b;
+  background-color: #12552e;
 }
 
 .govt-green-accent {
-  background-color: #16834A;
+  background-color: #8BC34A;
 }
 
 .govt-border {
@@ -61,8 +61,8 @@
 }
 
 ::selection {
-  background: #cfe1ff;
-  color: #12304A;
+  background: #8BC34A;
+  color: #183153;
 }
 
 /* Subtle clean scrollbars */
@@ -71,12 +71,12 @@
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #F3F6F9;
+  background: #F4F8F3;
 }
 ::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
+  background: #B8CDB5;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
+  background: #176B3A;
 }

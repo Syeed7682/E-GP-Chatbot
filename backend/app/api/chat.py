@@ -96,6 +96,7 @@ async def ask_question(request: ChatRequest) -> ChatResponse:
             image=img_data,
             use_alt_model=request.use_alt_model,
             image_mime=request.image_mime or "image/png",
+            language=request.language,
         )
         if not answer or not answer.strip():
             answer = llm_service._offline_answer_generator(answer_question, context)

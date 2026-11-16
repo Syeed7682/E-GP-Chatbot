@@ -33,10 +33,43 @@ interface GovtChatAreaProps {
   onRetry: () => void;
 }
 
+type AssistantTextBlock =
+  | { kind: 'line'; text: string }
+  | { kind: 'table'; headers: string[]; rows: string[][] };
+
+const parseMarkdownTableRow = (line: string): string[] =>
+  line
+    .trim()
+    .replace(/^\|/, '')
+    .replace(/\|$/, '')
+    .split('|')
+    .map((cell) => cell.trim());
+
+const isMarkdownTableSeparator = (line: string): boolean =>
+  parseMarkdownTableRow(line).every((cell) => /^:?-{3,}:?$/.test(cell));
+
 const FormattedGovtText: React.FC<{ text: string; onOpenScreenModal?: (screenId: string) => void }> = ({ text, onOpenScreenModal }) => {
   const lines = formatAssistantAnswer(text)
     .split('\n')
     .filter((line) => line.trim());
+  const blocks: AssistantTextBlock[] = [];
+  for (let index = 0; index < lines.length; index += 1) {
+    const header = parseMarkdownTableRow(lines[index]);
+    const separator = lines[index + 1];
+    if (header.length > 1 && separator && isMarkdownTableSeparator(separator)) {
+      const rows: string[][] = [];
+      index += 2;
+      while (index < lines.length && lines[index].includes('|')) {
+        rows.push(parseMarkdownTableRow(lines[index]));
+        index += 1;
+      }
+      index -= 1;
+      blocks.push({ kind: 'table', headers: header, rows });
+    } else {
+      blocks.push({ kind: 'line', text: lines[index] });
+    }
+  }
+
   const elements: React.ReactNode[] = [];
   let currentList: React.ReactNode[] = [];
 
@@ -61,7 +94,7 @@ const FormattedGovtText: React.FC<{ text: string; onOpenScreenModal?: (screenId:
         return <em key={i}>{part.slice(1, -1)}</em>;
       }
       if (part.startsWith('`') && part.endsWith('`')) {
-        return <code key={i} className="px-1.5 py-0.5 rounded bg-slate-100 text-[#0B4F8A] font-mono text-[11px] font-medium border border-slate-200">{part.slice(1, -1)}</code>;
+        return <code key={i} className="px-1.5 py-0.5 rounded bg-[#F4F8F3] text-[#183153] font-mono text-[11px] font-medium border border-[#183153]/10">{part.slice(1, -1)}</code>;
       }
       if (/^Screen\s*[-–—:]\s*[A-Za-z0-9_.]+/i.test(part)) {
         return (
@@ -69,10 +102,10 @@ const FormattedGovtText: React.FC<{ text: string; onOpenScreenModal?: (screenId:
             key={i}
             type="button"
             onClick={() => onOpenScreenModal && onOpenScreenModal(part)}
-            className="inline-flex items-center gap-1 mx-1 text-[#0B4F8A] underline underline-offset-2 cursor-pointer"
+            className="inline-flex items-center gap-1 mx-1 text-[#176B3A] underline underline-offset-2 cursor-pointer"
             title={`View ${part}`}
           >
-            <Monitor className="w-3 h-3 text-[#0B4F8A]" />
+            <Monitor className="w-3 h-3 text-[#176B3A]" />
             <span>{part}</span>
           </button>
         );
@@ -81,7 +114,39 @@ const FormattedGovtText: React.FC<{ text: string; onOpenScreenModal?: (screenId:
     });
   };
 
-  lines.forEach((line, idx) => {
+  blocks.forEach((block, idx) => {
+    if (block.kind === 'table') {
+      flushList();
+      elements.push(
+        <div key={`table-${idx}`} className="my-2 max-w-full overflow-x-auto rounded-lg border border-slate-200">
+          <table className="w-full min-w-max border-collapse text-left text-xs">
+            <thead className="bg-[#F4F8F3] text-[#183153]">
+              <tr>
+                {block.headers.map((cell, cellIndex) => (
+                  <th key={`header-${cellIndex}`} scope="col" className="border-b border-[#183153]/10 px-3 py-2 font-semibold">
+                    {renderInlineStyles(cell)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {block.rows.map((row, rowIndex) => (
+                <tr key={`row-${rowIndex}`} className="odd:bg-white even:bg-[#F4F8F3]">
+                  {block.headers.map((_, cellIndex) => (
+                    <td key={`cell-${cellIndex}`} className="border-b border-[#183153]/5 px-3 py-2 text-[#183153]">
+                      {renderInlineStyles(row[cellIndex] ?? '')}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+      return;
+    }
+
+    const line = block.text;
     const trimmed = line.trim();
     if (!trimmed) {
       flushList();
@@ -217,7 +282,7 @@ const ManualAnswerImage: React.FC<{ sources: ChatSourceCitation[] }> = ({ source
     <div className="mt-2">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100 hover:text-blue-900"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-[#176B3A]/20 bg-[#F4F8F3] px-3 py-1.5 text-xs font-medium text-[#176B3A] transition-colors hover:border-[#8BC34A] hover:bg-[#8BC34A]/20 hover:text-[#183153]"
       >
         <ImageIcon className="h-3 w-3" />
         <span>{screenLabel}</span>
@@ -229,7 +294,7 @@ const ManualAnswerImage: React.FC<{ sources: ChatSourceCitation[] }> = ({ source
       </button>
 
       {isOpen && (
-        <div className="mt-2 rounded-lg border border-blue-200 bg-blue-50/50 p-2">
+        <div className="mt-2 rounded-lg border border-[#176B3A]/20 bg-[#F4F8F3] p-2">
           <img
             src={
               source.image_path
@@ -247,7 +312,7 @@ const ManualAnswerImage: React.FC<{ sources: ChatSourceCitation[] }> = ({ source
               <button
                 onClick={() => setPageIndex((i) => Math.max(0, i - 1))}
                 disabled={pageIndex === 0}
-                className="rounded border border-blue-200 bg-white px-2 py-0.5 text-xs text-blue-700 disabled:opacity-40"
+                className="rounded border border-[#176B3A]/20 bg-white px-2 py-0.5 text-xs text-[#176B3A] disabled:opacity-40"
               >
                 ← Prev
               </button>
@@ -257,7 +322,7 @@ const ManualAnswerImage: React.FC<{ sources: ChatSourceCitation[] }> = ({ source
               <button
                 onClick={() => setPageIndex((i) => Math.min(imageSources.length - 1, i + 1))}
                 disabled={pageIndex === imageSources.length - 1}
-                className="rounded border border-blue-200 bg-white px-2 py-0.5 text-xs text-blue-700 disabled:opacity-40"
+                className="rounded border border-[#176B3A]/20 bg-white px-2 py-0.5 text-xs text-[#176B3A] disabled:opacity-40"
               >
                 Next →
               </button>
@@ -289,7 +354,7 @@ const ManualReferences: React.FC<{ sources: ChatSourceCitation[] }> = ({ sources
     <div className="mt-2">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100 hover:text-amber-900"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-[#8BC34A]/50 bg-[#F4F8F3] px-3 py-1.5 text-xs font-medium text-[#183153] transition-colors hover:bg-[#8BC34A]/20"
       >
         <BookOpen className="h-3 w-3" />
         <span>Source Reference</span>
@@ -301,7 +366,7 @@ const ManualReferences: React.FC<{ sources: ChatSourceCitation[] }> = ({ sources
       </button>
 
       {isOpen && (
-        <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50/70 px-3 py-2 text-xs leading-5 text-slate-700">
+        <div className="mt-2 rounded-lg border border-[#8BC34A]/50 bg-[#F4F8F3] px-3 py-2 text-xs leading-5 text-[#183153]">
           <p>📖 <strong>Reference:</strong> {refText}</p>
         </div>
       )}
@@ -369,8 +434,8 @@ const MessageActionButtons: React.FC<{
             onClick={() => toggle('scenario')}
             className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
               openPanel === 'scenario'
-                ? 'border-blue-400 bg-blue-100 text-blue-800'
-                : 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'
+                ? 'border-[#176B3A] bg-[#8BC34A]/25 text-[#183153]'
+                : 'border-[#176B3A]/20 bg-[#F4F8F3] text-[#176B3A] hover:bg-[#8BC34A]/20'
             }`}
           >
             <ImageIcon className="h-3 w-3" />
@@ -384,8 +449,8 @@ const MessageActionButtons: React.FC<{
             onClick={() => toggle('reference')}
             className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
               openPanel === 'reference'
-                ? 'border-amber-400 bg-amber-100 text-amber-800'
-                : 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                ? 'border-[#8BC34A] bg-[#8BC34A]/25 text-[#183153]'
+                : 'border-[#8BC34A]/50 bg-[#F4F8F3] text-[#183153] hover:bg-[#8BC34A]/20'
             }`}
           >
             <BookOpen className="h-3 w-3" />
@@ -410,7 +475,7 @@ const MessageActionButtons: React.FC<{
 
       {/* Expanded panels */}
       {openPanel === 'scenario' && hasScenario && (
-        <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-2">
+        <div className="rounded-lg border border-[#176B3A]/20 bg-[#F4F8F3] p-2">
           <img
             src={
               imgSource.image_path
@@ -428,7 +493,7 @@ const MessageActionButtons: React.FC<{
               <button
                 onClick={() => setPageIndex((i) => Math.max(0, i - 1))}
                 disabled={pageIndex === 0}
-                className="rounded border border-blue-200 bg-white px-2 py-0.5 text-xs text-blue-700 disabled:opacity-40"
+                className="rounded border border-[#176B3A]/20 bg-white px-2 py-0.5 text-xs text-[#176B3A] disabled:opacity-40"
               >
                 ← Prev
               </button>
@@ -436,7 +501,7 @@ const MessageActionButtons: React.FC<{
               <button
                 onClick={() => setPageIndex((i) => Math.min(imageSources.length - 1, i + 1))}
                 disabled={pageIndex === imageSources.length - 1}
-                className="rounded border border-blue-200 bg-white px-2 py-0.5 text-xs text-blue-700 disabled:opacity-40"
+                className="rounded border border-[#176B3A]/20 bg-white px-2 py-0.5 text-xs text-[#176B3A] disabled:opacity-40"
               >
                 Next →
               </button>
@@ -446,7 +511,7 @@ const MessageActionButtons: React.FC<{
       )}
 
       {openPanel === 'reference' && hasRef && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50/70 px-3 py-2 text-xs leading-5 text-slate-700">
+        <div className="rounded-lg border border-[#8BC34A]/50 bg-[#F4F8F3] px-3 py-2 text-xs leading-5 text-[#183153]">
           <p>📖 <strong>Reference:</strong> {refText}</p>
         </div>
       )}
@@ -456,12 +521,12 @@ const MessageActionButtons: React.FC<{
           <p>📞 <strong>e-GP Helpdesk Hotline:</strong> 16575 (from any mobile network in Bangladesh)</p>
           <p>☎️ <strong>Telephone Support:</strong> +880 9609112233 / +880 1762625528–31</p>
           <p>✉️ <strong>Email Support:</strong>{' '}
-            <a href="mailto:helpdesk@eprocure.gov.bd" className="text-blue-600 underline">helpdesk@eprocure.gov.bd</a>
+            <a href="mailto:helpdesk@eprocure.gov.bd" className="text-[#176B3A] underline">helpdesk@eprocure.gov.bd</a>
             {' / '}
-            <a href="mailto:e-gphelpdesk@cptu.gov.bd" className="text-blue-600 underline">e-gphelpdesk@cptu.gov.bd</a>
+            <a href="mailto:e-gphelpdesk@cptu.gov.bd" className="text-[#176B3A] underline">e-gphelpdesk@cptu.gov.bd</a>
           </p>
           <p>🌐 <strong>Official Portal:</strong>{' '}
-            <a href="https://www.eprocure.gov.bd" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+            <a href="https://www.eprocure.gov.bd" target="_blank" rel="noopener noreferrer" className="text-[#176B3A] underline">
               https://www.eprocure.gov.bd
             </a>
           </p>
@@ -536,20 +601,20 @@ export const GovtChatArea: React.FC<GovtChatAreaProps> = ({
   };
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-[#f7faff] text-slate-800">
+    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-[#F4F8F3] text-[#183153]">
       {/* Messages Stream */}
-      <div className="min-h-0 flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,_rgba(219,234,254,0.62),_transparent_42%)] px-3 py-5 sm:px-5 sm:py-6 md:px-8">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,_rgba(139,195,74,0.12),_transparent_42%)] px-3 py-5 sm:px-5 sm:py-6 md:px-8">
         {messages.length === 0 && (
           <div className="mx-auto flex min-h-full w-full max-w-3xl items-center justify-center py-4">
-            <div className="w-full max-w-2xl rounded-[1.75rem] border border-white bg-white/85 p-6 text-center shadow-[0_20px_70px_-35px_rgba(15,34,54,0.45)] backdrop-blur-xl sm:p-10">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0B4F8A] to-[#12304A] text-white shadow-lg shadow-blue-900/20">
+            <div className="w-full max-w-2xl rounded-[1.75rem] border border-[#183153]/10 bg-white/90 p-6 text-center shadow-[0_20px_70px_-35px_rgba(24,49,83,0.3)] backdrop-blur-xl sm:p-10">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#176B3A] to-[#183153] text-white shadow-lg shadow-[#183153]/20">
                 <ShieldCheck className="h-8 w-8" />
               </div>
-              <div className="mt-5 flex items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#0B4F8A]">
+              <div className="mt-5 flex items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#176B3A]">
                 <Sparkles className="h-3.5 w-3.5" />
                 <span>Official manual assistant</span>
               </div>
-              <h2 className="mt-3 text-2xl font-bold tracking-tight text-[#12304A] sm:text-3xl">
+              <h2 className="mt-3 text-2xl font-bold tracking-tight text-[#183153] sm:text-3xl">
                 How can we help today?
               </h2>
               <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-500 sm:text-[15px]">
@@ -566,9 +631,9 @@ export const GovtChatArea: React.FC<GovtChatAreaProps> = ({
                     key={prompt}
                     type="button"
                     onClick={() => onSendMessage(prompt)}
-                    className="group rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-left transition-all hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50/70 hover:shadow-sm"
+                    className="group rounded-xl border border-[#183153]/10 bg-[#F4F8F3] p-3 text-left transition-all hover:-translate-y-0.5 hover:border-[#8BC34A] hover:bg-[#8BC34A]/15 hover:shadow-sm"
                   >
-                    <span className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-[#0B4F8A]">
+                    <span className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-[#176B3A]">
                       {label}
                       <ArrowUpRight className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100" />
                     </span>
@@ -595,15 +660,15 @@ export const GovtChatArea: React.FC<GovtChatAreaProps> = ({
               className={`flex w-full min-w-0 ${isUser ? 'justify-end' : 'justify-start'}`}
             >
               {!isUser && (
-                <div className="mr-3 mt-1 hidden h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#0B4F8A] text-white shadow-sm sm:flex">
+                <div className="mr-3 mt-1 hidden h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#176B3A] text-white shadow-sm sm:flex">
                   <ShieldCheck className="h-4 w-4" />
                 </div>
               )}
               <div
                 className={`min-w-0 max-w-[94%] space-y-2 rounded-2xl px-4 py-3.5 shadow-sm sm:max-w-[85%] sm:px-5 ${
                   isUser
-                    ? 'rounded-tr-md bg-[#3568D4] text-white shadow-blue-900/10'
-                    : 'rounded-tl-md border border-slate-200/80 bg-white text-slate-800'
+                    ? 'rounded-tr-md bg-[#183153] text-white shadow-[#183153]/10'
+                    : 'rounded-tl-md border border-[#183153]/10 bg-white text-[#183153]'
                 }`}
               >
                 {/* Uploaded Screenshot if any */}
@@ -628,8 +693,8 @@ export const GovtChatArea: React.FC<GovtChatAreaProps> = ({
 
                 {!isUser && (
                   <>
-                    <div className="flex items-center gap-2 border-t border-slate-100 pt-2 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    <div className="flex items-center gap-2 border-t border-[#183153]/10 pt-2 text-[10px] font-semibold uppercase tracking-wide text-[#176B3A]">
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#8BC34A]" />
                       Grounded in official manual
                     </div>
                     <MessageActionButtons sources={msg.sources} msgId={msg.id} />
@@ -643,8 +708,8 @@ export const GovtChatArea: React.FC<GovtChatAreaProps> = ({
         {/* Loading Indicator */}
         {isLoading && (
           <div className="mx-auto flex w-full max-w-3xl">
-            <div className="flex items-center gap-3 rounded-2xl bg-[#F3F4F6] px-4 py-3 text-sm text-slate-600">
-              <div className="w-4 h-4 border-2 border-[#0B4F8A] border-t-transparent rounded-full animate-spin" />
+            <div className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3 text-sm text-[#183153] shadow-sm">
+              <div className="w-4 h-4 border-2 border-[#176B3A] border-t-transparent rounded-full animate-spin" />
               <span>{language === 'en' ? 'Thinking…' : 'ভাবছি…'}</span>
             </div>
           </div>
@@ -675,7 +740,7 @@ export const GovtChatArea: React.FC<GovtChatAreaProps> = ({
       <div className="border-t border-slate-200/80 bg-white/90 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-12px_30px_-24px_rgba(15,34,54,0.5)] backdrop-blur-xl sm:p-4 sm:pb-[max(1rem,env(safe-area-inset-bottom))]">
         <div className="mx-auto max-w-3xl">
           {uploadedImage && (
-            <div className="mb-2.5 inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs text-slate-700">
+            <div className="mb-2.5 inline-flex items-center gap-2 rounded-xl border border-[#8BC34A]/50 bg-[#F4F8F3] px-3 py-1.5 text-xs text-[#183153]">
               <span className="max-w-xs truncate">{uploadedImage.name}</span>
               <button
                 onClick={() => onImageSelected(null)}
@@ -689,7 +754,7 @@ export const GovtChatArea: React.FC<GovtChatAreaProps> = ({
           )}
 
           <form onSubmit={handleFormSubmit}>
-            <div className="relative overflow-hidden rounded-2xl border border-slate-300 bg-white transition-all focus-within:border-[#0B4F8A] focus-within:ring-4 focus-within:ring-blue-500/10">
+            <div className="relative overflow-hidden rounded-2xl border border-[#183153]/20 bg-white transition-all focus-within:border-[#176B3A] focus-within:ring-4 focus-within:ring-[#8BC34A]/20">
               <textarea
                 ref={textareaRef}
                 rows={1}
@@ -711,7 +776,7 @@ export const GovtChatArea: React.FC<GovtChatAreaProps> = ({
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-blue-50 hover:text-[#0B4F8A]"
+                  className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-[#F4F8F3] hover:text-[#176B3A]"
                   title="Attach e-GP portal screenshot"
                   aria-label="Upload portal screenshot"
                 >
@@ -720,7 +785,7 @@ export const GovtChatArea: React.FC<GovtChatAreaProps> = ({
                 <button
                   type="submit"
                   disabled={(!inputQuestion.trim() && !uploadedImage) || isLoading}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0B4F8A] text-white transition-all hover:bg-[#083c6b] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-40"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#176B3A] text-white transition-all hover:bg-[#183153] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-40"
                   aria-label="Send question"
                 >
                   <Send className="h-3.5 w-3.5" />

@@ -984,6 +984,7 @@ class LLMService:
         image: Optional[str] = None,
         use_alt_model: bool = False,
         image_mime: str = "image/png",
+        language: str = "en",
     ) -> Tuple[str, str, bool]:
         """
         Returns the grounded answer, the provider/model that produced it, and offline status.
@@ -1019,9 +1020,16 @@ class LLMService:
         if context_available and is_concise_numbered_steps_request(question):
             return self._steps_answer_from_context(question, context), "e-GP Assistant", True
 
+        generation_question = question
+        if language == "bn":
+            generation_question = (
+                f"{question}\n\nIMPORTANT LANGUAGE REQUIREMENT: Respond entirely in Bangla (বাংলা), "
+                "while preserving official e-GP terms, screen names, error codes, URLs, and page numbers."
+            )
+
         # E2 always uses its configured multimodal model; E1 switches to it for images.
         if use_alt_model:
-            vision_answer = self._call_alt_vl_model(question, context, image=image, image_mime=image_mime)
+            vision_answer = self._call_alt_vl_model(generation_question, context, image=image, image_mime=image_mime)
             if vision_answer:
                 return vision_answer, GROQ_VISION_MODEL, False
             print("[llm_service] E2 Groq inference failed; trying configured hosted fallback.")
@@ -1031,7 +1039,7 @@ class LLMService:
             try:
                 print(f"[llm_service] Running local inference on '{self.model_name}'...")
                 local_answer = self._generate_local_transformers(
-                    question,
+                    generation_question,
                     context,
                     image_url_or_path=None,
                 )
@@ -1042,7 +1050,7 @@ class LLMService:
         if not use_alt_model:
             groq_model = GROQ_VISION_MODEL if image else GROQ_TEXT_MODEL
             groq_answer = self._call_groq_api(
-                question,
+                generation_question,
                 context,
                 image=image,
                 image_mime=image_mime,
@@ -1052,7 +1060,7 @@ class LLMService:
                 return groq_answer, groq_model, False
 
         gemini_answer = self._call_gemini_api(
-            question,
+            generation_question,
             context,
             image=image,
             image_mime=image_mime,
