@@ -2,6 +2,7 @@ import React from 'react';
 import { User, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { ChatMessage as ChatMessageType } from '../../types/egp';
 import { SourceCitation } from './SourceCitation';
+import { FormattedGovtText } from '../GovtChatArea';
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -34,8 +35,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onOpenPage })
         )}
 
         {/* Message Content */}
-        <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap leading-relaxed text-sm">
-          {message.text}
+        <div className="prose prose-sm dark:prose-invert max-w-none leading-relaxed text-sm">
+          {isUser ? message.text : <FormattedGovtText text={message.text} />}
         </div>
 
         {/* Citations */}

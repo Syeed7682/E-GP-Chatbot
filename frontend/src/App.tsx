@@ -133,9 +133,15 @@ export default function App() {
           !isVagueStepsRequest(message.text)
         )
         ?.text;
+      const conversationContext = messages
+        .slice(-6)
+        .map((message) => `${message.sender === 'user' ? 'User' : 'Assistant'}: ${message.text}`)
+        .join('\n')
+        .slice(-6000);
       const result = await sendChatQuery({
         question: text.trim(),
         previous_question: previousQuestion,
+        conversation_context: conversationContext,
         image_base64: attached?.base64,
         image_mime: attached?.mime,
         image_name: attached?.name,

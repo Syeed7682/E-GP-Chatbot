@@ -16,6 +16,11 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const EXTRACTED_IMAGES_DIR = path.join(PROJECT_ROOT, 'data', 'extracted_images');
+const MANUAL_PDF_CANDIDATES = [
+  'egp_manual.pdf',
+  'egp_official_manual.pdf',
+  'e-GP System User Manual - Procuring Entity User 1 February 2026.pdf'
+].map((filename) => path.join(PROJECT_ROOT, 'data', 'raw', filename));
 
 app.use(express.json({ limit: '50mb' }));
 
@@ -25,9 +30,22 @@ let serverCurrentVersion = SERVER_DATASET_VERSION;
 let serverDatasetHash = SERVER_DATASET_HASH;
 
 // System Prompt for e-GP Procurement Entity RAG
-const EGP_SYSTEM_PROMPT = `You are Proca, the official e-GP (electronic Government Procurement) Manual AI Assistant for Procuring Entity (PE) users, established by the Central Procurement Technical Unit (CPTU) and Ministry of Planning.
+const EGP_SYSTEM_PROMPT = `You are Proca, a helpful general-purpose assistant with strong expertise in Bangladesh e-GP procurement.
 
-Answer using only the provided e-GP manual context and any uploaded screenshot. Never invent procurement procedures, rules, or deadlines. Start with a direct answer in one short, natural paragraph; use a short numbered list only when sequential steps are needed. Keep it concise, correct obvious OCR line-break or split-word errors when clear, and do not copy chunk headings or extraction artifacts. Do not include page numbers, citations, chunk IDs, source labels, or a separate screen-reference list in the answer; the application displays references separately. Mention a screen or menu in the answer only when needed to explain an action. For screenshots, describe only visible details and relevant supported manual guidance. If the context is insufficient, say so briefly.`;
+Use the supplied manual context for official e-GP procedures, rules, deadlines, and menu paths. For other topics, answer normally using your general knowledge. Interpret ordinary wording semantically: for example, “ban a contractor” commonly means suspend or debar a contractor/tenderer. Never refuse merely because the exact phrase is absent. Never invent e-GP-specific rules or deadlines. Start with a direct answer in one short, natural paragraph; use a short numbered list only when sequential steps are needed. Keep it concise, correct obvious OCR line-break or split-word errors when clear, and do not copy chunk headings or extraction artifacts. For screenshots, describe only visible details and relevant supported manual guidance.`;
+
+app.get('/api/manual/download', async (_req, res) => {
+  for (const candidate of MANUAL_PDF_CANDIDATES) {
+    try {
+      await readFile(candidate);
+      return res.download(candidate, path.basename(candidate));
+    } catch {
+      // Try the next supported local manual filename.
+    }
+  }
+
+  return res.status(404).json({ error: 'The full manual PDF is not available locally.' });
+});
 
 // 1. Health Endpoints (FastAPI compatibility)
 app.get(['/api/health', '/api/chat/health'], (req, res) => {
@@ -233,7 +251,7 @@ app.post('/api/sync/push', (req, res) => {
 
 // 5. Chat Endpoint (Multimodal RAG with FastAPI proxy, Hugging Face Qwen, Gemini, or Grounded Fallback)
 app.post('/api/chat', async (req, res) => {
-  const { question, image_base64, image_mime = 'image/png', image_name, top_k = 3, use_alt_model = false } = req.body;
+  const { question, previous_question, conversation_context, image_base64, image_mime = 'image/png', image_name, top_k = 3, use_alt_model = false } = req.body;
 
   if (!question && !image_base64) {
     return res.status(400).json({ error: 'Question or image is required' });
@@ -249,6 +267,8 @@ app.post('/api/chat', async (req, res) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         question,
+        previous_question: previous_question || null,
+        conversation_context: conversation_context || null,
         image_base64: image_base64 || null,
         image: image_base64 || null,
         image_name: image_name || null,
@@ -283,7 +303,7 @@ app.post('/api/chat', async (req, res) => {
   }
 
   // Combine query and OCR content for precision retrieval
-  const effectiveQuery = [question, ocrExtractedText].filter(Boolean).join(' ').trim() || 'e-GP portal screen analysis';
+  const effectiveQuery = [conversation_context, question, ocrExtractedText].filter(Boolean).join(' ').trim() || 'e-GP portal screen analysis';
 
   // Retrieve relevant manual chunks
   const retrieved = retrieveTopKChunks(effectiveQuery, INITIAL_MANUAL_CHUNKS, top_k, Boolean(image_base64));
@@ -306,7 +326,8 @@ app.post('/api/chat', async (req, res) => {
   const groqApiKey = process.env.GROQ_API_KEY;
   if (groqApiKey) {
     try {
-      const promptText = `USER QUESTION: ${question || 'Analyze this portal screenshot and explain the required e-GP procedure or error fix.'}
+      const promptText = `RECENT CONVERSATION (use this to understand follow-up wording; answer the latest question): ${conversation_context || '(none)'}
+USER QUESTION: ${question || 'Analyze this portal screenshot and explain the required e-GP procedure or error fix.'}
 ${ocrExtractedText ? `EXTRACTED PORTAL TEXT: ${ocrExtractedText}\n` : ''}
 RELEVANT OFFICIAL e-GP PE MANUAL CONTEXT (use as evidence; do not copy OCR artifacts or metadata):
 ${retrievedContextText}
@@ -368,7 +389,7 @@ Write a concise, direct answer in a natural conversational style. Prefer one sho
   }
 
   // Graceful fallback: Offline / Deterministic RAG generation with OCR-enhanced query
-  const offlineResult = generateOfflineAnswer(effectiveQuery, INITIAL_MANUAL_CHUNKS, image_name);
+  const offlineResult = generateOfflineAnswer(question || effectiveQuery, INITIAL_MANUAL_CHUNKS, image_name, previous_question);
   return res.json({
     question: question || 'Portal Screenshot Diagnostic',
     answer: offlineResult.answer,

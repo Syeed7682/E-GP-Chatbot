@@ -16,6 +16,7 @@ export interface BackendHealthResponse {
 export interface SendChatParams {
   question: string;
   previous_question?: string;
+  conversation_context?: string;
   image_base64?: string | null;
   image_mime?: string;
   image_name?: string;
@@ -87,7 +88,7 @@ export async function fetchBackendChunks(): Promise<ManualChunk[]> {
  * Sends chat queries to FastAPI; offline fallback is limited to development.
  */
 export async function sendChatQuery(params: SendChatParams): Promise<ChatApiResponse> {
-  const { question, previous_question, image_base64, image_mime, image_name, top_k = 3, use_alt_model = false, language = 'en' } = params;
+  const { question, previous_question, conversation_context, image_base64, image_mime, image_name, top_k = 3, use_alt_model = false, language = 'en' } = params;
 
   if (import.meta.env.PROD && !API_BASE) {
     throw new Error('The assistant backend is not configured for this site. Set VITE_API_BASE_URL in Netlify to your public FastAPI backend URL, then redeploy.');
@@ -102,6 +103,7 @@ export async function sendChatQuery(params: SendChatParams): Promise<ChatApiResp
       body: JSON.stringify({
         question,
         previous_question,
+        conversation_context,
         top_k,
         image: image_base64 || null,
         image_base64: image_base64 || null,

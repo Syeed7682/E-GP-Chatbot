@@ -294,22 +294,8 @@ export function generateOfflineAnswer(
     };
   }
 
-  // 1. Guardrail: Detect non-portal image uploads (e.g. animals, photos, random graphics)
-  const isNonPortalImage = NON_PORTAL_TERMS.some(term => lowerImg.includes(term));
-  const hasProcurementQuery = PROCUREMENT_KEYWORDS.some(kw => normQ.includes(kw));
-
-  if (imageName && isNonPortalImage && !hasProcurementQuery) {
-    return {
-      question,
-      answer: `This assistant is dedicated strictly to the official Bangladesh electronic Government Procurement (e-GP) System.\n\nThe uploaded image (\`${imageName}\`) does not appear to be an official e-GP portal screen, error dialog, or procurement document.\n\nPlease upload an official e-GP portal screenshot (e.g., login gateway, tender preparation form, workflow approval screen, or error notification) so I can guide you through the relevant manual procedure.`,
-      sources: [],
-      portal_screens: [],
-      model_used: 'e-GP PE Manual Grounded',
-      was_offline: true
-    };
-  }
-
-  // 2. Guardrail: Common non-procurement or conversational questions
+  // 1. Keep image analysis available for general questions too.
+  // 2. Common conversational questions
   if (normQ === 'who are you' || normQ.includes('who are you') || normQ.includes('what can you do')) {
     return {
       question,

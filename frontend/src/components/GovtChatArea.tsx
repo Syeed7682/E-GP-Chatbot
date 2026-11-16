@@ -48,7 +48,7 @@ const parseMarkdownTableRow = (line: string): string[] =>
 const isMarkdownTableSeparator = (line: string): boolean =>
   parseMarkdownTableRow(line).every((cell) => /^:?-{3,}:?$/.test(cell));
 
-const FormattedGovtText: React.FC<{ text: string; onOpenScreenModal?: (screenId: string) => void }> = ({ text, onOpenScreenModal }) => {
+export const FormattedGovtText: React.FC<{ text: string; onOpenScreenModal?: (screenId: string) => void }> = ({ text, onOpenScreenModal }) => {
   const lines = formatAssistantAnswer(text)
     .split('\n')
     .filter((line) => line.trim());
