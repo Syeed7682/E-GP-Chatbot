@@ -608,7 +608,7 @@ export const GovtChatArea: React.FC<GovtChatAreaProps> = ({
   };
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-[#F4F8F3] text-[#183153]">
+    <div className="glass-chat relative flex min-h-0 flex-1 flex-col overflow-hidden bg-[#F4F7F5] text-[#263746]">
       {/* Messages Stream */}
       <div className="min-h-0 flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,_rgba(139,195,74,0.12),_transparent_42%)] px-3 py-5 sm:px-5 sm:py-6 md:px-8">
         {messages.length === 0 && (
@@ -746,7 +746,7 @@ export const GovtChatArea: React.FC<GovtChatAreaProps> = ({
       </div>
 
       {/* Input Form Area */}
-      <div className="border-t border-slate-200/80 bg-white/90 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-12px_30px_-24px_rgba(15,34,54,0.5)] backdrop-blur-xl sm:p-4 sm:pb-[max(1rem,env(safe-area-inset-bottom))]">
+      <div className="border-t border-white/20 bg-white/10 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-12px_30px_-24px_rgba(15,34,54,0.5)] backdrop-blur-xl sm:p-4 sm:pb-[max(1rem,env(safe-area-inset-bottom))]">
         <div className="mx-auto max-w-3xl">
           {uploadedImage && (
             <div className="mb-2.5 inline-flex items-center gap-2 rounded-xl border border-[#8BC34A]/50 bg-[#F4F8F3] px-3 py-1.5 text-xs text-[#183153]">
@@ -763,14 +763,14 @@ export const GovtChatArea: React.FC<GovtChatAreaProps> = ({
           )}
 
           <form onSubmit={handleFormSubmit}>
-            <div className="relative overflow-hidden rounded-2xl border border-[#183153]/20 bg-white transition-all focus-within:border-[#176B3A] focus-within:ring-4 focus-within:ring-[#8BC34A]/20">
+            <div className="relative overflow-hidden rounded-2xl border border-[#DCE5E0] bg-white shadow-sm transition-all focus-within:border-[#176B45] focus-within:ring-4 focus-within:ring-[#8BC34A]/20">
               <textarea
                 ref={textareaRef}
                 rows={1}
                 value={inputQuestion}
                 onChange={(e) => setInputQuestion(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={language === 'en' ? 'Ask a question...' : 'প্রশ্ন লিখুন...'}
+                placeholder={language === 'en' ? 'Ask anything about e-GP procedures...' : 'প্রশ্ন লিখুন...'}
                 className="w-full resize-none bg-transparent p-4 pr-28 text-sm text-slate-800 outline-none placeholder:text-slate-400"
               />
 

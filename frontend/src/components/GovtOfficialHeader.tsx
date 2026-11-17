@@ -40,7 +40,7 @@ export const GovtOfficialHeader: React.FC<GovtOfficialHeaderProps> = ({
   onToggleAltModel
 }) => {
   return (
-    <header className="relative z-40 w-full shrink-0 bg-[#193653] text-white border-b border-[#D8E3D8]/20 shadow-sm backdrop-blur-xl select-none font-sans">
+    <header className="relative z-40 w-full shrink-0 bg-[#24435F] text-white border-b border-white/15 shadow-sm backdrop-blur-xl select-none font-sans">
       {/* Top Government-Style Strip */}
       <div className="hidden">
         <div className="flex min-w-0 items-center gap-2.5">

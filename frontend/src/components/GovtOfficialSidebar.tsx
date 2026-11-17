@@ -89,7 +89,7 @@ export const GovtOfficialSidebar: React.FC<GovtOfficialSidebarProps> = ({
     )}
     <aside
       aria-label="Manual topics and actions"
-      className={`fixed inset-y-0 left-0 z-50 flex w-[min(20rem,88vw)] shrink-0 select-none flex-col gap-4 overflow-y-auto border-r border-[#183153]/10 bg-[#F4F8F3] p-4 pt-[max(1rem,env(safe-area-inset-top))] text-xs shadow-2xl backdrop-blur-xl transition-transform duration-200 md:static md:z-auto md:h-auto md:min-h-0 md:w-80 md:translate-x-0 md:bg-[#F4F8F3]/95 md:pt-5 md:shadow-none ${
+      className={`glass-sidebar fixed inset-y-0 left-0 z-50 flex w-[min(20rem,88vw)] shrink-0 select-none flex-col gap-4 overflow-y-auto border-r border-[#DCE5E0] bg-[#EAF1EC] p-4 pt-[max(1rem,env(safe-area-inset-top))] text-xs shadow-2xl transition-transform duration-200 md:static md:z-auto md:h-auto md:min-h-0 md:w-80 md:translate-x-0 md:bg-[#EAF1EC] md:pt-5 md:shadow-none ${
       isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
     }`}>
       <div className="flex items-center justify-between border-b border-slate-200 pb-2 md:hidden">
@@ -117,7 +117,7 @@ export const GovtOfficialSidebar: React.FC<GovtOfficialSidebarProps> = ({
       </button>
 
       {/* 2. Suggested Questions */}
-      <div className="space-y-2.5 rounded-2xl border border-[#183153]/10 bg-white/90 p-3.5 shadow-sm">
+        <div className="glass-panel space-y-2.5 rounded-2xl border border-[#DCE5E0] bg-white p-3.5 shadow-sm">
         <div className="flex items-center justify-between border-b border-slate-100 pb-2">
           <div className="flex items-center gap-1.5 font-bold text-[#183153]">
             <Search className="w-3.5 h-3.5 text-[#176B3A]" />

@@ -208,7 +208,7 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-[#F4F8F3] text-[#183153] font-sans">
+    <div className="glass-site flex h-dvh flex-col overflow-hidden bg-[#F4F7F5] text-[#263746] font-sans">
       {/* 1. Government-Style Header */}
       <GovtOfficialHeader
         syncState={syncState}
@@ -227,7 +227,7 @@ export default function App() {
       />
 
       {/* 2. Main Content Container */}
-      <div className="mx-auto flex min-h-0 w-full min-w-0 max-w-[1750px] flex-1 flex-col overflow-hidden border-x border-[#183153]/10 bg-[#F4F8F3] shadow-sm md:flex-row">
+      <div className="glass-content mx-auto flex min-h-0 w-full min-w-0 max-w-[1750px] flex-1 flex-col overflow-hidden border-x border-[#DCE5E0] bg-[#F4F7F5] shadow-sm md:flex-row">
         {/* Navigation / Sidebar Panel */}
         <GovtOfficialSidebar
           syncState={syncState}
