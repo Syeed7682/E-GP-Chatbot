@@ -40,9 +40,9 @@ export const GovtOfficialHeader: React.FC<GovtOfficialHeaderProps> = ({
   onToggleAltModel
 }) => {
   return (
-    <header className="relative z-40 w-full shrink-0 bg-[#183153]/95 text-white border-b border-white/15 shadow-md backdrop-blur-xl select-none font-sans">
+    <header className="relative z-40 w-full shrink-0 bg-[#193653] text-white border-b border-[#D8E3D8]/20 shadow-sm backdrop-blur-xl select-none font-sans">
       {/* Top Government-Style Strip */}
-      <div className="bg-[#176B3A] text-[11px] px-3 sm:px-4 md:px-6 py-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[#F4F8F3] border-b border-[#8BC34A]/30">
+      <div className="hidden">
         <div className="flex min-w-0 items-center gap-2.5">
           {/* Bangladesh National Circular Emblem */}
           <div className="w-4.5 h-4.5 rounded-full bg-[#006A4E] flex items-center justify-center p-0.5 shadow-xs">
@@ -79,7 +79,7 @@ export const GovtOfficialHeader: React.FC<GovtOfficialHeaderProps> = ({
           {/* Language Toggle */}
           <button
             onClick={onToggleLanguage}
-            className="flex min-h-8 items-center gap-1 px-2 py-1 rounded-md bg-[#183153] hover:bg-[#24446f] text-[#F4F8F3] text-[11px] font-medium border border-[#8BC34A]/40 transition-all cursor-pointer hover:border-[#8BC34A]"
+            className="flex h-7 items-center gap-1 px-2 py-1 rounded-md bg-[#193653] hover:bg-[#24466A] text-[#F4F8F3] text-[10px] font-medium border border-[#8BC34A]/35 transition-all cursor-pointer hover:border-[#8BC34A]"
             aria-label="Toggle language between English and Bangla"
           >
             <Globe className="w-3 h-3 text-[#8BC34A]" />
@@ -92,7 +92,7 @@ export const GovtOfficialHeader: React.FC<GovtOfficialHeaderProps> = ({
           <div className="flex items-center gap-0.5 bg-[#10243D] p-0.5 rounded-md border border-[#8BC34A]/30" title={useAltModel ? 'E2: Groq Qwen multimodal vision model (Active)' : 'E1: Groq GPT-OSS grounded text model'}>
             <button
               onClick={!useAltModel ? undefined : onToggleAltModel}
-              className={`flex min-h-8 items-center gap-1 px-2 py-1 rounded text-[10.5px] font-semibold transition-all cursor-pointer ${
+              className={`flex h-7 items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold transition-all cursor-pointer ${
                 !useAltModel
                   ? 'bg-[#176B3A] text-white shadow-2xs font-bold'
                   : 'text-[#F4F8F3]/70 hover:text-white hover:bg-white/10'
@@ -104,7 +104,7 @@ export const GovtOfficialHeader: React.FC<GovtOfficialHeaderProps> = ({
             </button>
             <button
               onClick={useAltModel ? undefined : onToggleAltModel}
-              className={`flex min-h-8 items-center gap-1 px-2 py-1 rounded text-[10.5px] font-semibold transition-all cursor-pointer ${
+              className={`flex h-7 items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold transition-all cursor-pointer ${
                 useAltModel
                   ? 'bg-[#8BC34A] text-[#183153] shadow-2xs font-bold'
                   : 'text-[#F4F8F3]/70 hover:text-white hover:bg-white/10'
@@ -119,7 +119,7 @@ export const GovtOfficialHeader: React.FC<GovtOfficialHeaderProps> = ({
       </div>
 
       {/* Main Branding & Navigation Row */}
-      <div className="max-w-7xl mx-auto w-full px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+      <div className="max-w-[1500px] mx-2 sm:mx-4 lg:mx-auto w-auto px-3 sm:px-5 py-2.5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-2xl border border-white/20 bg-[#163f55]/55 shadow-xl shadow-black/20 backdrop-blur-2xl supports-[backdrop-filter]:bg-white/[0.10]">
         {/* Project Branding */}
         <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
           <button
@@ -131,13 +131,13 @@ export const GovtOfficialHeader: React.FC<GovtOfficialHeaderProps> = ({
             <Menu className="h-5 w-5" />
           </button>
           <img
-            src="/Logo.gif"
-            alt="e-GP logo"
-            className="hidden h-10 w-14 shrink-0 rounded-lg border border-white/20 bg-white/90 p-1 object-contain shadow-sm sm:block"
+            src="/govt-seal.png"
+            alt="Government of Bangladesh seal"
+            className="hidden h-11 w-11 shrink-0 rounded-full border border-white/40 bg-white p-0.5 object-contain shadow-sm sm:block"
           />
           <div className="min-w-0">
             <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-              <h1 className="truncate whitespace-nowrap text-sm sm:text-base md:text-lg font-bold tracking-tight text-white leading-tight">
+              <h1 className="truncate whitespace-nowrap text-sm sm:text-base md:text-[17px] font-bold tracking-tight text-white leading-tight">
                 {language === 'en' ? 'e-GP Official Manual Assistant' : 'ই-জিপি অফিসিয়াল ম্যানুয়াল সহায়িকা'}
               </h1>
               <span className="hidden sm:inline-flex text-[10px] font-semibold px-2 py-0.5 bg-[#176B3A] text-white rounded-full tracking-wide border border-[#8BC34A]/50 shadow-2xs">
@@ -153,10 +153,33 @@ export const GovtOfficialHeader: React.FC<GovtOfficialHeaderProps> = ({
         </div>
 
         {/* Navigation Links */}
-        <nav className="flex w-full shrink-0 items-center justify-end gap-1 text-xs font-medium sm:ml-auto sm:w-auto sm:gap-1.5">
+        <nav className="flex w-full shrink-0 items-center justify-end gap-1.5 text-xs font-medium sm:ml-auto sm:w-auto sm:gap-2">
+          <div className="hidden lg:inline-flex h-9 items-center gap-1.5 rounded-full border border-[#8BC34A]/60 bg-[#176B3A]/60 px-3 text-[10px] font-semibold text-[#D8F3A8] shadow-sm">
+            <span className="h-2 w-2 rounded-full bg-[#8BC34A] animate-pulse" />
+            <span>{language === 'en' ? 'Online Index' : 'অনলাইন'}</span>
+          </div>
+
+          <button
+            onClick={onToggleLanguage}
+            className="hidden md:inline-flex h-9 items-center gap-1 rounded-full border border-white/25 bg-white/10 px-3 text-[10px] font-semibold text-white/90 transition hover:bg-white/20"
+            aria-label="Toggle language between English and Bangla"
+          >
+            <Globe className="h-3.5 w-3.5 text-[#8BC34A]" />
+            <span>EN / {language === 'en' ? 'বাংলা' : 'English'}</span>
+            <ChevronDown className="h-3 w-3 text-white/70" />
+          </button>
+
+          <button
+            onClick={onToggleAltModel}
+            className="hidden lg:inline-flex h-9 items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-3 text-[10px] font-semibold text-white/90 transition hover:bg-white/20"
+          >
+            <Cpu className="h-3.5 w-3.5" />
+            <span>{useAltModel ? 'E2 Vision' : 'E1 Text'}</span>
+          </button>
+
           <button
             onClick={() => { setActiveTab('chat'); onNewChat(); }}
-            className={`min-h-9 px-2 sm:px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`h-9 px-3 sm:px-4 py-1 rounded-full transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'chat'
                 ? 'bg-[#176B3A] text-white shadow-sm font-semibold border border-[#8BC34A]/50'
                 : 'text-[#F4F8F3]/75 hover:text-white hover:bg-white/10'
@@ -168,7 +191,7 @@ export const GovtOfficialHeader: React.FC<GovtOfficialHeaderProps> = ({
 
           <button
             onClick={() => setActiveTab('guide')}
-            className={`min-h-9 px-2 sm:px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`h-9 px-3 sm:px-4 py-1 rounded-full transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'guide'
                 ? 'bg-[#176B3A] text-white shadow-sm font-semibold border border-[#8BC34A]/50'
                 : 'text-[#F4F8F3]/75 hover:text-white hover:bg-white/10'
