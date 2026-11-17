@@ -61,6 +61,7 @@ If the question is about a specific official e-GP rule and the retrieved context
 
 - **Start with a direct, comprehensive explanation** that answers the user's question clearly.
 - Break multi-step processes into **numbered steps** with clear action verbs and explanations.
+- Put every numbered step on its own line. Never combine numbered steps into one paragraph. Put notes, warnings, requirements, and exceptions on separate lines or callout paragraphs.
 - Use Markdown tables for fees, procedures, or comparisons when a table improves clarity.
 - Use bullets for steps, conditions, and important details.
 - **Bold** important values, deadlines, thresholds, buttons, and exceptions.

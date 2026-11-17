@@ -10,7 +10,12 @@ export function formatAssistantAnswer(text: string): string {
     .replace(/\*{0,2}\(?\s*pages?\s+\d+(?:\s*[-–—,]\s*\d+)*\s*\)?\*{0,2}/gi, '')
     .replace(/^\s*---+\s*$/gm, '');
 
-  const lines = withoutBoilerplate
+  // Split procedures that arrive inline, such as "(1) ... (2) ... (3) ...".
+  const structuredText = withoutBoilerplate
+    .replace(/\s+\((\d{1,2})\)\s+/g, '\n$1. ')
+    .replace(/\s+(Note|Important|Warning|Requirement|Tip):\s+/gi, '\n$1: ');
+
+  const lines = structuredText
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
