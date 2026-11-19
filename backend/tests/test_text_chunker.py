@@ -9,3 +9,12 @@ def test_overlap_chunks_start_at_word_boundaries():
 
     assert len(chunks) > 1
     assert all(chunk.split()[0] in words for chunk in chunks)
+
+
+def test_default_chunk_size_is_1800_characters():
+    text = "manual procedure detail " * 300
+
+    chunks = split_text_with_overlap(text)
+
+    assert len(chunks) > 1
+    assert all(len(chunk) <= 1800 for chunk in chunks)

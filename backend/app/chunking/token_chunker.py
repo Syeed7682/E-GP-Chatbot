@@ -24,7 +24,7 @@ def _get_tokenizer():
         return None
 
 
-def chunk_text(text: str, chunk_size: int = 450, overlap: int = 60) -> List[str]:
+def chunk_text(text: str, chunk_size: int = 1800, overlap: int = 240) -> List[str]:
     """
     Splits text into chunks of `chunk_size` tokens with `overlap` tokens.
     Uses BGE-M3 tokenizer when available, or word-based token approximation as fallback.

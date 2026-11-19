@@ -162,16 +162,17 @@ class RetrievalService:
             score = match["score"]
             source_files = record.get("source_files", [record.get("source", "e-GP System Q&A.txt")])
             src_name = record.get("source", "e-GP System Q&A.txt")
+            evidence_label = "CSV evidence" if record.get("source_type") == "manual_csv" else "Supplemental Q&A"
             context_parts.append(
-                f"[Supplemental Q&A: {', '.join(source_files)} | Module: {record['module']} | "
-                f"Question {record['question_number']} | Relevance: {score:.2f}]\n"
+                f"[{evidence_label}: {', '.join(source_files)} | Module: {record['module']} | "
+                f"Page: {record.get('page', 'N/A')} | Relevance: {score:.2f}]\n"
                 f"Q: {record['question']}\nA:\n{record['answer']}"
             )
             sources.append({
                 "source": src_name,
                 "source_files": source_files,
-                "source_type": "qa",
-                "page": None,
+                "source_type": record.get("source_type", "qa"),
+                "page": record.get("page"),
                 "chunk_id": None,
                 "question_number": record["question_number"],
                 "module": record["module"],
@@ -393,9 +394,10 @@ class RetrievalService:
     def retrieve(
         self,
         question: str,
-        top_k: int = 3,
+        top_k: int = 2,
         image: Optional[Any] = None,
         include_page_context: bool = False,
+        use_keyword_search: bool = True,
     ) -> Tuple[str, List[Dict]]:
         """
         Retrieves top_k most relevant chunks using hybrid FAISS dense search + keyword matching.
@@ -415,12 +417,12 @@ class RetrievalService:
 
         # Check contractor evaluation CSV dataset if baseline has no direct match and not a procedure steps request
         is_steps_query = bool(re.search(r"\b(?:steps?|step by step|procedure)\b", question, re.IGNORECASE))
-        if self.csv_qa_service and not is_steps_query and not any(m.get("direct_match") for m in qa_matches):
+        if self.csv_qa_service and not any(m.get("direct_match") for m in qa_matches):
             csv_matches = self.csv_qa_service.search(question, limit=min(max(top_k, 1), 3))
             if any(m.get("direct_match") for m in csv_matches):
                 qa_matches = [m for m in csv_matches if m.get("direct_match")]
             elif not qa_matches and csv_matches:
-                top_csv = [m for m in csv_matches if m.get("score", 0.0) >= 0.60]
+                top_csv = [m for m in csv_matches if m.get("score", 0.0) >= 0.25]
                 if top_csv:
                     qa_matches = top_csv
 
@@ -477,7 +479,7 @@ class RetrievalService:
 
         # 2. Domain Keyword Retrieval (when text query is present)
         kw_results = []
-        if question and self.faiss_service.metadata:
+        if use_keyword_search and question and self.faiss_service.metadata:
             kw_results = self._keyword_rank(question, self.faiss_service.metadata, top_k=max(top_k * 2, 8))
 
         # 3. Hybrid Fusion Ranking

@@ -6,7 +6,7 @@ import json
 import os
 from typing import List, Dict
 
-def split_text_with_overlap(text: str, chunk_size: int = 500, chunk_overlap: int = 100) -> List[str]:
+def split_text_with_overlap(text: str, chunk_size: int = 1800, chunk_overlap: int = 240) -> List[str]:
     """
     Splits a single text string into overlapping chunks.
     Ensures that chunks break at whitespace when possible to keep words intact.
@@ -60,7 +60,7 @@ def split_text_with_overlap(text: str, chunk_size: int = 500, chunk_overlap: int
 
     return chunks
 
-def chunk_documents(documents: List[Dict], chunk_size: int = 500, chunk_overlap: int = 100) -> List[Dict]:
+def chunk_documents(documents: List[Dict], chunk_size: int = 1800, chunk_overlap: int = 240) -> List[Dict]:
     """
     Takes document pages and splits them into structured chunks with metadata.
     

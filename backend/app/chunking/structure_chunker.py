@@ -14,8 +14,8 @@ from app.chunking.token_chunker import chunk_text
 
 def create_pdf_chunks(
     pages_data: List[Dict[str, Any]],
-    chunk_size: int = 450,
-    overlap: int = 60,
+    chunk_size: int = 1800,
+    overlap: int = 240,
     document_id: str = "EGP_MANUAL_V1",
     source_file: str = "egp_manual.pdf",
 ) -> List[Dict[str, Any]]:

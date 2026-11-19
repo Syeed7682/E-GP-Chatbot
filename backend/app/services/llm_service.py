@@ -12,44 +12,17 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-def _get_st_secret(key: str) -> Optional[str]:
-    """Safely retrieves a secret from Streamlit Cloud secrets only if in an active Streamlit runtime."""
-    try:
-        from streamlit.runtime import exists as st_exists
-        if st_exists():
-            import streamlit as st
-            if hasattr(st, "secrets") and key in st.secrets:
-                return str(st.secrets[key]).strip()
-    except Exception:
-        pass
-    return None
-
 def get_hf_token() -> str:
-    """Gets HF_TOKEN from environment variable or Streamlit Cloud secrets."""
-    token = os.getenv("HF_TOKEN", "").strip()
-    if not token:
-        sec = _get_st_secret("HF_TOKEN")
-        if sec:
-            token = sec
-    return token
+    """Gets HF_TOKEN from the environment or .env file."""
+    return os.getenv("HF_TOKEN", "").strip()
 
 def get_gemini_api_key() -> str:
-    """Gets GEMINI_API_KEY from environment or Streamlit Cloud secrets."""
-    key = os.getenv("GEMINI_API_KEY", "").strip()
-    if not key:
-        sec = _get_st_secret("GEMINI_API_KEY")
-        if sec:
-            key = sec
-    return key
+    """Gets GEMINI_API_KEY from the environment or .env file."""
+    return os.getenv("GEMINI_API_KEY", "").strip()
 
 def get_groq_api_key() -> str:
-    """Gets GROQ_API_KEY from environment or Streamlit Cloud secrets."""
-    key = os.getenv("GROQ_API_KEY", "").strip()
-    if not key:
-        sec = _get_st_secret("GROQ_API_KEY")
-        if sec:
-            key = sec
-    return key
+    """Gets GROQ_API_KEY from the environment or .env file."""
+    return os.getenv("GROQ_API_KEY", "").strip()
 
 HF_TOKEN = get_hf_token()
 GEMINI_API_KEY = get_gemini_api_key()

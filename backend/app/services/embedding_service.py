@@ -245,26 +245,22 @@ class EmbeddingService:
 
     def embed_chunks(self, chunks: List[Dict[str, Any]]) -> np.ndarray:
         """
-        Generates multimodal embeddings for a list of chunks.
-        If a chunk has an associated screenshot ('image_path'), it automatically performs
-        joint multimodal embedding combining both the section text and the diagram.
+        Generates text-only embeddings for a list of chunks.
         """
         if not chunks:
             return np.zeros((0, self.dimension), dtype=np.float32)
 
-        print(f"[embedding_service] Computing multimodal embeddings for {len(chunks)} chunks...")
-        embeddings = []
-        for c in chunks:
-            text = c.get("text", "")
-            img_path = c.get("image_path")
-            if img_path and os.path.exists(img_path):
-                embeddings.append(self.embed_multimodal(text=text, image=img_path))
-            else:
-                embeddings.append(self.embed_text(text))
+        texts = [chunk.get("text") or chunk.get("content", "") for chunk in chunks]
+        if self._mode == "local" and self._local_model is not None:
+            vectors = self._local_model.encode(
+                texts,
+                normalize_embeddings=True,
+                convert_to_numpy=True,
+                show_progress_bar=True,
+            )
+            return np.asarray(vectors, dtype=np.float32)
 
-        result = np.vstack(embeddings).astype(np.float32)
-        print(f"[embedding_service] Generated multimodal matrix of shape: {result.shape}")
-        return result
+        return self.embed_documents(texts)
 
 
 # Singleton instance

@@ -169,6 +169,80 @@ def test_exact_manual_match_excludes_loosely_related_qa_entries():
     assert sources
     assert all(source.get("source_type") != "qa" for source in sources)
 
+
+def test_dense_only_retrieval_skips_keyword_ranker():
+    class DenseEmbedding:
+        semantic_search_available = True
+
+        def embed_text(self, question):
+            return [1.0]
+
+    dense_chunk = {
+        "chunk_id": 1,
+        "page": 388,
+        "source": "official manual",
+        "text": "The dense result is returned from the manual index.",
+    }
+
+    class DenseIndex:
+        index = object()
+        metadata = [dense_chunk]
+
+        def load(self):
+            return True
+
+        def search(self, query_vector, top_k):
+            return [{"score": 0.8, "chunk": dense_chunk}]
+
+    class EmptyQA:
+        def search(self, question, limit=3):
+            return []
+
+    retrieval = RetrievalService(
+        emb_service=DenseEmbedding(),
+        f_service=DenseIndex(),
+        q_service=EmptyQA(),
+    )
+
+    def fail_if_keyword_ranker_runs(*args, **kwargs):
+        raise AssertionError("dense-only retrieval must not run keyword ranking")
+
+    retrieval._keyword_rank = fail_if_keyword_ranker_runs
+
+    context, sources = retrieval.retrieve(
+        "manual question",
+        use_keyword_search=False,
+    )
+
+    assert "dense result" in context
+    assert [source["page"] for source in sources] == [388]
+
+
+def test_chunk_embeddings_ignore_images_and_batch_text():
+    class BatchTextModel:
+        def __init__(self):
+            self.inputs = None
+
+        def encode(self, texts, **kwargs):
+            self.inputs = texts
+            assert kwargs["normalize_embeddings"] is True
+            return [[1.0, 0.0] for _ in texts]
+
+    service = EmbeddingService.__new__(EmbeddingService)
+    service.model_name = "BAAI/bge-visualized-m3"
+    service.dimension = 2
+    service._mode = "local"
+    service._local_model = BatchTextModel()
+
+    vectors = service.embed_chunks([
+        {"text": "first passage", "image_path": "image-1.png"},
+        {"content": "second passage", "image_path": "image-2.png"},
+    ])
+
+    assert service._local_model.inputs == ["first passage", "second passage"]
+    assert vectors.shape == (2, 2)
+    assert vectors.tolist() == [[1.0, 0.0], [1.0, 0.0]]
+
 if __name__ == "__main__":
     test_retrieval_service_ready()
     test_tender_deletion_retrieval()

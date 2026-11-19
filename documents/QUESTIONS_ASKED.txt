@@ -1,0 +1,116 @@
+e-GP Retrieval and Embedding Questions with Answers
+===================================================
+
+1. Where is the comment if embeddings fall back to searching from CSV?
+
+Answer:
+The CSV fallback comment is in:
+backend/app/services/retrieval_service.py:416
+
+The CSV search runs when the normal Q&A search has no direct match and the
+question is not a procedure/steps question. Direct CSV matches are preferred;
+otherwise CSV results need a score of at least 0.60.
+
+
+2. How does it search?
+
+Answer:
+The active search order is:
+
+Question -> standard Q&A search -> CSV fallback -> embedding/FAISS search
+-> keyword search -> hybrid ranking -> LLM answer.
+
+The embedding result and keyword result are combined. Keyword matching normally
+has a 70 percent weight and FAISS semantic matching has a 30 percent weight.
+
+Main file:
+backend/app/services/retrieval_service.py
+
+
+3. Make a fallback order file for me.
+
+Answer:
+The fallback order module is:
+backend/app/services/fallback_order.py
+
+It documents the embedding provider order, CSV selection rules, and overall
+retrieval order. It is standalone and does not replace the active retrieval
+service.
+
+
+4. Explain my full embedding system. How does it work and where are the files?
+
+Answer:
+The embedding service creates normalized 1024-dimensional vectors for text,
+images, and text-image combinations.
+
+Provider order:
+
+1. Local sentence-transformers model
+2. Hugging Face Inference API
+3. Offline deterministic hash/perceptual fallback
+
+Important files:
+
+backend/app/services/embedding_service.py
+backend/app/embeddings/text_embedder.py
+backend/app/services/faiss_service.py
+backend/app/indexing/faiss_builder.py
+backend/app/retrieval/hybrid_retriever.py
+backend/app/services/rag_service.py
+backend/scripts/ingest_all.py
+
+The generated indexes normally include pdf_text.faiss, qa.faiss, visual.faiss,
+bm25.pkl, metadata.db, and manifest.json under backend/data/indexes/v001/.
+
+
+5. When I make a question, doesn't it search from embeddings?
+
+Answer:
+Yes. A normal question is converted into an embedding and searched against
+the FAISS index in backend/app/services/retrieval_service.py around lines
+441-449. Keyword search also runs alongside the embedding search.
+
+If a semantic embedding provider is unavailable, FAISS semantic search is
+skipped and keyword retrieval continues instead.
+
+
+6. How does it chunk my data? How many chunk words are being used?
+
+Answer:
+PDF manual content targets approximately 450 words per chunk. The normal
+structure-aware chunker groups paragraphs and carries the previous paragraph
+into the next chunk for context.
+
+The token fallback uses 450 tokens with 60-token overlap. If the tokenizer is
+unavailable, this is approximated as about 337 words with about 45 words of
+overlap.
+
+Q&A records are not split into fixed-size chunks. Each question-answer pair is
+stored as one Q&A record.
+
+Important files:
+
+backend/app/chunking/structure_chunker.py
+backend/app/chunking/token_chunker.py
+backend/app/chunking/qa_chunker.py
+
+
+7. How many relevant answers are we retrieving from the chunks?
+
+Answer:
+The frontend currently sends top_k=3, so the system normally returns 3 final
+relevant chunks/sources.
+
+Internally, it first retrieves at least 12 FAISS candidates and at least 8
+keyword candidates, combines and ranks them, and then keeps the top 3.
+
+Procedure questions may include additional chunks from the selected pages as
+context, but the final source list is still limited to top_k.
+
+The frontend setting is in:
+frontend/src/App.tsx
+
+The final limit is enforced in:
+backend/app/services/retrieval_service.py
+

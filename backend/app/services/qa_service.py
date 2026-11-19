@@ -170,8 +170,17 @@ class QAService:
                 continue
             if path.suffix.lower() == ".docx":
                 from docx import Document
-
-                text = "\n".join(paragraph.text for paragraph in Document(path).paragraphs)
+                try:
+                    text = "\n".join(paragraph.text for paragraph in Document(path).paragraphs)
+                except MemoryError:
+                    logger.warning(
+                        "Skipping oversized Q&A DOCX during startup to preserve memory: %s",
+                        path,
+                    )
+                    continue
+                except Exception as error:
+                    logger.warning("Skipping unreadable Q&A DOCX %s: %s", path, error)
+                    continue
             else:
                 text = path.read_text(encoding="utf-8-sig")
             parsed_sources.append((path.name, parse_qa_text(text)))

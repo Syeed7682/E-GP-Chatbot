@@ -117,6 +117,38 @@ class CSVLoader:
         records: List[Dict[str, Any]] = []
         with open(path, "r", encoding="utf-8-sig", errors="replace") as f:
             reader = csv.DictReader(f)
+            if "text_content" in (reader.fieldnames or []):
+                for idx, row in enumerate(reader):
+                    text = (row.get("text_content") or "").strip()
+                    if not text:
+                        continue
+                    page = (row.get("page_number") or "").strip()
+                    source = (row.get("source_file") or path.name).strip()
+                    section = (row.get("detected_section") or "Manual page").strip()
+                    records.append({
+                        "id": f"PAGE-{page or idx + 1}",
+                        "question_number": int(page) if page.isdigit() else idx + 1,
+                        "category": section,
+                        "module": section,
+                        "title": section,
+                        "question": section,
+                        "answer": text,
+                        "page": page or None,
+                        "expected_citation": source,
+                        "expected_screen_reference": "",
+                        "expected_legal_basis": "",
+                        "tenderer_workflow_guidance": "",
+                        "language": "English",
+                        "complexity": "Manual evidence",
+                        "answerability": "Answerable",
+                        "retrieval_text": text,
+                        "source_type": "manual_csv",
+                        "source": source,
+                        "source_files": [source],
+                    })
+                logger.info("Loaded %d extracted manual pages from CSV: %s", len(records), path)
+                return records
+
             for idx, row in enumerate(reader):
                 qid = row.get("id", f"EGP-{idx + 1:04d}").strip()
                 # Parse numeric question number for indexing compatibility

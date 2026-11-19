@@ -19,8 +19,8 @@ def main():
     parser = argparse.ArgumentParser(description="Ingest e-GP manual PDFs into text chunks.")
     parser.add_argument("--raw-dir", default="data/raw", help="Folder containing raw PDF files")
     parser.add_argument("--output", default="data/processed/chunks.json", help="Path to save chunks.json")
-    parser.add_argument("--chunk-size", type=int, default=450, help="Character size per chunk")
-    parser.add_argument("--overlap", type=int, default=80, help="Character overlap between chunks")
+    parser.add_argument("--chunk-size", type=int, default=1800, help="Character size per chunk")
+    parser.add_argument("--overlap", type=int, default=240, help="Character overlap between chunks")
     args = parser.parse_args()
 
     print("========================================")

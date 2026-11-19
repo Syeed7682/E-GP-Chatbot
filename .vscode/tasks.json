@@ -1,0 +1,21 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build BGE-M3 FAISS index",
+			"type": "shell",
+			"command": "e:\\E-gp Project manual\\.venv\\Scripts\\python.exe",
+			"args": [
+				"backend/scripts/build_faiss_index.py",
+				"--chunks",
+				"data/faiss_index/metadata.json",
+				"--index-path",
+				"data/faiss_index/bge_m3/index.faiss",
+				"--metadata-path",
+				"data/faiss_index/bge_m3/metadata.json"
+			],
+			"isBackground": true,
+			"problemMatcher": []
+		}
+	]
+}

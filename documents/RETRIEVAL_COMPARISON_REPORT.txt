@@ -1,0 +1,2204 @@
+e-GP RETRIEVAL MODE COMPARISON REPORT
+==========================================================================================
+
+PROJECT: e-GP Manual Chatbot
+EVALUATION: Retrieval and Descriptive Answer Generation
+
+TEST CONFIGURATION
+----------------------------------------
+Questions Tested: 10
+Retrieval Top-K: 2
+FAISS Metadata Records: 1188
+Configured CSV Path: E:\E-gp Project manual\csv_files\egp_manual_extracted.csv
+CSV Available: YES
+Semantic Embedding Available: YES
+Offline Generation: NO
+
+
+==========================================================================================
+QUESTION 1: How is a tenderer's beneficial ownership verified during e-GP registration?
+==========================================================================================
+
+CSV-ONLY ANSWER
+----------------------------------------------------------------------
+Status: available
+Answer model: openai/gpt-oss-20b
+Answer:
+### 1. Direct Answer  
+The retrieved documentation does **not** describe a procedure for verifying a tenderer’s beneficial ownership during e‑GP registration.
+
+### 2. Detailed Explanation  
+The only reference to beneficial ownership in the supplied excerpts appears in the context of contract award disclosure: for contracts exceeding **Taka 10 lakh**, the e‑GP portal must publish the award information **along with the beneficial ownership details of the responsive tenderer**. This disclosure occurs **after** the contract has been awarded, not during the tenderer registration process. No steps, fields, or verification mechanisms for beneficial ownership are mentioned in the registration‑related passages.
+
+### 3. Step‑by‑Step Process / Key Requirements  
+No specific step‑by‑step procedure for verifying beneficial ownership during registration was identified in the retrieved documentation.
+
+### 4. Important Notes  
+- Beneficial ownership information is required for public disclosure **post‑award** for contracts above Taka 10 lakh.  
+- The registration process, as described, focuses on office address, district, email, and unique identification number for searching tenderers, with no mention of beneficial ownership verification.
+
+### 5. Evidence Assessment  
+**Insufficient Evidence** – The provided excerpts do not contain any procedure or requirement for verifying a tenderer’s beneficial ownership during the e‑GP registration phase.
+
+SOURCE / DOCUMENT / PAGE / RETRIEVAL EVIDENCE
+----------------------------------------------------------------------
+
+1. SOURCE REFERENCE
+   Document: e-GP System User Manual (PE)
+   Page: 169
+   Module: Office address during registration in e-GP.
+   Question ID: N/A
+   Relevance Score: 0.31
+   Retrieved Evidence: 169 Screen – D45.2 4.1.40.3 Upon clicking, you need to search for tenderer by selecting the district provided in their Company Registered Address or Corporate/Head Office address during registration in e-GP. 4.1.40.4 For DPM Tenders, additional param...
+
+
+2. SOURCE REFERENCE
+   Document: e-GP System User Manual (PE)
+   Page: 323
+   Module: Opening Report, Clarification and Tender Evaluation Report respectively.
+   Question ID: N/A
+   Relevance Score: 0.31
+   Retrieved Evidence: 323 6.7.7 After entering the contract information, click on “Submit” button and then a pop-up is displayed stating that: Contract information will be published in e-GP Portal and BPPA website, so please make sure the contract has been already signed ...
+
+Best term coverage: 0.33
+Retrieved evidence:
+[CSV evidence: e-GP System User Manual (PE) | Module: Office address during registration in e-GP. | Page: 169 | Relevance: 0.31]
+Q: Office address during registration in e-GP.
+A:
+169 Screen – D45.2 4.1.40.3 Upon clicking, you need to search for tenderer by selecting the district provided in their Company Registered Address or Corporate/Head Office address during registration in e-GP. 4.1.40.4 For DPM Tenders, additional parameters such as company email and unique identification number are available for searching tenderers. 4.1.40.5 After defining the search parameter, click on “Search” button. (As shown in Screen – D45.3) Screen – D45.3
+
+---
+
+[CSV evidence: e-GP System User Manual (PE) | Module: Opening Report, Clarification and Tender Evaluation Report respectively. | Page: 323 | Relevance: 0.31]
+Q: Opening Report, Clarification and Tender Evaluation Report respectively.
+A:
+323 6.7.7 After entering the contract information, click on “Submit” button and then a pop-up is displayed stating that: Contract information will be published in e-GP Portal and BPPA website, so please make sure the contract has been already signed and information is correct before you click Submit button. (As shown in Screen-K15) Screen – K15 6.7.8 Click “Yes” and then the status of contract will be changed as “Contract Awarded” (As shown in Screen-K16.1). Screen – K16.1 6.7.9 On successfully contract awarded, it will be published in e-GP website under “e-Contract” tab. Then all e-GP stakeholders can view the contract awarded information (As shown in Screen-K16.2). Screen – K16.2 Note: In the case of any contract exceeding Taka 10 lakh, the information relating to the contract award along with the beneficial ownership details of the responsive Tenderer, shall be disclosed on the e-GP web portal.
+
+EMBEDDING-ONLY ANSWER
+----------------------------------------------------------------------
+Status: available
+Answer model: openai/gpt-oss-20b
+Answer:
+### 1. Direct Answer  
+The retrieved documentation does **not** describe a verification process for a tenderer’s beneficial ownership during the e‑GP registration phase.
+
+### 2. Detailed Explanation  
+The manual excerpt from page 320 states that a tenderer must provide beneficial ownership information **before** a contract can be signed, and that the system allows entry of this information via the “Enter Contract Details” link. No steps, fields, or verification mechanisms are outlined for the registration stage itself. The other excerpt (page 214) concerns debarment status checks, not beneficial ownership.
+
+### 3. Step‑by‑Step Process / Key Requirements  
+No specific step‑by‑step procedure for verifying beneficial ownership during e‑GP registration was identified in the retrieved documentation.
+
+### 4. Important Notes  
+- Beneficial ownership information is required **prior to contract signing**, not during initial registration.  
+- The system provides a link to enter this information once the contract is ready to be signed.  
+- Verification of this information, if any, is not detailed in the supplied excerpts.
+
+### 5. Evidence Assessment  
+**Insufficient Evidence** – The available passages mention the requirement for beneficial ownership data at contract signing but do not explain how it is verified during the registration process.
+
+SOURCE / DOCUMENT / PAGE / RETRIEVAL EVIDENCE
+----------------------------------------------------------------------
+
+1. SOURCE REFERENCE
+   Document: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf
+   Page: 320
+   Module: N/A
+   Question ID: N/A
+   Relevance Score: 1.0
+   Retrieved Evidence: / Letter for Contract Signing / Letter of Acceptance and submits the performance security, the system allows you to enter contract sign information in e-GP. NOTE: In the e-GP system, prior to the signing of the contract, the Tenderer shall give the ...
+
+
+2. SOURCE REFERENCE
+   Document: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf
+   Page: 214
+   Module: N/A
+   Question ID: N/A
+   Relevance Score: 0.98
+   Retrieved Evidence: k is generated in dashboard under evaluation tab to view participants d ebarment status from BPPA website. (As shown in Screen – G14) 6.1.33 After clicking on “View” link, e-GP system redirects you to the BPPA website to check the tenderers debarmen...
+
+Best term coverage: 0.00
+Retrieved evidence:
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 320 | Relevance: 1.00]
+/ Letter for Contract Signing / Letter of
+Acceptance and submits the performance security, the system allows you to
+enter contract sign information in e-GP.
+
+NOTE:
+In the e-GP system, prior to the signing of the contract, the Tenderer shall give
+the beneficial ownership information for the said contract. No contract can be
+signed without beneficial ownership information.
+
+6.7.2 Click on “Enter Contract Details ” link to enter the contract
+
+---
+
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 214 | Relevance: 0.98]
+k is generated in
+dashboard under evaluation tab to view participants d ebarment status from
+BPPA website. (As shown in Screen – G14)
+
+6.1.33 After clicking on “View” link, e-GP system redirects you to the BPPA website
+to check the tenderers debarment status. As shown in Screen – G15
+
+Screen – G15
+
+HYBRID CSV+EMBEDDING ANSWER
+----------------------------------------------------------------------
+Status: available
+Answer model: Offline procedure extractor
+Answer:
+I couldn't identify specific step-by-step instructions in the retrieved records for this request.
+
+Please verify the module or process name, or contact the official e-GP Helpdesk for operational guidance:
+
+---
+- 📞 **e-GP Helpdesk Hotline:** 16575 (from any mobile network in Bangladesh)
+- ☎️ **Telephone Support:** +880 9609112233 / +880 1762625528–31
+- ✉️ **Email Support:** helpdesk@eprocure.gov.bd / e-gphelpdesk@cptu.gov.bd
+- 🌐 **Official Portal:** https://www.eprocure.gov.bd
+- 🏢 **Authority:** Bangladesh Public Procurement Authority (BPPA) / CPTU, IMED, Ministry of Planning
+
+SOURCE / DOCUMENT / PAGE / RETRIEVAL EVIDENCE
+----------------------------------------------------------------------
+
+1. SOURCE REFERENCE
+   Document: e-GP System Q&A.txt
+   Page: None
+   Module: Mandatory Beneficial Ownership Disclosures
+   Question ID: N/A
+   Relevance Score: 0.38
+   Retrieved Evidence: To execute Mandatory Beneficial Ownership Disclosures - Procedure Part 1 , follow these step-by-step instructions: * Access Operational Module : * Log into the e-GP portal using your verified credentials. * Navigate to the relevant menu option corre...
+
+
+2. SOURCE REFERENCE
+   Document: e-GP System Q&A.txt
+   Page: None
+   Module: Mandatory Beneficial Ownership Disclosures
+   Question ID: N/A
+   Relevance Score: 0.38
+   Retrieved Evidence: To execute Mandatory Beneficial Ownership Disclosures - Procedure Part 2 , follow these step-by-step instructions: * Access Operational Module : * Log into the e-GP portal using your verified credentials. * Navigate to the relevant menu option corre...
+
+Best term coverage: 0.50
+Retrieved evidence:
+[Supplemental Q&A: e-GP System Q&A.txt, e-GP System Q&A .docx | Module: Mandatory Beneficial Ownership Disclosures | Page: N/A | Relevance: 0.38]
+Q: What are the exact step-by-step instructions for executing Mandatory Beneficial Ownership Disclosures - Procedure Part 1 in the e-GP system?
+A:
+To execute  Mandatory Beneficial Ownership Disclosures - Procedure Part 1 , follow these step-by-step instructions:
+* Access Operational Module :
+* Log into the e-GP portal using your verified credentials.
+* Navigate to the relevant menu option corresponding to  Mandatory Beneficial Ownership Disclosures .
+* Enter Required Data & Form Parameters :
+* Populate all mandatory input fields marked with red asterisks.
+* Verify data consistency against system validation rules and financial constraints.
+* Execute Security & OTP Controls :
+* Confirm authorization by entering your password or 6-digit mobile OTP code when prompted.
+* Verify that the system registers a successful transaction response.
+* Finalize Transaction & Verify Audit Record :
+* Click  "Save & Submit"  to lock the operational record in the e-GP database.
+* Confirm that the dashboard status updates to reflect the completed workflow state.
+
+---
+
+[Supplemental Q&A: e-GP System Q&A.txt, e-GP System Q&A .docx | Module: Mandatory Beneficial Ownership Disclosures | Page: N/A | Relevance: 0.38]
+Q: What are the exact step-by-step instructions for executing Mandatory Beneficial Ownership Disclosures - Procedure Part 2 in the e-GP system?
+A:
+To execute  Mandatory Beneficial Ownership Disclosures - Procedure Part 2 , follow these step-by-step instructions:
+* Access Operational Module :
+* Log into the e-GP portal using your verified credentials.
+* Navigate to the relevant menu option corresponding to  Mandatory Beneficial Ownership Disclosures .
+* Enter Required Data & Form Parameters :
+* Populate all mandatory input fields marked with red asterisks.
+* Verify data consistency against system validation rules and financial constraints.
+* Execute Security & OTP Controls :
+* Confirm authorization by entering your password or 6-digit mobile OTP code when prompted.
+* Verify that the system registers a successful transaction response.
+* Finalize Transaction & Verify Audit Record :
+* Click  "Save & Submit"  to lock the operational record in the e-GP database.
+* Confirm that the dashboard status updates to reflect the completed workflow state.
+
+---
+
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 376 | Relevance: 0.89]
+are forwarded from e-GP system
+by PE with Tender ID, Bill ID, PE’s Information, Gross & Net Bill
+amount. To process the bill, click “ Process” button. (As shown in
+Screen – M46)
+
+---
+
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 8 | Screenshot: chunk_26_page_8_0_screena4.png | Relevance: 0.70]
+GP dashboard.
+
+• Unverified Email or Mobile Number: In the event that either the email
+address or mobile number is not verified, a specific page will be
+displayed to the user. This page, as shown in Screen-A4, is designed to
+facilitate the verification of the user's National ID and Mobile Number.
+Completing this verification process is essential to ensure the security
+and authenticity of the user's account before granting access to the
+
+QUESTION COMPARISON
+----------------------------------------------------------------------
+Ranking by best-term coverage: Hybrid CSV+embedding (0.50) > CSV-only (0.33) > Embedding-only (0.00)
+Comparison note: term coverage measures retrieval overlap; inspect the answers and evidence for factual completeness.
+
+==========================================================================================
+QUESTION 2: What happens when a procuring entity needs to revise a debarment decision after a court petition?
+==========================================================================================
+
+CSV-ONLY ANSWER
+----------------------------------------------------------------------
+Status: available
+Answer model: Offline grounded synthesis
+Answer:
+1. By clicking the “Yes” button, a new window will open, and the system will display the message “Tenderer/Consultant suspended successfully.” The PE will then upload the document by clicking the “Choose File” button, followed by the “Upload” button. File now available in HOPE’s hand to take the decision. ) NOTE: 1) If the HOPE intends to debar the suspended Tenderer, the HOPE must complete the debarment within 42 calendar days. 2) If the HOPE does not take any action within 42 calendar days, the suspension shall be automatically lifted.
+2. After approving the debarment by HOPE, the debarment details will be displayed under the Debarred Tenderer List in e-GP Home Page.
+3. To view any Tenderer debarment status PE needs to click on “Debarment -> Debarment” menu.
+4. The PE can initiate the Decision Revision process for an approved debarment by obtaining an order from the Honorable High Court. Then the PE will send the file to HOPE for approval of the revision.
+5. To start preparing the debarment decision revision process PE has to click on “Revise Decision” link.
+6. By clicking on “Revise Decision” link PE can change the Debarment Start Date and Debarment End Date. PE can input Petition No. and Case Details in comment box.
+7. After filling up all the required fields click on “Submit” button to complete process.
+8. An alert message will appear when the PE user click on submit button. “Please make sure that you have entered the correct information as per the Hon’ble High Court’s directive.
+
+SOURCE / DOCUMENT / PAGE / RETRIEVAL EVIDENCE
+----------------------------------------------------------------------
+
+1. SOURCE REFERENCE
+   Document: e-GP System User Manual (PE)
+   Page: 345
+   Module: Opening Report, Clarification and Tender Evaluation Report respectively.
+   Question ID: N/A
+   Relevance Score: 0.43
+   Retrieved Evidence: 345 Screen – L8 7.4 By clicking on “Revise Decision” link PE can change the Debarment Start Date and Debarment End Date. PE can input Petition No. and Case Details in comment box. (As shown in Screen – L9) 7.5 After filling up all the required fields...
+
+
+2. SOURCE REFERENCE
+   Document: e-GP System User Manual (PE)
+   Page: 344
+   Module: Opening Report, Clarification and Tender Evaluation Report respectively.
+   Question ID: N/A
+   Relevance Score: 0.35
+   Retrieved Evidence: 344 7.1.8 By clicking the “Yes” button, a new window will open, and the system will display the message “Tenderer/Consultant suspended successfully.” The PE will then upload the document by clicking the “Choose File” button, followed by the “Upload” ...
+
+Best term coverage: 0.50
+Retrieved evidence:
+[CSV evidence: e-GP System User Manual (PE) | Module: Opening Report, Clarification and Tender Evaluation Report respectively. | Page: 345 | Relevance: 0.43]
+Q: Opening Report, Clarification and Tender Evaluation Report respectively.
+A:
+345 Screen – L8 7.4 By clicking on “Revise Decision” link PE can change the Debarment Start Date and Debarment End Date. PE can input Petition No. and Case Details in comment box. (As shown in Screen – L9) 7.5 After filling up all the required fields click on “Submit” button to complete process. (As shown in Screen – L9) Screen – L9 7.6 An alert message will appear when the PE user click on submit button. “Please make sure that you have entered the correct information as per the Hon’ble High Court’s directive.” Screen – L10
+
+---
+
+[CSV evidence: e-GP System User Manual (PE) | Module: Opening Report, Clarification and Tender Evaluation Report respectively. | Page: 344 | Relevance: 0.35]
+Q: Opening Report, Clarification and Tender Evaluation Report respectively.
+A:
+344 7.1.8 By clicking the “Yes” button, a new window will open, and the system will display the message “Tenderer/Consultant suspended successfully.” The PE will then upload the document by clicking the “Choose File” button, followed by the “Upload” button. File now available in HOPE’s hand to take the decision. (As shown in Screen – L7) Screen – L7 NOTE: 1) If the HOPE intends to debar the suspended Tenderer, the HOPE must complete the debarment within 42 calendar days. 2) If the HOPE does not take any action within 42 calendar days, the suspension shall be automatically lifted. 7.1.9 After approving the debarment by HOPE, the debarment details will be displayed under the Debarred Tenderer List in e-GP Home Page. 7.2 Debarment >> Debarment 7.2.1 To view any Tenderer debarment status PE needs to click on “Debarment -> Debarment” menu. (As shown in Screen – L8) 7.2.2 The PE can initiate the Decision Revision process for an approved debarment by obtaining an order from the Honorable High Court. Then the PE will send the file to HOPE for approval of the revision. 7.3 To start preparing the debarment decision revision process PE has to click on “Revise Decision” link. (As shown in Screen – L8)
+
+EMBEDDING-ONLY ANSWER
+----------------------------------------------------------------------
+Status: available
+Answer model: Offline grounded synthesis
+Answer:
+1. By clicking on “ Revise Decision ” link PE can change the Debarment Start Date and Debarment End Date. PE can input Petition No. and Case Details in comment box.
+2. After filling up all the required fields click on “ Submit” button to complete process.
+3. An alert message will appear when the PE user click on subm it button.
+4. An alert message will appear when the PE user click on Send to HOPE button.
+5. By clicking “Ok” button , system will display a message “ Revised Decision posted successfully”.
+6. If HOPE approve the revised debarment, the debarment period will be automatically changed in the e -GP System and the changes will be shown in the Debarred.
+
+SOURCE / DOCUMENT / PAGE / RETRIEVAL EVIDENCE
+----------------------------------------------------------------------
+
+1. SOURCE REFERENCE
+   Document: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf
+   Page: 345
+   Module: N/A
+   Question ID: N/A
+   Relevance Score: 0.96
+   Retrieved Evidence: 345 Screen – L8 7.4 By clicking on “ Revise Decision ” link PE can change the Debarment Start Date and Debarment End Date. PE can input Petition No. and Case Details in comment box. (As shown in Screen – L9) 7.5 After filling up all the required f...
+
+
+2. SOURCE REFERENCE
+   Document: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf
+   Page: 347
+   Module: N/A
+   Question ID: N/A
+   Relevance Score: 0.88
+   Retrieved Evidence: 347 Screen – L13 7.10 An alert message will appear when the PE user click on Send to HOPE button. (As shown in Screen – L14) Screen – L14 7.11 By clicking “Ok” button , system will display a message “ Revised Decision posted successfully”. (As sh...
+
+Best term coverage: 0.50
+Retrieved evidence:
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 345 | Screenshot: chunk_794_page_345_0_screen_l8.png | Relevance: 0.96]
+345
+
+Screen – L8
+
+7.4 By clicking on “ Revise Decision ” link PE can change the Debarment Start
+Date and Debarment End Date. PE can input Petition No. and Case Details in
+comment box. (As shown in Screen – L9)
+
+7.5 After filling up all the required fields click on “ Submit” button to complete
+process. (As shown in Screen – L9)
+
+Screen – L9
+
+7.6 An alert message will appear when the PE user click on subm it button .
+“Please make sure that you
+
+---
+
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 347 | Screenshot: chunk_798_page_347_0_screen_l13.png | Relevance: 0.88]
+347
+
+Screen – L13
+
+7.10 An alert message will appear when the PE user click on Send to HOPE
+button. (As shown in Screen – L14)
+
+Screen – L14
+
+7.11 By clicking “Ok” button , system will display a message “ Revised Decision
+posted successfully”. (As shown in Screen – L15)
+
+Screen – L15
+
+7.12 If HOPE approve the revised debarment, the debarment period will be
+automatically changed in the e -GP System and the changes will be shown in
+the Debarred
+
+HYBRID CSV+EMBEDDING ANSWER
+----------------------------------------------------------------------
+Status: available
+Answer model: Offline grounded synthesis
+Answer:
+1. By clicking the “Yes” button, a new window will open, and the system will display the message “Tenderer/Consultant suspended successfully.” The PE will then upload the document by clicking the “Choose File” button, followed by the “Upload” button. File now available in HOPE’s hand to take the decision. ) NOTE: 1) If the HOPE intends to debar the suspended Tenderer, the HOPE must complete the debarment within 42 calendar days. 2) If the HOPE does not take any action within 42 calendar days, the suspension shall be automatically lifted.
+2. After approving the debarment by HOPE, the debarment details will be displayed under the Debarred Tenderer List in e-GP Home Page.
+3. To view any Tenderer debarment status PE needs to click on “Debarment -> Debarment” menu.
+4. The PE can initiate the Decision Revision process for an approved debarment by obtaining an order from the Honorable High Court. Then the PE will send the file to HOPE for approval of the revision.
+5. To start preparing the debarment decision revision process PE has to click on “Revise Decision” link.
+6. By clicking on “ Revise Decision ” link PE can change the Debarment Start Date and Debarment End Date. PE can input Petition No. and Case Details in comment box.
+7. After filling up all the required fields click on “ Submit” button to complete process.
+8. An alert message will appear when the PE user click on submit button. “Please make sure that you have entered the correct information as per the Hon’ble High Court’s directive.
+
+SOURCE / DOCUMENT / PAGE / RETRIEVAL EVIDENCE
+----------------------------------------------------------------------
+
+1. SOURCE REFERENCE
+   Document: e-GP System User Manual (PE)
+   Page: 345
+   Module: Opening Report, Clarification and Tender Evaluation Report respectively.
+   Question ID: N/A
+   Relevance Score: 0.43
+   Retrieved Evidence: 345 Screen – L8 7.4 By clicking on “Revise Decision” link PE can change the Debarment Start Date and Debarment End Date. PE can input Petition No. and Case Details in comment box. (As shown in Screen – L9) 7.5 After filling up all the required fields...
+
+
+2. SOURCE REFERENCE
+   Document: e-GP System User Manual (PE)
+   Page: 344
+   Module: Opening Report, Clarification and Tender Evaluation Report respectively.
+   Question ID: N/A
+   Relevance Score: 0.35
+   Retrieved Evidence: 344 7.1.8 By clicking the “Yes” button, a new window will open, and the system will display the message “Tenderer/Consultant suspended successfully.” The PE will then upload the document by clicking the “Choose File” button, followed by the “Upload” ...
+
+Best term coverage: 0.50
+Retrieved evidence:
+[CSV evidence: e-GP System User Manual (PE) | Module: Opening Report, Clarification and Tender Evaluation Report respectively. | Page: 345 | Relevance: 0.43]
+Q: Opening Report, Clarification and Tender Evaluation Report respectively.
+A:
+345 Screen – L8 7.4 By clicking on “Revise Decision” link PE can change the Debarment Start Date and Debarment End Date. PE can input Petition No. and Case Details in comment box. (As shown in Screen – L9) 7.5 After filling up all the required fields click on “Submit” button to complete process. (As shown in Screen – L9) Screen – L9 7.6 An alert message will appear when the PE user click on submit button. “Please make sure that you have entered the correct information as per the Hon’ble High Court’s directive.” Screen – L10
+
+---
+
+[CSV evidence: e-GP System User Manual (PE) | Module: Opening Report, Clarification and Tender Evaluation Report respectively. | Page: 344 | Relevance: 0.35]
+Q: Opening Report, Clarification and Tender Evaluation Report respectively.
+A:
+344 7.1.8 By clicking the “Yes” button, a new window will open, and the system will display the message “Tenderer/Consultant suspended successfully.” The PE will then upload the document by clicking the “Choose File” button, followed by the “Upload” button. File now available in HOPE’s hand to take the decision. (As shown in Screen – L7) Screen – L7 NOTE: 1) If the HOPE intends to debar the suspended Tenderer, the HOPE must complete the debarment within 42 calendar days. 2) If the HOPE does not take any action within 42 calendar days, the suspension shall be automatically lifted. 7.1.9 After approving the debarment by HOPE, the debarment details will be displayed under the Debarred Tenderer List in e-GP Home Page. 7.2 Debarment >> Debarment 7.2.1 To view any Tenderer debarment status PE needs to click on “Debarment -> Debarment” menu. (As shown in Screen – L8) 7.2.2 The PE can initiate the Decision Revision process for an approved debarment by obtaining an order from the Honorable High Court. Then the PE will send the file to HOPE for approval of the revision. 7.3 To start preparing the debarment decision revision process PE has to click on “Revise Decision” link. (As shown in Screen – L8)
+
+---
+
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 345 | Screenshot: chunk_794_page_345_0_screen_l8.png | Relevance: 0.89]
+345
+
+Screen – L8
+
+7.4 By clicking on “ Revise Decision ” link PE can change the Debarment Start
+Date and Debarment End Date. PE can input Petition No. and Case Details in
+comment box. (As shown in Screen – L9)
+
+7.5 After filling up all the required fields click on “ Submit” button to complete
+process. (As shown in Screen – L9)
+
+Screen – L9
+
+7.6 An alert message will appear when the PE user click on subm it button .
+“Please make sure that you
+
+---
+
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 347 | Screenshot: chunk_798_page_347_0_screen_l13.png | Relevance: 0.83]
+347
+
+Screen – L13
+
+7.10 An alert message will appear when the PE user click on Send to HOPE
+button. (As shown in Screen – L14)
+
+Screen – L14
+
+7.11 By clicking “Ok” button , system will display a message “ Revised Decision
+posted successfully”. (As shown in Screen – L15)
+
+Screen – L15
+
+7.12 If HOPE approve the revised debarment, the debarment period will be
+automatically changed in the e -GP System and the changes will be shown in
+the Debarred
+
+QUESTION COMPARISON
+----------------------------------------------------------------------
+Ranking by best-term coverage: CSV-only (0.50) > Embedding-only (0.50) > Hybrid CSV+embedding (0.50)
+Comparison note: term coverage measures retrieval overlap; inspect the answers and evidence for factual completeness.
+
+==========================================================================================
+QUESTION 3: How does the e-GP system handle a significantly low-priced responsive tender?
+==========================================================================================
+
+CSV-ONLY ANSWER
+----------------------------------------------------------------------
+Status: available
+Answer model: Offline procedure extractor
+Answer:
+1. During the APP creation if PE selects Package Type: Manual, after the “Publish” he will find following scenario. To calculate Significantly Low- Priced Tender (SLT) Calculation, a link has been added under each manual package named “SLT Calculation”.
+2. Tenderer Quoted Amount cannot be more than 10% above the Official Estimated Cost.
+3. After providing this information, PE User can save the information as a draft or finalize and once it is finalized then SLT information will be shown in the e-GP System.
+4. The Official Cost Estimate and Opening Date cannot be updated after finalizing the SLT information. It will be automatically locked once it is finalized.
+5. If SLT has already calculated, PE can recalculate it if the Tender is re- evaluated.
+6. Once the “Price Comparative Report” or “Lottery” gets saved then system will generate the Wining Tenderer/Consultant, TER3 and TER4. ).
+7. Significantly Low-Priced Tenders will not be applicable for a single responsive tender. ). In such case, the quoted price will have to be compared with the official estimated cost. If the difference between the quoted price of the single tender and the official estimated cost is more than “-” 20%, then that tender will not be accepted and the “Send to HOPE” button will be generated. If the difference between the quoted price of the single tender and the official estimated cost is “-” 20% or less, then after clicking “Save Report” this Tenderer will show as winner. ).
+8. 3.1.38.1 In Significantly Low-Priced Tender (SLT) Calculation, PE will enter below information: i. Official Cost Estimate (In BDT) ii. Upload Official Cost Estimate Document iii. Tender Opening Date and Time iv.
+
+SOURCE / DOCUMENT / PAGE / RETRIEVAL EVIDENCE
+----------------------------------------------------------------------
+
+1. SOURCE REFERENCE
+   Document: e-GP System User Manual (PE)
+   Page: 250
+   Module: is generated instead of the Tender Evaluation Reports (TER1 and TER2).
+   Question ID: N/A
+   Relevance Score: 0.46
+   Retrieved Evidence: 250 6.1.78 Once the “Price Comparative Report” or “Lottery” gets saved then system will generate the Wining Tenderer/Consultant, TER3 and TER4. (As shown in Screen – G60). Screen – G60 6.1.79 Significantly Low-Priced Tenders will not be applicable fo...
+
+
+2. SOURCE REFERENCE
+   Document: e-GP System User Manual (PE)
+   Page: 46
+   Module: Annual Procurement Plan (APP)
+   Question ID: N/A
+   Relevance Score: 0.44
+   Retrieved Evidence: 46 3.1.38 During the APP creation if PE selects Package Type: Manual, after the “Publish” he will find following scenario. To calculate Significantly Low- Priced Tender (SLT) Calculation, a link has been added under each manual package named “SLT Cal...
+
+Best term coverage: 0.67
+Retrieved evidence:
+[CSV evidence: e-GP System User Manual (PE) | Module: is generated instead of the Tender Evaluation Reports (TER1 and TER2). | Page: 250 | Relevance: 0.46]
+Q: is generated instead of the Tender Evaluation Reports (TER1 and TER2).
+A:
+250 6.1.78 Once the “Price Comparative Report” or “Lottery” gets saved then system will generate the Wining Tenderer/Consultant, TER3 and TER4. (As shown in Screen – G60). Screen – G60 6.1.79 Significantly Low-Priced Tenders will not be applicable for a single responsive tender. (As shown in Screen – G61). In such case, the quoted price will have to be compared with the official estimated cost. If the difference between the quoted price of the single tender and the official estimated cost is more than “-” 20%, then that tender will not be accepted and the “Send to HOPE” button will be generated. If the difference between the quoted price of the single tender and the official estimated cost is “-” 20% or less, then after clicking “Save Report” this Tenderer will show as winner. (As shown in Screen – G62). Screen – G61
+
+---
+
+[CSV evidence: e-GP System User Manual (PE) | Module: Annual Procurement Plan (APP) | Page: 46 | Relevance: 0.44]
+Q: Annual Procurement Plan (APP)
+A:
+46 3.1.38 During the APP creation if PE selects Package Type: Manual, after the “Publish” he will find following scenario. To calculate Significantly Low- Priced Tender (SLT) Calculation, a link has been added under each manual package named “SLT Calculation”. (As shown in Screen – C41.1) Screen – C41.1 3.1.38.1 In Significantly Low-Priced Tender (SLT) Calculation, PE will enter below information: i. Official Cost Estimate (In BDT) ii. Upload Official Cost Estimate Document iii. Tender Opening Date and Time iv. Responsive Tenderers and their Quoted Amount (In BDT) 3.1.38.2 Opening Date must be yesterday or smaller then yesterday. 3.1.38.3 Tenderer Quoted Amount cannot be more than 10% above the Official Estimated Cost. 3.1.38.4 After providing this information, PE User can save the information as a draft or finalize and once it is finalized then SLT information will be shown in the e-GP System. 3.1.38.5 The Official Cost Estimate and Opening Date cannot be updated after finalizing the SLT information. It will be automatically locked once it is finalized. 3.1.38.6 If SLT has already calculated, PE can recalculate it if the Tender is re- evaluated. 3.1.38.7 PE can view the Calculated SLT from “View SLT” link.
+
+EMBEDDING-ONLY ANSWER
+----------------------------------------------------------------------
+Status: available
+Answer model: openai/gpt-oss-20b
+Answer:
+### 1. Direct Answer  
+The retrieved documentation does not describe any specific handling or special procedure for a significantly low‑priced responsive tender in the e‑GP system.
+
+### 2. Detailed Explanation  
+The excerpts provided cover the tenderer database, package number uniqueness, and procurement nature selection, but they contain no mention of how the system treats tenders that are responsive yet priced unusually low. Therefore, based on the available evidence, there is no documented rule or workflow that addresses this scenario.
+
+### 3. Step‑by‑Step Process / Key Requirements  
+No specific step‑by‑step procedure was identified in the retrieved documentation regarding low‑priced responsive tenders.
+
+### 4. Important Notes  
+- The e‑GP system may have other policies or guidelines (e.g., evaluation criteria, price thresholds, or debarment rules) that are not captured in the provided excerpts.  
+- If you need clarification on how low‑priced tenders are treated, consult the full e‑GP User Manual or contact the e‑GP Helpdesk.
+
+### 5. Evidence Assessment  
+**Insufficient Evidence** – The supplied manual passages do not contain any information about the handling of significantly low‑priced responsive tenders.
+
+SOURCE / DOCUMENT / PAGE / RETRIEVAL EVIDENCE
+----------------------------------------------------------------------
+
+1. SOURCE REFERENCE
+   Document: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf
+   Page: 453
+   Module: N/A
+   Question ID: N/A
+   Relevance Score: 1.0
+   Retrieved Evidence: 453 10. Tenderer Database In e -GP tenderer database has been introduced which provides a centralized repository of vendor information, including cont ract details, qualifications, past performance, and capabilities . It reduces the potential for f...
+
+
+2. SOURCE REFERENCE
+   Document: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf
+   Page: 469
+   Module: N/A
+   Question ID: N/A
+   Relevance Score: 0.98
+   Retrieved Evidence: input the Package No., which must be unique within the e -GP system. The system prevents the addition of contract information with duplicated package numbers. 10.1.5.6 If the tender is domestic, select NCT. For international tenders, choose ICT. 10...
+
+Best term coverage: 0.33
+Retrieved evidence:
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 453 | Relevance: 1.00]
+453
+
+10. Tenderer Database
+
+In e -GP tenderer database has been introduced which provides a centralized
+repository of vendor information, including cont ract details, qualifications, past
+performance, and capabilities . It reduces the potential for fraud and corruption.
+During the participation, tenderer can map the ir verified work experiences from
+tenderer database which assist the evaluation committee in evaluating tenderers
+effectively and
+
+---
+
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 469 | Relevance: 0.98]
+input the Package No., which must be unique within
+the e -GP system. The system prevents the addition of contract
+information with duplicated package numbers.
+
+10.1.5.6 If the tender is domestic, select NCT. For international tenders, choose
+ICT.
+
+10.1.5.7 Enter the nature of procurement (like Goods, Works, Services, Physical
+Services) being undertaken for the contract.
+
+10.1.5.8 Based on the chosen procurement nature, the procurement
+
+HYBRID CSV+EMBEDDING ANSWER
+----------------------------------------------------------------------
+Status: available
+Answer model: Offline procedure extractor
+Answer:
+1. When the TEC Chairperson clicks the “ Calculate” link, the system automatically performs the “ Significantly Low-Priced” calculation in the back -end and displays the results on the front -end.
+2. Tenderers marked as “ Yes” for “ Significantly Low -Priced Tender?.
+3. An alert message will appear when the PE user click on Send to HOPE button.
+4. By clicking “Ok” button , system will display a message “ Revised Decision posted successfully”.
+5. If HOPE approve the revised debarment, the debarment period will be automatically changed in the e -GP System and the changes will be shown in the Debarred Tenderers list in e-GP Home Page.
+
+SOURCE / DOCUMENT / PAGE / RETRIEVAL EVIDENCE
+----------------------------------------------------------------------
+
+1. SOURCE REFERENCE
+   Document: e-GP System Q&A.txt
+   Page: None
+   Module: Significantly Low-Priced Tender (SLT) Calculation
+   Question ID: N/A
+   Relevance Score: 0.49
+   Retrieved Evidence: To execute Significantly Low-Priced Tender (SLT) Calculation - Procedure Part 1 , follow these step-by-step instructions: * Access Operational Module : * Log into the e-GP portal using your verified credentials. * Navigate to the relevant menu optio...
+
+
+2. SOURCE REFERENCE
+   Document: e-GP System Q&A.txt
+   Page: None
+   Module: Significantly Low-Priced Tender (SLT) Calculation
+   Question ID: N/A
+   Relevance Score: 0.49
+   Retrieved Evidence: To execute Significantly Low-Priced Tender (SLT) Calculation - Procedure Part 2 , follow these step-by-step instructions: * Access Operational Module : * Log into the e-GP portal using your verified credentials. * Navigate to the relevant menu optio...
+
+Best term coverage: 0.50
+Retrieved evidence:
+[Supplemental Q&A: e-GP System Q&A.txt, e-GP System Q&A .docx | Module: Significantly Low-Priced Tender (SLT) Calculation | Page: N/A | Relevance: 0.49]
+Q: What are the exact step-by-step instructions for executing Significantly Low-Priced Tender (SLT) Calculation - Procedure Part 1 in the e-GP system?
+A:
+To execute  Significantly Low-Priced Tender (SLT) Calculation - Procedure Part 1 , follow these step-by-step instructions:
+* Access Operational Module :
+* Log into the e-GP portal using your verified credentials.
+* Navigate to the relevant menu option corresponding to  Significantly Low-Priced Tender (SLT) Calculation .
+* Enter Required Data & Form Parameters :
+* Populate all mandatory input fields marked with red asterisks.
+* Verify data consistency against system validation rules and financial constraints.
+* Execute Security & OTP Controls :
+* Confirm authorization by entering your password or 6-digit mobile OTP code when prompted.
+* Verify that the system registers a successful transaction response.
+* Finalize Transaction & Verify Audit Record :
+* Click  "Save & Submit"  to lock the operational record in the e-GP database.
+* Confirm that the dashboard status updates to reflect the completed workflow state.
+
+---
+
+[Supplemental Q&A: e-GP System Q&A.txt, e-GP System Q&A .docx | Module: Significantly Low-Priced Tender (SLT) Calculation | Page: N/A | Relevance: 0.49]
+Q: What are the exact step-by-step instructions for executing Significantly Low-Priced Tender (SLT) Calculation - Procedure Part 2 in the e-GP system?
+A:
+To execute  Significantly Low-Priced Tender (SLT) Calculation - Procedure Part 2 , follow these step-by-step instructions:
+* Access Operational Module :
+* Log into the e-GP portal using your verified credentials.
+* Navigate to the relevant menu option corresponding to  Significantly Low-Priced Tender (SLT) Calculation .
+* Enter Required Data & Form Parameters :
+* Populate all mandatory input fields marked with red asterisks.
+* Verify data consistency against system validation rules and financial constraints.
+* Execute Security & OTP Controls :
+* Confirm authorization by entering your password or 6-digit mobile OTP code when prompted.
+* Verify that the system registers a successful transaction response.
+* Finalize Transaction & Verify Audit Record :
+* Click  "Save & Submit"  to lock the operational record in the e-GP database.
+* Confirm that the dashboard status updates to reflect the completed workflow state.
+
+---
+
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 245 | Screenshot: chunk_564_page_245_0_screen_g52.png | Relevance: 0.86]
+245
+
+Screen – G52
+
+6.1.72.3 When the TEC Chairperson clicks the “ Calculate” link, the system
+automatically performs the “ Significantly Low-Priced” calculation in
+the back -end and displays the results on the front -end. (As shown in
+the Screen – G53)
+
+Screen – G53
+
+6.1.72.4 Tenderers marked as “ Yes” for “ Significantly Low -Priced Tender? ”
+will be eliminated from the next step, while those marked as “ No” will
+remain eligible to proceed to
+
+---
+
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 347 | Relevance: 0.85]
+347
+
+Screen – L13
+
+7.10 An alert message will appear when the PE user click on Send to HOPE
+button. (As shown in Screen – L14)
+
+Screen – L14
+
+7.11 By clicking “Ok” button , system will display a message “ Revised Decision
+posted successfully”. (As shown in Screen – L15)
+
+Screen – L15
+
+7.12 If HOPE approve the revised debarment, the debarment period will be
+automatically changed in the e -GP System and the changes will be shown in
+the Debarred Tenderers list in e-GP Home Page.
+
+QUESTION COMPARISON
+----------------------------------------------------------------------
+Ranking by best-term coverage: CSV-only (0.67) > Hybrid CSV+embedding (0.50) > Embedding-only (0.33)
+Comparison note: term coverage measures retrieval overlap; inspect the answers and evidence for factual completeness.
+
+==========================================================================================
+QUESTION 4: Which workflow action is required after an approver approves a file before publication?
+==========================================================================================
+
+CSV-ONLY ANSWER
+----------------------------------------------------------------------
+Status: available
+Answer model: Offline procedure extractor
+Answer:
+1. After submitting, click on “Process the files in Workflow” link to process the files through workflow.
+2. You can upload documents if required.
+3. In e-GP, there are several modules that workflow level user can process. The modules are App Approval, Tender Notice & Document Approval, Committee Approval, Contract Approval, Complaint Management, Debarment, Tender Validity Extension, Amendment Approval, Contract Termination etc.
+4. Click on “View” link under File Details to view details.
+5. After reviewing the file details, provide feedback regarding the necessary action in the comments box, select action from the dropdown menu.
+6. You can select several actions from the dropdown. • Approve: This action signifies the agreement and authorization for the process to proceed. • Return: Choosing this option implies that you want to send the file back to the initiator or reviewer for further review or revision before making a final decision. • Reject: When you are in a role of approver, you will get this action, it indicates a complete disapproval of the process, and the file may be closed without further consideration. • Re-evaluation: This action suggests that approver believes there is a need to re-evaluate certain aspects of the procurement, before making a final decision. This may occur when there are concerns or issues that need addressing before approval. You can only find this option in Contract Approval Workflow process.
+7. You also can upload document (If required) by clicking on “ Click here If any relevant documents to be uploaded” link.
+8. After all the mandatory task is done, click on “Submit” button.
+
+SOURCE / DOCUMENT / PAGE / RETRIEVAL EVIDENCE
+----------------------------------------------------------------------
+
+1. SOURCE REFERENCE
+   Document: e-GP System User Manual (PE)
+   Page: 195
+   Module: Approval, Contract Approval, Complaint Management, Debarment, Tender
+   Question ID: N/A
+   Relevance Score: 0.41
+   Retrieved Evidence: 195 5.1.6 In e-GP, there are several modules that workflow level user can process. The modules are App Approval, Tender Notice & Document Approval, Committee Approval, Contract Approval, Complaint Management, Debarment, Tender Validity Extension, Ame...
+
+
+2. SOURCE REFERENCE
+   Document: e-GP System User Manual (PE)
+   Page: 175
+   Module: Office address during registration in e-GP.
+   Question ID: N/A
+   Relevance Score: 0.34
+   Retrieved Evidence: 175 4.1.41.10 After submitting, click on “Process the files in Workflow” link to process the files through workflow. (As shown in Screen – D46.10) Screen – D46.10 4.1.41.11 Enter Comments, Select Action from the drop-down list. (As shown in Screen – ...
+
+Best term coverage: 0.33
+Retrieved evidence:
+[CSV evidence: e-GP System User Manual (PE) | Module: Approval, Contract Approval, Complaint Management, Debarment, Tender | Page: 195 | Relevance: 0.41]
+Q: Approval, Contract Approval, Complaint Management, Debarment, Tender
+A:
+195 5.1.6 In e-GP, there are several modules that workflow level user can process. The modules are App Approval, Tender Notice & Document Approval, Committee Approval, Contract Approval, Complaint Management, Debarment, Tender Validity Extension, Amendment Approval, Contract Termination etc. 5.1.7 Click on “View” link under File Details to view details. 5.1.8 After reviewing the file details, provide feedback regarding the necessary action in the comments box, select action from the dropdown menu. 5.1.9 You can select several actions from the dropdown. • Approve: This action signifies the agreement and authorization for the process to proceed. • Return: Choosing this option implies that you want to send the file back to the initiator or reviewer for further review or revision before making a final decision. • Reject: When you are in a role of approver, you will get this action, it indicates a complete disapproval of the process, and the file may be closed without further consideration. • Re-evaluation: This action suggests that approver believes there is a need to re-evaluate certain aspects of the procurement, before making a final decision. This may occur when there are concerns or issues that need addressing before approval. You can only find this option in Contract Approval Workflow process. 5.1.10 You also can upload document (If required) by clicking on “ Click here If any relevant documents to be uploaded” link. As shown in Screen – E5 5.1.11 After all the mandatory task is done, click on “Submit” button.
+
+---
+
+[CSV evidence: e-GP System User Manual (PE) | Module: Office address during registration in e-GP. | Page: 175 | Relevance: 0.34]
+Q: Office address during registration in e-GP.
+A:
+175 4.1.41.10 After submitting, click on “Process the files in Workflow” link to process the files through workflow. (As shown in Screen – D46.10) Screen – D46.10 4.1.41.11 Enter Comments, Select Action from the drop-down list. (As shown in Screen – D46.11) 4.1.41.12 You can upload documents if required. (As shown in Screen – D46.11) Screen – D46.11 4.1.41.13 Finally, click on “Submit” button to send next workflow level user. (As shown in Screen – D46.12) Note : Reviewer/Approver can check the same in tender notice information and tender document information once they click on view tender/proposal notice and view tender/propsoal document information by clicking on the links.
+
+EMBEDDING-ONLY ANSWER
+----------------------------------------------------------------------
+Status: available
+Answer model: Offline procedure extractor
+Answer:
+1. After saving the new package, PE has to process file for approval through workflow by clicking on “Process file in Workflow” link.
+2. After approving the package, all new and revised packages of that APP will be approved at a same time.
+3. Process File in Workflow : Initiator (AU/PE) clicks on the “ Process file in workflow” to send the file to next level of workflow user.
+4. Therein, PE will be entered the no. of reviewers and no. of days for file escalation and click on “Submit” button.
+5. By Clicking on “ Edit” link , PE can edit thi s corrigendum/amendment until process the file for approval through workflow. On other way if the workflow user (Reviewer and Approver) returns the file to PE then it will be able for editing.
+6. Once workflow is created, PE send the corrigendum to next level of workflow users. While it is approved by all workflow level users then PE has to click on “ Publish” link to publish the Amendment PE has to click on “ Publish” link to publish the Amendment.
+
+SOURCE / DOCUMENT / PAGE / RETRIEVAL EVIDENCE
+----------------------------------------------------------------------
+
+1. SOURCE REFERENCE
+   Document: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf
+   Page: 187
+   Module: N/A
+   Question ID: N/A
+   Relevance Score: 1.0
+   Retrieved Evidence: create workflow to approve the corrigendum. (As shown in Screen – D67) 4.1.68.9 Therein, PE will be entered the no. of reviewers and no. of days for file escalation and click on “Submit” button. 4.1.68.10 By Clicking on “ Edit” link , PE can edit t...
+
+
+2. SOURCE REFERENCE
+   Document: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf
+   Page: 48
+   Module: N/A
+   Question ID: N/A
+   Relevance Score: 0.98
+   Retrieved Evidence: 48 Screen – C43 3.2.5 After saving the new package, PE has to process file for approval through workflow by clicking on “Process file in Workflow” link. (As shown in Screen – C44) 3.2.6 After approving the package, all new and revised packages of ...
+
+Best term coverage: 0.22
+Retrieved evidence:
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 187 | Relevance: 1.00]
+create workflow to approve the
+corrigendum. (As shown in Screen – D67)
+
+4.1.68.9 Therein, PE will be entered the no. of reviewers and no. of days for file
+escalation and click on “Submit” button.
+
+4.1.68.10 By Clicking on “ Edit” link , PE can edit thi s corrigendum/amendment
+until process the file for approval through workflow. On other way if the
+workflow user (Reviewer and Approver) returns the file to PE then it
+will be able for editing. (As shown in Screen – D67)
+
+4.1.68.11 Once workflow is created, PE send the corrigendum to next level of
+workflow users. While it is approved by all workflow level users then
+PE has to click on “ Publish” link to publish the Amendment PE has to
+click on “ Publish” link to publish the Amendment . (As shown in
+Screen – D69.1)
+
+Screen – D69.1
+
+---
+
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 48 | Screenshot: chunk_135_page_48_0_screen_c43.png | Relevance: 0.98]
+48
+
+Screen – C43
+
+3.2.5 After saving the new package, PE has to process file for approval through
+workflow by clicking on “Process file in Workflow” link. (As shown in Screen
+– C44)
+
+3.2.6 After approving the package, all new and revised packages of that APP will be
+approved at a same time.
+
+Screen – C44
+
+3.2.6.1 Process File in Workflow : Initiator (AU/PE) clicks on the “ Process file
+in workflow” to send the file to next level of workflow user
+
+HYBRID CSV+EMBEDDING ANSWER
+----------------------------------------------------------------------
+Status: available
+Answer model: Offline procedure extractor
+Answer:
+1. After submitting, click on “Process the files in Workflow” link to process the files through workflow.
+2. You can upload documents if required.
+3. Therein, PE will be entered the no. of reviewers and no. of days for file escalation and click on “Submit” button.
+4. By Clicking on “ Edit” link , PE can edit thi s corrigendum/amendment until process the file for approval through workflow. On other way if the workflow user (Reviewer and Approver) returns the file to PE then it will be able for editing.
+5. Once workflow is created, PE send the corrigendum to next level of workflow users. While it is approved by all workflow level users then PE has to click on “ Publish” link to publish the Amendment PE has to click on “ Publish” link to publish the Amendment.
+6. In e-GP, there are several modules that workflow level user can process. The modules are App Approval, Tender Notice & Document Approval, Committee Approval, Contract Approval, Complaint Management, Debarment, Tender Validity Extension, Amendment Approval, Contract Termination etc.
+7. Click on “View” link under File Details to view details.
+8. After reviewing the file details, provide feedback regarding the necessary action in the comments box, select action from the dropdown menu.
+
+SOURCE / DOCUMENT / PAGE / RETRIEVAL EVIDENCE
+----------------------------------------------------------------------
+
+1. SOURCE REFERENCE
+   Document: e-GP System User Manual (PE)
+   Page: 195
+   Module: Approval, Contract Approval, Complaint Management, Debarment, Tender
+   Question ID: N/A
+   Relevance Score: 0.41
+   Retrieved Evidence: 195 5.1.6 In e-GP, there are several modules that workflow level user can process. The modules are App Approval, Tender Notice & Document Approval, Committee Approval, Contract Approval, Complaint Management, Debarment, Tender Validity Extension, Ame...
+
+
+2. SOURCE REFERENCE
+   Document: e-GP System User Manual (PE)
+   Page: 175
+   Module: Office address during registration in e-GP.
+   Question ID: N/A
+   Relevance Score: 0.34
+   Retrieved Evidence: 175 4.1.41.10 After submitting, click on “Process the files in Workflow” link to process the files through workflow. (As shown in Screen – D46.10) Screen – D46.10 4.1.41.11 Enter Comments, Select Action from the drop-down list. (As shown in Screen – ...
+
+Best term coverage: 0.33
+Retrieved evidence:
+[CSV evidence: e-GP System User Manual (PE) | Module: Approval, Contract Approval, Complaint Management, Debarment, Tender | Page: 195 | Relevance: 0.41]
+Q: Approval, Contract Approval, Complaint Management, Debarment, Tender
+A:
+195 5.1.6 In e-GP, there are several modules that workflow level user can process. The modules are App Approval, Tender Notice & Document Approval, Committee Approval, Contract Approval, Complaint Management, Debarment, Tender Validity Extension, Amendment Approval, Contract Termination etc. 5.1.7 Click on “View” link under File Details to view details. 5.1.8 After reviewing the file details, provide feedback regarding the necessary action in the comments box, select action from the dropdown menu. 5.1.9 You can select several actions from the dropdown. • Approve: This action signifies the agreement and authorization for the process to proceed. • Return: Choosing this option implies that you want to send the file back to the initiator or reviewer for further review or revision before making a final decision. • Reject: When you are in a role of approver, you will get this action, it indicates a complete disapproval of the process, and the file may be closed without further consideration. • Re-evaluation: This action suggests that approver believes there is a need to re-evaluate certain aspects of the procurement, before making a final decision. This may occur when there are concerns or issues that need addressing before approval. You can only find this option in Contract Approval Workflow process. 5.1.10 You also can upload document (If required) by clicking on “ Click here If any relevant documents to be uploaded” link. As shown in Screen – E5 5.1.11 After all the mandatory task is done, click on “Submit” button.
+
+---
+
+[CSV evidence: e-GP System User Manual (PE) | Module: Office address during registration in e-GP. | Page: 175 | Relevance: 0.34]
+Q: Office address during registration in e-GP.
+A:
+175 4.1.41.10 After submitting, click on “Process the files in Workflow” link to process the files through workflow. (As shown in Screen – D46.10) Screen – D46.10 4.1.41.11 Enter Comments, Select Action from the drop-down list. (As shown in Screen – D46.11) 4.1.41.12 You can upload documents if required. (As shown in Screen – D46.11) Screen – D46.11 4.1.41.13 Finally, click on “Submit” button to send next workflow level user. (As shown in Screen – D46.12) Note : Reviewer/Approver can check the same in tender notice information and tender document information once they click on view tender/proposal notice and view tender/propsoal document information by clicking on the links.
+
+---
+
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 187 | Relevance: 0.89]
+create workflow to approve the
+corrigendum. (As shown in Screen – D67)
+
+4.1.68.9 Therein, PE will be entered the no. of reviewers and no. of days for file
+escalation and click on “Submit” button.
+
+4.1.68.10 By Clicking on “ Edit” link , PE can edit thi s corrigendum/amendment
+until process the file for approval through workflow. On other way if the
+workflow user (Reviewer and Approver) returns the file to PE then it
+will be able for editing. (As shown in Screen – D67)
+
+4.1.68.11 Once workflow is created, PE send the corrigendum to next level of
+workflow users. While it is approved by all workflow level users then
+PE has to click on “ Publish” link to publish the Amendment PE has to
+click on “ Publish” link to publish the Amendment . (As shown in
+Screen – D69.1)
+
+Screen – D69.1
+
+---
+
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 426 | Relevance: 0.79]
+426
+
+8.3.13.5 After Upload the documents, PE can view the details from “ View
+Contract Termination Detail” link. (As shown in the Screen – M131)
+
+8.3.13.6 PE can Edit from “ Edit contract Termination ” link. (As shown in the
+Screen – M131)
+
+8.3.13.7 PE can upload/Download Files from “ Upload/Download Files ” link.
+(As shown in the Screen – M131)
+
+8.3.13.8 PE can create Workflow from “Create Workflow” link. (As shown in
+the Screen – M131)
+
+Screen – M131
+
+8.3.13.9 PE can create the workflow and process the file. After workflow
+process is completed, Approver provide approval then PE has to click
+on “Process and Publish” link (As shown in the Screen – M132)
+
+Screen – M132
+
+8.3.13.10 Once PE clicked on process and publish then system will display
+contract termination page where PE click on “ Approve” button.
+
+QUESTION COMPARISON
+----------------------------------------------------------------------
+Ranking by best-term coverage: CSV-only (0.33) > Hybrid CSV+embedding (0.33) > Embedding-only (0.22)
+Comparison note: term coverage measures retrieval overlap; inspect the answers and evidence for factual completeness.
+
+==========================================================================================
+QUESTION 5: How are external committee members selected from the Same PE and From External tabs?
+==========================================================================================
+
+CSV-ONLY ANSWER
+----------------------------------------------------------------------
+Status: available
+Answer model: Offline procedure extractor
+Answer:
+1. If the Approving Authority is higher than HOPE, PE can select committee members from the “Same PE” and “From External” tabs.
+2. The "From External" tab enables the addition of committee members from another ministry. To choose member from another ministry, follow the process below: - Click “From External” tab. - Then select Ministry -> Organisation by clicking on the tree icon “ ”. - The PE Office associated with your selection will be loaded. Choose the office of the member you wish to include. - Click on “Seach” button. Officials of that office will be loaded in the list. - Finally, select the desired member from the loaded list.
+3. If click on “Create TSC” link, PE has to enter Committee name and click on “Add Member” button.
+4. Then the system will display a pop-up window in which PE has to select the committee members from same PE or Other PE or External Member and click on “Add” button.
+5. 4.1.37.6.5 The "Same PE" tab displays individuals within PE’s office. If the PE wants to add a member from the same organization but a different PE office, he needs to click on the tree icon “ ”, select the organization, then select the PE office, and finally click the Search button. The officials from the selected PE office will then be displayed in the list. Select the desired member from the loaded list.
+
+SOURCE / DOCUMENT / PAGE / RETRIEVAL EVIDENCE
+----------------------------------------------------------------------
+
+1. SOURCE REFERENCE
+   Document: e-GP System User Manual (PE)
+   Page: 160
+   Module: section 6, PE will find an additional features: Drawings: In this section
+   Question ID: N/A
+   Relevance Score: 0.56
+   Retrieved Evidence: 160 4.1.37.6.4 If the Approving Authority is higher than HOPE, PE can select committee members from the “Same PE” and “From External” tabs. (As shown in Screen – D40.6) Screen – D40.6 4.1.37.6.5 The "Same PE" tab displays individuals within PE’s offi...
+
+
+2. SOURCE REFERENCE
+   Document: e-GP System User Manual (PE)
+   Page: 291
+   Module: is generated instead of the Tender Evaluation Reports (TER1 and TER2).
+   Question ID: N/A
+   Relevance Score: 0.49
+   Retrieved Evidence: 291 6.2.7.1 If click on “Create TSC” link, PE has to enter Committee name and click on “Add Member” button. (As shown in Screen – H7) Screen – H7 6.2.7.2 Then the system will display a pop-up window in which PE has to select the committee members fro...
+
+Best term coverage: 0.75
+Retrieved evidence:
+[CSV evidence: e-GP System User Manual (PE) | Module: section 6, PE will find an additional features: Drawings: In this section | Page: 160 | Relevance: 0.56]
+Q: section 6, PE will find an additional features: Drawings: In this section
+A:
+160 4.1.37.6.4 If the Approving Authority is higher than HOPE, PE can select committee members from the “Same PE” and “From External” tabs. (As shown in Screen – D40.6) Screen – D40.6 4.1.37.6.5 The "Same PE" tab displays individuals within PE’s office. If the PE wants to add a member from the same organization but a different PE office, he needs to click on the tree icon “ ”, select the organization, then select the PE office, and finally click the Search button. The officials from the selected PE office will then be displayed in the list. Select the desired member from the loaded list. 4.1.37.6.6 The "From External" tab enables the addition of committee members from another ministry. To choose member from another ministry, follow the process below: - Click “From External” tab. - Then select Ministry -> Organisation by clicking on the tree icon “ ”. - The PE Office associated with your selection will be loaded. Choose the office of the member you wish to include. - Click on “Seach” button. Officials of that office will be loaded in the list. - Finally, select the desired member from the loaded list.
+
+---
+
+[CSV evidence: e-GP System User Manual (PE) | Module: is generated instead of the Tender Evaluation Reports (TER1 and TER2). | Page: 291 | Relevance: 0.49]
+Q: is generated instead of the Tender Evaluation Reports (TER1 and TER2).
+A:
+291 6.2.7.1 If click on “Create TSC” link, PE has to enter Committee name and click on “Add Member” button. (As shown in Screen – H7) Screen – H7 6.2.7.2 Then the system will display a pop-up window in which PE has to select the committee members from same PE or Other PE or External Member and click on “Add” button. (As shown in Screen – H8) Screen – H8
+
+EMBEDDING-ONLY ANSWER
+----------------------------------------------------------------------
+Status: available
+Answer model: Offline procedure extractor
+Answer:
+1. If the Approving Authority is higher than HOPE, PE can select committee members from the “Same PE ” and “From External ” tabs.
+2. The "From External " tab enables the addition of committee members from another ministry. To choose member from another ministry, follow the process below: - Click “From External” tab.
+3. 4.1.37.6.5 The "Same PE" tab displays individuals within PE’s office.
+
+SOURCE / DOCUMENT / PAGE / RETRIEVAL EVIDENCE
+----------------------------------------------------------------------
+
+1. SOURCE REFERENCE
+   Document: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf
+   Page: 160
+   Module: N/A
+   Question ID: N/A
+   Relevance Score: 1.0
+   Retrieved Evidence: e tree icon “ ”, select the organization, then select the PE office, and finally click the Search button. The officials from the selected PE office will then be displayed in the list. Select the desired member from the loaded list. 4.1.37.6.6 The "F...
+
+
+2. SOURCE REFERENCE
+   Document: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf
+   Page: 160
+   Module: N/A
+   Question ID: N/A
+   Relevance Score: 1.0
+   Retrieved Evidence: 160 4.1.37.6.4 If the Approving Authority is higher than HOPE, PE can select committee members from the “Same PE ” and “From External ” tabs. (As shown in Screen – D40.6) Screen – D40.6 4.1.37.6.5 The "Same PE" tab displays individuals within PE’s...
+
+Best term coverage: 0.75
+Retrieved evidence:
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 160 | Relevance: 1.00]
+e tree icon “ ”, select the
+organization, then select the PE office, and finally click the Search
+button. The officials from the selected PE office will then be
+displayed in the list. Select the desired member from the loaded list.
+
+4.1.37.6.6 The "From External " tab enables the addition of committee
+members from another ministry. To choose member from another
+ministry, follow the process below:
+
+- Click “From External” tab.
+- Then select
+
+---
+
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 160 | Screenshot: chunk_372_page_160_0_screen_d40.png | Relevance: 1.00]
+160
+
+4.1.37.6.4 If the Approving Authority is higher than HOPE, PE can select
+committee members from the “Same PE ” and “From External ”
+tabs. (As shown in Screen – D40.6)
+
+Screen – D40.6
+
+4.1.37.6.5 The "Same PE" tab displays individuals within PE’s office. If the PE
+wants to add a member from the same organization but a different
+PE office, he needs to click on the tree icon “ ”, select the
+organization, then select the PE office, and finally
+
+HYBRID CSV+EMBEDDING ANSWER
+----------------------------------------------------------------------
+Status: available
+Answer model: Offline procedure extractor
+Answer:
+1. If the Approving Authority is higher than HOPE, PE can select committee members from the “Same PE ” and “From External ” tabs.
+2. The "From External " tab enables the addition of committee members from another ministry. To choose member from another ministry, follow the process below: - Click “From External” tab.
+3. 4.1.37.6.5 The "Same PE" tab displays individuals within PE’s office.
+
+SOURCE / DOCUMENT / PAGE / RETRIEVAL EVIDENCE
+----------------------------------------------------------------------
+
+1. SOURCE REFERENCE
+   Document: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf
+   Page: 160
+   Module: N/A
+   Question ID: N/A
+   Relevance Score: 1.0
+   Retrieved Evidence: e tree icon “ ”, select the organization, then select the PE office, and finally click the Search button. The officials from the selected PE office will then be displayed in the list. Select the desired member from the loaded list. 4.1.37.6.6 The "F...
+
+
+2. SOURCE REFERENCE
+   Document: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf
+   Page: 160
+   Module: N/A
+   Question ID: N/A
+   Relevance Score: 1.0
+   Retrieved Evidence: 160 4.1.37.6.4 If the Approving Authority is higher than HOPE, PE can select committee members from the “Same PE ” and “From External ” tabs. (As shown in Screen – D40.6) Screen – D40.6 4.1.37.6.5 The "Same PE" tab displays individuals within PE’s...
+
+Best term coverage: 0.75
+Retrieved evidence:
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 160 | Relevance: 1.00]
+e tree icon “ ”, select the
+organization, then select the PE office, and finally click the Search
+button. The officials from the selected PE office will then be
+displayed in the list. Select the desired member from the loaded list.
+
+4.1.37.6.6 The "From External " tab enables the addition of committee
+members from another ministry. To choose member from another
+ministry, follow the process below:
+
+- Click “From External” tab.
+- Then select
+
+---
+
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 160 | Screenshot: chunk_372_page_160_0_screen_d40.png | Relevance: 1.00]
+160
+
+4.1.37.6.4 If the Approving Authority is higher than HOPE, PE can select
+committee members from the “Same PE ” and “From External ”
+tabs. (As shown in Screen – D40.6)
+
+Screen – D40.6
+
+4.1.37.6.5 The "Same PE" tab displays individuals within PE’s office. If the PE
+wants to add a member from the same organization but a different
+PE office, he needs to click on the tree icon “ ”, select the
+organization, then select the PE office, and finally
+
+QUESTION COMPARISON
+----------------------------------------------------------------------
+Ranking by best-term coverage: CSV-only (0.75) > Embedding-only (0.75) > Hybrid CSV+embedding (0.75)
+Comparison note: term coverage measures retrieval overlap; inspect the answers and evidence for factual completeness.
+
+==========================================================================================
+QUESTION 6: What information must be entered before an invoice can be forwarded to the AG?
+==========================================================================================
+
+CSV-ONLY ANSWER
+----------------------------------------------------------------------
+Status: available
+Answer model: Offline procedure extractor
+Answer:
+1. After successfully forward the bill, to submit the bill to AG, go to the “Goods & Service Submission” menu from the sidebar ).
+2. Select Fiscal Year & click on “Search” button. Then all the forwarded pending bill of the selected fiscal year will load ).
+3. The details of the bill eg the organization from where the money will be exempted, source of fund, amount and other information will show in the bill details page ).
+
+SOURCE / DOCUMENT / PAGE / RETRIEVAL EVIDENCE
+----------------------------------------------------------------------
+
+1. SOURCE REFERENCE
+   Document: e-GP System User Manual (PE)
+   Page: 384
+   Module: Opening Report, Clarification and Tender Evaluation Report respectively.
+   Question ID: N/A
+   Relevance Score: 0.27
+   Retrieved Evidence: 384 8.3.9.56 After successfully forward the bill, to submit the bill to AG, go to the “Goods & Service Submission” menu from the sidebar (As shown in Screen – M62). Screen – M62 8.3.9.57 Select Fiscal Year & click on “Search” button. Then all the for...
+
+Best term coverage: 0.00
+Retrieved evidence:
+[CSV evidence: e-GP System User Manual (PE) | Module: Opening Report, Clarification and Tender Evaluation Report respectively. | Page: 384 | Relevance: 0.27]
+Q: Opening Report, Clarification and Tender Evaluation Report respectively.
+A:
+384 8.3.9.56 After successfully forward the bill, to submit the bill to AG, go to the “Goods & Service Submission” menu from the sidebar (As shown in Screen – M62). Screen – M62 8.3.9.57 Select Fiscal Year & click on “Search” button. Then all the forwarded pending bill of the selected fiscal year will load (As shown in Screen – M63). Screen – M63 8.3.9.58 Click “View” button to see the bill details (As shown in Screen – M63). 8.3.9.59 The details of the bill eg the organization from where the money will be exempted, source of fund, amount and other information will show in the bill details page (As shown in Screen – M64)
+
+EMBEDDING-ONLY ANSWER
+----------------------------------------------------------------------
+Status: available
+Answer model: Offline procedure extractor
+Answer:
+1. The above-mentioned dimensions will be measured through five -level scale using the following parameters.
+2. After ratings are given, click “ Submit” button the ), and you will be redirected to the Payment Details page.
+3. After all the required payment details are given, click on “ Save as Draft” button.
+4. On successfully submitted, system will display a message “ Invoice details saved successfully”.
+5. Then enter comments, elect Forward from Action & Upload Document (if required ). Then c licks on “ Submit” button to forward the bill.
+6. After the bill is processed by approver through invoice workflow, it will be.
+7. After successfully forward the bill , to submit the bill to AG , go to the “Goods & Service Submission” menu from the sidebar ).
+8. Select Fiscal Year & click on “ Search” button. Then all the forwarded pending bill of the selected fiscal year will load ).
+
+SOURCE / DOCUMENT / PAGE / RETRIEVAL EVIDENCE
+----------------------------------------------------------------------
+
+1. SOURCE REFERENCE
+   Document: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf
+   Page: 384
+   Module: N/A
+   Question ID: N/A
+   Relevance Score: 1.0
+   Retrieved Evidence: 384 8.3.9.56 After successfully forward the bill , to submit the bill to AG , go to the “Goods & Service Submission” menu from the sidebar (As shown in Screen – M62). Screen – M62 8.3.9.57 Select Fiscal Year & click on “ Search” button. Then all t...
+
+
+2. SOURCE REFERENCE
+   Document: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf
+   Page: 374
+   Module: N/A
+   Question ID: N/A
+   Relevance Score: 0.96
+   Retrieved Evidence: 374 8.3.9.25 The above-mentioned dimensions will be measured through five -level scale using the following parameters. • Strongly Disagree • Disagree • Neutral • Agree • Strongly Agree 8.3.9.26 After ratings are given, click “ Submit” button (As sh...
+
+Best term coverage: 0.00
+Retrieved evidence:
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 384 | Screenshot: chunk_865_page_384_0_screen_m62.png | Relevance: 1.00]
+384
+
+8.3.9.56 After successfully forward the bill , to submit the bill to AG , go to the
+“Goods & Service Submission” menu from the sidebar (As shown in
+Screen – M62).
+
+Screen – M62
+
+8.3.9.57 Select Fiscal Year & click on “ Search” button. Then all the forwarded
+pending bill of the selected fiscal year will load (As shown in Screen –
+M63).
+
+Screen – M63
+
+8.3.9.58 Click “View” button to see the bill details (As shown in Screen – M63).
+
+8.3.9.59
+
+---
+
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 374 | Relevance: 0.96]
+374
+
+8.3.9.25 The above-mentioned dimensions will be measured through five -level
+scale using the following parameters.
+• Strongly Disagree
+• Disagree
+• Neutral
+• Agree
+• Strongly Agree
+
+8.3.9.26 After ratings are given, click “ Submit” button (As shown in the Screen
+– M40), and you will be redirected to the Payment Details page.
+
+8.3.9.27 After all the required payment details are given, click on “ Save as
+Draft” button.
+
+8.3.9.28 On successfully submitted, system will display a message “ Invoice
+details saved successfully”.
+
+8.3.9.29 Then enter comments, elect Forward from Action & Upload Document
+(if required ). Then c licks on “ Submit” button to forward the bill . (As
+shown in Screen – M41)
+
+Screen – M41
+
+8.3.9.30 After the bill is processed by approver through invoice workflow, it will
+be
+
+HYBRID CSV+EMBEDDING ANSWER
+----------------------------------------------------------------------
+Status: available
+Answer model: Offline procedure extractor
+Answer:
+1. The above-mentioned dimensions will be measured through five -level scale using the following parameters.
+2. After ratings are given, click “ Submit” button the ), and you will be redirected to the Payment Details page.
+3. After all the required payment details are given, click on “ Save as Draft” button.
+4. On successfully submitted, system will display a message “ Invoice details saved successfully”.
+5. Then enter comments, elect Forward from Action & Upload Document (if required ). Then c licks on “ Submit” button to forward the bill.
+6. After the bill is processed by approver through invoice workflow, it will be.
+7. After successfully forward the bill , to submit the bill to AG , go to the “Goods & Service Submission” menu from the sidebar ).
+8. Select Fiscal Year & click on “ Search” button. Then all the forwarded pending bill of the selected fiscal year will load ).
+
+SOURCE / DOCUMENT / PAGE / RETRIEVAL EVIDENCE
+----------------------------------------------------------------------
+
+1. SOURCE REFERENCE
+   Document: e-GP System User Manual (PE)
+   Page: 384
+   Module: Opening Report, Clarification and Tender Evaluation Report respectively.
+   Question ID: N/A
+   Relevance Score: 0.27
+   Retrieved Evidence: 384 8.3.9.56 After successfully forward the bill, to submit the bill to AG, go to the “Goods & Service Submission” menu from the sidebar (As shown in Screen – M62). Screen – M62 8.3.9.57 Select Fiscal Year & click on “Search” button. Then all the for...
+
+
+2. SOURCE REFERENCE
+   Document: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf
+   Page: 384
+   Module: N/A
+   Question ID: N/A
+   Relevance Score: 1.0
+   Retrieved Evidence: 384 8.3.9.56 After successfully forward the bill , to submit the bill to AG , go to the “Goods & Service Submission” menu from the sidebar (As shown in Screen – M62). Screen – M62 8.3.9.57 Select Fiscal Year & click on “ Search” button. Then all t...
+
+Best term coverage: 0.00
+Retrieved evidence:
+[CSV evidence: e-GP System User Manual (PE) | Module: Opening Report, Clarification and Tender Evaluation Report respectively. | Page: 384 | Relevance: 0.27]
+Q: Opening Report, Clarification and Tender Evaluation Report respectively.
+A:
+384 8.3.9.56 After successfully forward the bill, to submit the bill to AG, go to the “Goods & Service Submission” menu from the sidebar (As shown in Screen – M62). Screen – M62 8.3.9.57 Select Fiscal Year & click on “Search” button. Then all the forwarded pending bill of the selected fiscal year will load (As shown in Screen – M63). Screen – M63 8.3.9.58 Click “View” button to see the bill details (As shown in Screen – M63). 8.3.9.59 The details of the bill eg the organization from where the money will be exempted, source of fund, amount and other information will show in the bill details page (As shown in Screen – M64)
+
+---
+
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 384 | Screenshot: chunk_865_page_384_0_screen_m62.png | Relevance: 1.00]
+384
+
+8.3.9.56 After successfully forward the bill , to submit the bill to AG , go to the
+“Goods & Service Submission” menu from the sidebar (As shown in
+Screen – M62).
+
+Screen – M62
+
+8.3.9.57 Select Fiscal Year & click on “ Search” button. Then all the forwarded
+pending bill of the selected fiscal year will load (As shown in Screen –
+M63).
+
+Screen – M63
+
+8.3.9.58 Click “View” button to see the bill details (As shown in Screen – M63).
+
+8.3.9.59
+
+---
+
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 374 | Relevance: 0.96]
+374
+
+8.3.9.25 The above-mentioned dimensions will be measured through five -level
+scale using the following parameters.
+• Strongly Disagree
+• Disagree
+• Neutral
+• Agree
+• Strongly Agree
+
+8.3.9.26 After ratings are given, click “ Submit” button (As shown in the Screen
+– M40), and you will be redirected to the Payment Details page.
+
+8.3.9.27 After all the required payment details are given, click on “ Save as
+Draft” button.
+
+8.3.9.28 On successfully submitted, system will display a message “ Invoice
+details saved successfully”.
+
+8.3.9.29 Then enter comments, elect Forward from Action & Upload Document
+(if required ). Then c licks on “ Submit” button to forward the bill . (As
+shown in Screen – M41)
+
+Screen – M41
+
+8.3.9.30 After the bill is processed by approver through invoice workflow, it will
+be
+
+QUESTION COMPARISON
+----------------------------------------------------------------------
+Ranking by best-term coverage: CSV-only (0.00) > Embedding-only (0.00) > Hybrid CSV+embedding (0.00)
+Comparison note: term coverage measures retrieval overlap; inspect the answers and evidence for factual completeness.
+
+==========================================================================================
+QUESTION 7: How does the system treat tender security validity when the proposal validity period changes?
+==========================================================================================
+
+CSV-ONLY ANSWER
+----------------------------------------------------------------------
+Status: available
+Answer model: Offline procedure extractor
+Answer:
+1. All Annual Procurement Plan (APP >> All APPs) | Page: 66 | Relevance: 0.
+2. Tender/Proposal Security Validity in No. of Days will be filled automatically by the system.
+3. After selecting the appropriate STD and all the fields are filled up, click on “Submit” button.
+4. System will display a massage “Evaluation Committee members are notified successfully” ).
+5. Evaluation >> Tender Validity Extension Request.
+6. The Tender Validity Extension Request is sent to a tenderer to ask them to consider extending the validity period of their submitted bid or proposal. This request is made when the original validity period is about to expire, and the requesting party needs more time to evaluate and award the tender.
+7. Validity Extension Request can be sent from Evaluation tab. So, at first go to the specific tender dashboard. Then click on Evaluation tab.
+8. PE will click on “Extend” link of Validity and Security Extension.
+
+SOURCE / DOCUMENT / PAGE / RETRIEVAL EVIDENCE
+----------------------------------------------------------------------
+
+1. SOURCE REFERENCE
+   Document: e-GP System User Manual (PE)
+   Page: 66
+   Module: 3.3 All Annual Procurement Plan (APP >> All APPs)
+   Question ID: N/A
+   Relevance Score: 0.38
+   Retrieved Evidence: 66 Screen – D16.5 4.1.22.11 Then enter tender or proposal validity period (As shown in Screen – D16.6) which refers to the duration for which a submitted tender or proposal remains valid. This period can vary depending on the complexity and nature of...
+
+
+2. SOURCE REFERENCE
+   Document: e-GP System User Manual (PE)
+   Page: 302
+   Module: is generated instead of the Tender Evaluation Reports (TER1 and TER2).
+   Question ID: N/A
+   Relevance Score: 0.37
+   Retrieved Evidence: 302 6.2.26 System will display a massage “Evaluation Committee members are notified successfully” (As shown in Screen – H28) Screen – H28 6.3 Evaluation >> Tender Validity Extension Request 6.3.1 The Tender Validity Extension Request is sent to a ten...
+
+Best term coverage: 0.50
+Retrieved evidence:
+[CSV evidence: e-GP System User Manual (PE) | Module: 3.3 All Annual Procurement Plan (APP >> All APPs) | Page: 66 | Relevance: 0.38]
+Q: 3.3 All Annual Procurement Plan (APP >> All APPs)
+A:
+66 Screen – D16.5 4.1.22.11 Then enter tender or proposal validity period (As shown in Screen – D16.6) which refers to the duration for which a submitted tender or proposal remains valid. This period can vary depending on the complexity and nature of the project. It is commonly in the range of 60 to 150 days from the proposal submission deadline or the date of bid opening. 4.1.22.12 Tender/Proposal Security Validity in No. of Days will be filled automatically by the system. 4.1.22.13 After selecting the appropriate STD and all the fields are filled up, click on “Submit” button. Screen – D16.6
+
+---
+
+[CSV evidence: e-GP System User Manual (PE) | Module: is generated instead of the Tender Evaluation Reports (TER1 and TER2). | Page: 302 | Relevance: 0.37]
+Q: is generated instead of the Tender Evaluation Reports (TER1 and TER2).
+A:
+302 6.2.26 System will display a massage “Evaluation Committee members are notified successfully” (As shown in Screen – H28) Screen – H28 6.3 Evaluation >> Tender Validity Extension Request 6.3.1 The Tender Validity Extension Request is sent to a tenderer to ask them to consider extending the validity period of their submitted bid or proposal. This request is made when the original validity period is about to expire, and the requesting party needs more time to evaluate and award the tender. 6.3.2 Validity Extension Request can be sent from Evaluation tab. So, at first go to the specific tender dashboard. Then click on Evaluation tab. 6.3.3 PE will click on “Extend” link of Validity and Security Extension. (As shown in Screen – I1) Screen – I1 6.3.4 By clicking on "Extend" link, the PE can initiate the process of requesting an extension for the tender's validity period. (As shown in Screen – I2)
+
+EMBEDDING-ONLY ANSWER
+----------------------------------------------------------------------
+Status: available
+Answer model: Offline procedure extractor
+Answer:
+1. Tender/Proposal Security Validity in No.
+2. System will display a massage “ Evaluation Committee members are notified successfully” ).
+3. Evaluation >> Tender Validity Extension Request.
+4. The Tender Validity Extension Request is sent to a tenderer to ask them to consider extending the validity period of their submitted bid or proposal.
+5. 4.1.22.11 Then enter tender or proposal validity period ) which refers to the duration for which a submitted tender or proposal remains valid. This period can vary depending on the complexity and nature of the project. It is commonly in the range of 60 to 150 days from the proposal submission deadline or the date of bid opening.
+
+SOURCE / DOCUMENT / PAGE / RETRIEVAL EVIDENCE
+----------------------------------------------------------------------
+
+1. SOURCE REFERENCE
+   Document: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf
+   Page: 66
+   Module: N/A
+   Question ID: N/A
+   Relevance Score: 1.0
+   Retrieved Evidence: 66 Screen – D16.5 4.1.22.11 Then enter tender or proposal validity period (As shown in Screen – D16.6) which refers to the duration for which a submitted tender or proposal remains valid. This period can vary depending on the complexity and nature ...
+
+
+2. SOURCE REFERENCE
+   Document: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf
+   Page: 302
+   Module: N/A
+   Question ID: N/A
+   Relevance Score: 0.93
+   Retrieved Evidence: 302 6.2.26 System will display a massage “ Evaluation Committee members are notified successfully” (As shown in Screen – H28) Screen – H28 6.3 Evaluation >> Tender Validity Extension Request 6.3.1 The Tender Validity Extension Request is sent to ...
+
+Best term coverage: 0.50
+Retrieved evidence:
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 66 | Screenshot: chunk_182_page_66_0_screen_d16.png | Relevance: 1.00]
+66
+
+Screen – D16.5
+
+4.1.22.11 Then enter tender or proposal validity period (As shown in Screen –
+D16.6) which refers to the duration for which a submitted tender or
+proposal remains valid. This period can vary depending on the
+complexity and nature of the project. It is commonly in the range of 60
+to 150 days from the proposal submission deadline or the date of bid
+opening.
+
+4.1.22.12 Tender/Proposal Security Validity in No. of Days will be
+
+---
+
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 302 | Screenshot: chunk_691_page_302_0_screen_h28.jpg | Relevance: 0.93]
+302
+
+6.2.26 System will display a massage “ Evaluation Committee members are
+notified successfully” (As shown in Screen – H28)
+
+Screen – H28
+
+6.3 Evaluation >> Tender Validity Extension Request
+
+6.3.1 The Tender Validity Extension Request is sent to a tenderer to ask them to
+consider extending the validity period of their submitted bid or proposal. This
+request is made when the original validity period is about to expire, and the
+requesting
+
+HYBRID CSV+EMBEDDING ANSWER
+----------------------------------------------------------------------
+Status: available
+Answer model: Offline procedure extractor
+Answer:
+1. All Annual Procurement Plan (APP >> All APPs) | Page: 66 | Relevance: 0.
+2. Tender/Proposal Security Validity in No. of Days will be filled automatically by the system.
+3. After selecting the appropriate STD and all the fields are filled up, click on “Submit” button.
+4. System will display a massage “Evaluation Committee members are notified successfully” ).
+5. Evaluation >> Tender Validity Extension Request.
+6. The Tender Validity Extension Request is sent to a tenderer to ask them to consider extending the validity period of their submitted bid or proposal. This request is made when the original validity period is about to expire, and the requesting party needs more time to evaluate and award the tender.
+7. Validity Extension Request can be sent from Evaluation tab. So, at first go to the specific tender dashboard. Then click on Evaluation tab.
+8. PE will click on “Extend” link of Validity and Security Exten sion.
+
+SOURCE / DOCUMENT / PAGE / RETRIEVAL EVIDENCE
+----------------------------------------------------------------------
+
+1. SOURCE REFERENCE
+   Document: e-GP System User Manual (PE)
+   Page: 66
+   Module: 3.3 All Annual Procurement Plan (APP >> All APPs)
+   Question ID: N/A
+   Relevance Score: 0.38
+   Retrieved Evidence: 66 Screen – D16.5 4.1.22.11 Then enter tender or proposal validity period (As shown in Screen – D16.6) which refers to the duration for which a submitted tender or proposal remains valid. This period can vary depending on the complexity and nature of...
+
+
+2. SOURCE REFERENCE
+   Document: e-GP System User Manual (PE)
+   Page: 302
+   Module: is generated instead of the Tender Evaluation Reports (TER1 and TER2).
+   Question ID: N/A
+   Relevance Score: 0.37
+   Retrieved Evidence: 302 6.2.26 System will display a massage “Evaluation Committee members are notified successfully” (As shown in Screen – H28) Screen – H28 6.3 Evaluation >> Tender Validity Extension Request 6.3.1 The Tender Validity Extension Request is sent to a ten...
+
+Best term coverage: 0.50
+Retrieved evidence:
+[CSV evidence: e-GP System User Manual (PE) | Module: 3.3 All Annual Procurement Plan (APP >> All APPs) | Page: 66 | Relevance: 0.38]
+Q: 3.3 All Annual Procurement Plan (APP >> All APPs)
+A:
+66 Screen – D16.5 4.1.22.11 Then enter tender or proposal validity period (As shown in Screen – D16.6) which refers to the duration for which a submitted tender or proposal remains valid. This period can vary depending on the complexity and nature of the project. It is commonly in the range of 60 to 150 days from the proposal submission deadline or the date of bid opening. 4.1.22.12 Tender/Proposal Security Validity in No. of Days will be filled automatically by the system. 4.1.22.13 After selecting the appropriate STD and all the fields are filled up, click on “Submit” button. Screen – D16.6
+
+---
+
+[CSV evidence: e-GP System User Manual (PE) | Module: is generated instead of the Tender Evaluation Reports (TER1 and TER2). | Page: 302 | Relevance: 0.37]
+Q: is generated instead of the Tender Evaluation Reports (TER1 and TER2).
+A:
+302 6.2.26 System will display a massage “Evaluation Committee members are notified successfully” (As shown in Screen – H28) Screen – H28 6.3 Evaluation >> Tender Validity Extension Request 6.3.1 The Tender Validity Extension Request is sent to a tenderer to ask them to consider extending the validity period of their submitted bid or proposal. This request is made when the original validity period is about to expire, and the requesting party needs more time to evaluate and award the tender. 6.3.2 Validity Extension Request can be sent from Evaluation tab. So, at first go to the specific tender dashboard. Then click on Evaluation tab. 6.3.3 PE will click on “Extend” link of Validity and Security Extension. (As shown in Screen – I1) Screen – I1 6.3.4 By clicking on "Extend" link, the PE can initiate the process of requesting an extension for the tender's validity period. (As shown in Screen – I2)
+
+---
+
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 56 | Relevance: 0.85]
+tender closing time.
+
+Tender Closing Date and Time: The tender closing date and time
+represent the deadline for the submission of proposals or bids.
+
+Tender Opening Date and Time: The tender opening date is when the
+submitted tenders are opened. It is done electronically in an e-GP system.
+
+Last Date and Time for Tender/Proposal Security Submission : The final
+deadline for the submission of tender or proposal security.
+
+4.1.9 For Procurement
+
+---
+
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 302 | Relevance: 0.81]
+is made when the original validity period is about to expire, and the
+requesting party needs more time to evaluate and award the tender.
+
+6.3.2 Validity Extension Request can be sent from Evaluation tab. So, at first go to
+the specific tender dashboard. Then click on Evaluation tab.
+
+6.3.3 PE will click on “Extend” link of Validity and Security Exten sion. (As shown in
+Screen – I1)
+
+Screen – I1
+
+6.3.4 By clicking on " Extend" link, the PE can
+
+QUESTION COMPARISON
+----------------------------------------------------------------------
+Ranking by best-term coverage: CSV-only (0.50) > Embedding-only (0.50) > Hybrid CSV+embedding (0.50)
+Comparison note: term coverage measures retrieval overlap; inspect the answers and evidence for factual completeness.
+
+==========================================================================================
+QUESTION 8: What is the process for configuring Tender Evaluation Report 1 and Tender Evaluation Report 2?
+==========================================================================================
+
+CSV-ONLY ANSWER
+----------------------------------------------------------------------
+Status: available
+Answer model: Offline procedure extractor
+Answer:
+1. For ICT/ICB, Tender Opening Report 2 (TOR2) will be generated in the | Page: 208 | Relevance: 0.
+2. In the context of OSTETM tenders, when clicks on the TOR link only Technical Forms will be open, after Technical Forms approval Financial Forms will automatically open.
+3. Now TEC Chairperson going to ‘Evaluation’ tab and configuring the evaluation methodology. Within the Evaluation tab, essential links are generated in several step, which advancing the user to proceed with the evaluation process.
+4. For ICT/ICB, it is required to insert currency conversion rate equivalent to BDT before configuring the evaluation methodology. TEC Chairperson has to do the process before starting the evaluation. It's important to emphasize that this process solely applies to ICT/ICB tenders. The link to add conversion rate will not be available in a non-ICT tender.
+5. 6.1.50 The system will display the massage “Tender/Proposal Evaluation Report 1 Prepared Successfully”.
+6. 6.1.51 In a similar manner, complete Tender Evaluation Report 2, and click on the "Save" button. The system will display the message "Tender/Proposal Evaluation Report 2 Prepared Successfully.
+
+SOURCE / DOCUMENT / PAGE / RETRIEVAL EVIDENCE
+----------------------------------------------------------------------
+
+1. SOURCE REFERENCE
+   Document: e-GP System User Manual (PE)
+   Page: 208
+   Module: 6.1.14 For ICT/ICB, Tender Opening Report 2 (TOR2) will be generated in the
+   Question ID: N/A
+   Relevance Score: 0.38
+   Retrieved Evidence: 208 6.1.18 In the context of OSTETM tenders, when clicks on the TOR link only Technical Forms will be open, after Technical Forms approval Financial Forms will automatically open. 6.1.19 Now TEC Chairperson going to ‘Evaluation’ tab and configuring t...
+
+
+2. SOURCE REFERENCE
+   Document: e-GP System User Manual (PE)
+   Page: 229
+   Module: 6.1.14 For ICT/ICB, Tender Opening Report 2 (TOR2) will be generated in the
+   Question ID: N/A
+   Relevance Score: 0.29
+   Retrieved Evidence: 229 Screen – G25.1 6.1.50 The system will display the massage “Tender/Proposal Evaluation Report 1 Prepared Successfully”. (As shown in Screen – G25.2) Screen – G25.2 6.1.51 In a similar manner, complete Tender Evaluation Report 2, and click on the "...
+
+Best term coverage: 0.60
+Retrieved evidence:
+[CSV evidence: e-GP System User Manual (PE) | Module: 6.1.14 For ICT/ICB, Tender Opening Report 2 (TOR2) will be generated in the | Page: 208 | Relevance: 0.38]
+Q: 6.1.14 For ICT/ICB, Tender Opening Report 2 (TOR2) will be generated in the
+A:
+208 6.1.18 In the context of OSTETM tenders, when clicks on the TOR link only Technical Forms will be open, after Technical Forms approval Financial Forms will automatically open. 6.1.19 Now TEC Chairperson going to ‘Evaluation’ tab and configuring the evaluation methodology. Within the Evaluation tab, essential links are generated in several step, which advancing the user to proceed with the evaluation process. Screen – G1 6.1.20 For ICT/ICB, it is required to insert currency conversion rate equivalent to BDT before configuring the evaluation methodology. TEC Chairperson has to do the process before starting the evaluation. It's important to emphasize that this process solely applies to ICT/ICB tenders. The link to add conversion rate will not be available in a non-ICT tender. 6.1.20.1 To insert currency conversion rate, click on “Add” link (As shown in Screen – G2.1 Screen – G2.1 6.1.20.2 Next, enter the equivalent currency rate in BDT. Once the rates are entered, proceed by clicking the 'Submit' button. (As shown in Screen – G2.2) Screen – G2.2
+
+---
+
+[CSV evidence: e-GP System User Manual (PE) | Module: 6.1.14 For ICT/ICB, Tender Opening Report 2 (TOR2) will be generated in the | Page: 229 | Relevance: 0.29]
+Q: 6.1.14 For ICT/ICB, Tender Opening Report 2 (TOR2) will be generated in the
+A:
+229 Screen – G25.1 6.1.50 The system will display the massage “Tender/Proposal Evaluation Report 1 Prepared Successfully”. (As shown in Screen – G25.2) Screen – G25.2 6.1.51 In a similar manner, complete Tender Evaluation Report 2, and click on the "Save" button. The system will display the message "Tender/Proposal Evaluation Report 2 Prepared Successfully." Screen – G26
+
+EMBEDDING-ONLY ANSWER
+----------------------------------------------------------------------
+Status: available
+Answer model: Offline procedure extractor
+Answer:
+1. To start the evaluation, the first step involves Opening the Tender. After the submission deadline has elapsed, the PE/Tenderer/Evaluation Committee members or anyone receiving TOR1 and TOR2 reports clicks on the TOR link, they can generate Opening reports.
+2. After clicking TOR link s ystem will generate “Comparative & Individual Report” of each form.
+3. Once responsiveness is finalized, the system will generate a " Configure" link, that allows you to set up Tender Evaluation Report 1 and Tender Evaluation Report 2. By clicking on the " View Member’s Evaluation " link, you can review the configuration made by members.
+
+SOURCE / DOCUMENT / PAGE / RETRIEVAL EVIDENCE
+----------------------------------------------------------------------
+
+1. SOURCE REFERENCE
+   Document: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf
+   Page: 235
+   Module: N/A
+   Question ID: N/A
+   Relevance Score: 1.0
+   Retrieved Evidence: 235 6.1.60 Once responsiveness is finalized, the system will generate a " Configure" link, that allows you to set up Tender Evaluation Report 1 and Tender Evaluation Report 2 . By clicking on the " View Member’s Evaluation " link, you can review the...
+
+
+2. SOURCE REFERENCE
+   Document: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf
+   Page: 201
+   Module: N/A
+   Question ID: N/A
+   Relevance Score: 0.92
+   Retrieved Evidence: y generated upon clicking the TOR/POR link”. 6.1.6 To start the evaluation, the first step involves Opening the Tender. After the submission deadline has elapsed, the PE/Tenderer/Evaluation Committee members or anyone receiving TOR1 and TOR2 reports...
+
+Best term coverage: 0.60
+Retrieved evidence:
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 235 | Screenshot: chunk_544_page_235_0_screen_g34.png | Relevance: 1.00]
+235
+
+6.1.60 Once responsiveness is finalized, the system will generate a " Configure"
+link, that allows you to set up Tender Evaluation Report 1 and Tender
+Evaluation Report 2 . By clicking on the " View Member’s Evaluation " link,
+you can review the configuration made by members . (As shown in Screen –
+G34)
+
+Screen – G34
+
+6.1.61 Click on configure link, then configure by selecting "Yes/No/NA” from the
+dropdown on each criteria present in the
+
+---
+
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 201 | Relevance: 0.92]
+y generated upon
+clicking the TOR/POR link”.
+
+6.1.6 To start the evaluation, the first step involves Opening the Tender. After the
+submission deadline has elapsed, the PE/Tenderer/Evaluation Committee
+members or anyone receiving TOR1 and TOR2 reports clicks on the TOR
+link, they can generate Opening reports. (As shown in Screen – F4)
+
+Screen – F4
+
+6.1.7 After clicking TOR link s ystem will generate “Comparative & Individual
+Report” of each form.
+
+HYBRID CSV+EMBEDDING ANSWER
+----------------------------------------------------------------------
+Status: available
+Answer model: Offline procedure extractor
+Answer:
+1. 6.1.21 In preliminary stage of evaluation, it is mandatory to assess and compare the tenders submitted by tenderers. It can be done by two ways: - Individual: Whereas all the TEC members have to do the individual evaluation of the Tenderer. - Team: Whereas any one member of TEC has to do the evaluation of the Tenderer.
+2. So, to configure which methodology is followed in the corresponding tendering.
+3. 6.1.50 The system will display the massage “ Tender/Proposal Evaluation Report 1 Prepared Successfully”.
+4. 6.1.51 In a similar manner, complete Tender Evaluation Report 2, and click on the "Save" button. The system will display the message " Tender/Proposal Evaluation Report 2 Prepared Successfully.
+
+SOURCE / DOCUMENT / PAGE / RETRIEVAL EVIDENCE
+----------------------------------------------------------------------
+
+1. SOURCE REFERENCE
+   Document: e-GP System Q&A.txt
+   Page: None
+   Module: Tender Evaluation Reports (TER1–TER4) Digital Signatures
+   Question ID: N/A
+   Relevance Score: 0.42
+   Retrieved Evidence: To execute Tender Evaluation Reports (TER1–TER4) Digital Signatures - Procedure Part 1 , follow these step-by-step instructions: * Access Operational Module : * Log into the e-GP portal using your verified credentials. * Navigate to the relevant men...
+
+
+2. SOURCE REFERENCE
+   Document: e-GP System Q&A.txt
+   Page: None
+   Module: Tender Evaluation Reports (TER1–TER4) Digital Signatures
+   Question ID: N/A
+   Relevance Score: 0.42
+   Retrieved Evidence: To execute Tender Evaluation Reports (TER1–TER4) Digital Signatures - Procedure Part 2 , follow these step-by-step instructions: * Access Operational Module : * Log into the e-GP portal using your verified credentials. * Navigate to the relevant men...
+
+Best term coverage: 0.60
+Retrieved evidence:
+[Supplemental Q&A: e-GP System Q&A.txt, e-GP System Q&A .docx | Module: Tender Evaluation Reports (TER1–TER4) Digital Signatures | Page: N/A | Relevance: 0.42]
+Q: What are the exact step-by-step instructions for executing Tender Evaluation Reports (TER1–TER4) Digital Signatures - Procedure Part 1 in the e-GP system?
+A:
+To execute  Tender Evaluation Reports (TER1–TER4) Digital Signatures - Procedure Part 1 , follow these step-by-step instructions:
+* Access Operational Module :
+* Log into the e-GP portal using your verified credentials.
+* Navigate to the relevant menu option corresponding to  Tender Evaluation Reports (TER1–TER4) Digital Signatures .
+* Enter Required Data & Form Parameters :
+* Populate all mandatory input fields marked with red asterisks.
+* Verify data consistency against system validation rules and financial constraints.
+* Execute Security & OTP Controls :
+* Confirm authorization by entering your password or 6-digit mobile OTP code when prompted.
+* Verify that the system registers a successful transaction response.
+* Finalize Transaction & Verify Audit Record :
+* Click  "Save & Submit"  to lock the operational record in the e-GP database.
+* Confirm that the dashboard status updates to reflect the completed workflow state.
+
+---
+
+[Supplemental Q&A: e-GP System Q&A.txt, e-GP System Q&A .docx | Module: Tender Evaluation Reports (TER1–TER4) Digital Signatures | Page: N/A | Relevance: 0.42]
+Q: What are the exact step-by-step instructions for executing Tender Evaluation Reports (TER1–TER4) Digital Signatures - Procedure Part 2 in the e-GP system?
+A:
+To execute  Tender Evaluation Reports (TER1–TER4) Digital Signatures - Procedure Part 2 , follow these step-by-step instructions:
+* Access Operational Module :
+* Log into the e-GP portal using your verified credentials.
+* Navigate to the relevant menu option corresponding to  Tender Evaluation Reports (TER1–TER4) Digital Signatures .
+* Enter Required Data & Form Parameters :
+* Populate all mandatory input fields marked with red asterisks.
+* Verify data consistency against system validation rules and financial constraints.
+* Execute Security & OTP Controls :
+* Confirm authorization by entering your password or 6-digit mobile OTP code when prompted.
+* Verify that the system registers a successful transaction response.
+* Finalize Transaction & Verify Audit Record :
+* Click  "Save & Submit"  to lock the operational record in the e-GP database.
+* Confirm that the dashboard status updates to reflect the completed workflow state.
+
+---
+
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 229 | Screenshot: chunk_529_page_229_0_screen_g25.png | Relevance: 0.82]
+229
+
+Screen – G25.1
+
+6.1.50 The system will display the massage “ Tender/Proposal Evaluation Report
+1 Prepared Successfully”. (As shown in Screen – G25.2)
+
+Screen – G25.2
+
+6.1.51 In a similar manner, complete Tender Evaluation Report 2, and click on the
+"Save" button. The system will display the message " Tender/Proposal
+Evaluation Report 2 Prepared Successfully."
+
+Screen – G26
+
+---
+
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 210 | Screenshot: chunk_487_page_210_0_screen_g5.png | Relevance: 0.81]
+210
+
+Screen – G5.1
+
+Screen – G5.2
+
+6.1.21 In preliminary stage of evaluation, it is mandatory to assess and compare the
+tenders submitted by tenderers. It can be done by two ways:
+- Individual: Whereas all the TEC members have to do the individual
+evaluation of the Tenderer.
+- Team: Whereas any one member of TEC has to do the evaluation of
+the Tenderer.
+
+6.1.22 So, to configure which methodology is followed in the corresponding
+tendering
+
+QUESTION COMPARISON
+----------------------------------------------------------------------
+Ranking by best-term coverage: CSV-only (0.60) > Embedding-only (0.60) > Hybrid CSV+embedding (0.60)
+Comparison note: term coverage measures retrieval overlap; inspect the answers and evidence for factual completeness.
+
+==========================================================================================
+QUESTION 9: How are pending bills loaded after selecting DDO and fiscal year in the iBAS integration?
+==========================================================================================
+
+CSV-ONLY ANSWER
+----------------------------------------------------------------------
+Status: available
+Answer model: Offline procedure extractor
+Answer:
+1. Select DDO & Fiscal Year from the dropdown ).
+2. Click on “Go” button & then pending bills will be loaded. Select the bills you want to forward and click on “Forward” button ).
+3. At this stage, iBAS++ bill status in e-GP system will be changed as “Bill Forwarded to Budget Holder for Submission”.
+4. The bills which was receieved from DDO can be searched by fiscal year, month & organization/project. If you don’t want to search bill for any specific organization then select “All”. After selecting the searching parameter, click on “Search” button. Search result will be displayed in list ).
+5. Bill can be viewed & print using “View” & “Print” button respectively. To accept the bill, click on “Accept” button ).
+6. In this stage, the iBAS++ bill status in e-GP system will be changed as “Paypoint Accept DDO Bill”.
+
+SOURCE / DOCUMENT / PAGE / RETRIEVAL EVIDENCE
+----------------------------------------------------------------------
+
+1. SOURCE REFERENCE
+   Document: e-GP System User Manual (PE)
+   Page: 383
+   Module: Opening Report, Clarification and Tender Evaluation Report respectively.
+   Question ID: N/A
+   Relevance Score: 0.49
+   Retrieved Evidence: 383 8.3.9.52 Select DDO & Fiscal Year from the dropdown (As shown in Screen – M60). 8.3.9.53 Click on “Go” button & then pending bills will be loaded. Select the bills you want to forward and click on “Forward” button (As shown in Screen – M60). Scre...
+
+
+2. SOURCE REFERENCE
+   Document: e-GP System User Manual (PE)
+   Page: 388
+   Module: Opening Report, Clarification and Tender Evaluation Report respectively.
+   Question ID: N/A
+   Relevance Score: 0.42
+   Retrieved Evidence: 388 8.3.9.70 The bills which was receieved from DDO can be searched by fiscal year, month & organization/project. If you don’t want to search bill for any specific organization then select “All”. After selecting the searching parameter, click on “Sea...
+
+Best term coverage: 0.57
+Retrieved evidence:
+[CSV evidence: e-GP System User Manual (PE) | Module: Opening Report, Clarification and Tender Evaluation Report respectively. | Page: 383 | Relevance: 0.49]
+Q: Opening Report, Clarification and Tender Evaluation Report respectively.
+A:
+383 8.3.9.52 Select DDO & Fiscal Year from the dropdown (As shown in Screen – M60). 8.3.9.53 Click on “Go” button & then pending bills will be loaded. Select the bills you want to forward and click on “Forward” button (As shown in Screen – M60). Screen – M60 8.3.9.54 Click on “Yes” button in the pop-up & then bill is forwarded for submission to AG. (As shown in Screen – M61). 8.3.9.55 At this stage, iBAS++ bill status in e-GP system will be changed as “Bill Forwarded to Budget Holder for Submission”. Screen – M61
+
+---
+
+[CSV evidence: e-GP System User Manual (PE) | Module: Opening Report, Clarification and Tender Evaluation Report respectively. | Page: 388 | Relevance: 0.42]
+Q: Opening Report, Clarification and Tender Evaluation Report respectively.
+A:
+388 8.3.9.70 The bills which was receieved from DDO can be searched by fiscal year, month & organization/project. If you don’t want to search bill for any specific organization then select “All”. After selecting the searching parameter, click on “Search” button. Search result will be displayed in list (As shown in Screen – M70). Screen – M70 8.3.9.71 Bill can be viewed & print using “View” & “Print” button respectively. To accept the bill, click on “Accept” button (As shown in Screen – M70). 8.3.9.72 Then a pop-up is displayed with notification message that bill is accepted. (As shown in Screen – M71). Screen – M71 8.3.9.73 In this stage, the iBAS++ bill status in e-GP system will be changed as “Paypoint Accept DDO Bill”.
+
+EMBEDDING-ONLY ANSWER
+----------------------------------------------------------------------
+Status: available
+Answer model: Offline procedure extractor
+Answer:
+1. DDO will login to the iBAS++ system using User ID & Password.
+2. After logged in to the system, click on “Budget Execution > DDO Bills > Goods, Service & Others > Goods and Services Entry (By EGP) ” from sidebar. ).
+3. Then DDO will see all the bills which are forwarded from e-GP system by PE with Tender ID, Bill ID, PE’s Information,.
+4. Select DDO & Fiscal Year from the dropdown ).
+5. Click on “Go” button & then pending bills will be loaded. Select the bills you want to forward and click on “ Forward” button ).
+6. At this stage, iBAS++ bill status in e -GP system.
+
+SOURCE / DOCUMENT / PAGE / RETRIEVAL EVIDENCE
+----------------------------------------------------------------------
+
+1. SOURCE REFERENCE
+   Document: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf
+   Page: 383
+   Module: N/A
+   Question ID: N/A
+   Relevance Score: 1.0
+   Retrieved Evidence: 383 8.3.9.52 Select DDO & Fiscal Year from the dropdown (As shown in Screen – M60). 8.3.9.53 Click on “Go” button & then pending bills will be loaded. Select the bills you want to forward and click on “ Forward” button (As shown in Screen – M60). ...
+
+
+2. SOURCE REFERENCE
+   Document: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf
+   Page: 376
+   Module: N/A
+   Question ID: N/A
+   Relevance Score: 0.89
+   Retrieved Evidence: 376 8.3.9.33 DDO will login to the iBAS++ system using User ID & Password. (As shown in Screen – M44) Screen – M44 8.3.9.34 After logged in to the system, click on “Budget Execution > DDO Bills > Goods, Service & Others > Goods and Services Entry ...
+
+Best term coverage: 0.57
+Retrieved evidence:
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 383 | Screenshot: chunk_863_page_383_0_screen_m60.png | Relevance: 1.00]
+383
+
+8.3.9.52 Select DDO & Fiscal Year from the dropdown (As shown in Screen –
+M60).
+
+8.3.9.53 Click on “Go” button & then pending bills will be loaded. Select the bills
+you want to forward and click on “ Forward” button (As shown in
+Screen – M60).
+
+Screen – M60
+
+8.3.9.54 Click on “ Yes” button in the pop -up & then bill is forwarded for
+submission to AG. (As shown in Screen – M61).
+
+8.3.9.55 At this stage, iBAS++ bill status in e -GP system
+
+---
+
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 376 | Screenshot: chunk_851_page_376_0_screen_m44.png | Relevance: 0.89]
+376
+
+8.3.9.33 DDO will login to the iBAS++ system using User ID & Password. (As
+shown in Screen – M44)
+
+Screen – M44
+
+8.3.9.34 After logged in to the system, click on “Budget Execution > DDO Bills >
+Goods, Service & Others > Goods and Services Entry (By EGP) ”
+from sidebar. (As shown in Screen – M45).
+
+Screen – M45
+
+8.3.9.35 Then DDO will see all the bills which are forwarded from e-GP system
+by PE with Tender ID, Bill ID, PE’s Information,
+
+HYBRID CSV+EMBEDDING ANSWER
+----------------------------------------------------------------------
+Status: available
+Answer model: openai/gpt-oss-20b
+Answer:
+### 1. Direct Answer  
+After choosing the DDO and fiscal year in the iBAS++ interface, clicking the **“Go”** button loads the pending bills that have been forwarded from e‑GP for that DDO and fiscal year.
+
+### 2. Detailed Explanation  
+The iBAS++ system provides a dropdown list for the user to select a specific DDO and the fiscal year. When these two values are chosen and the **Go** button is pressed, the system queries the database for all bills that the Procuring Entity has forwarded to the DDO for that fiscal year. The resulting list displays the pending bills, allowing the DDO to review and forward them further.
+
+### 3. Step‑by‑Step Process / Key Requirements  
+1. **Log in** to the iBAS++ system with your User ID and Password.  
+2. From the sidebar, navigate to **Budget Execution > DDO Bills > Goods, Service & Others > Goods and Services Entry (By EGP)**.  
+3. In the screen that appears, **select the desired DDO** from the dropdown.  
+4. **Select the fiscal year** from the corresponding dropdown.
+
+SOURCE / DOCUMENT / PAGE / RETRIEVAL EVIDENCE
+----------------------------------------------------------------------
+
+1. SOURCE REFERENCE
+   Document: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf
+   Page: 383
+   Module: N/A
+   Question ID: N/A
+   Relevance Score: 1.0
+   Retrieved Evidence: 383 8.3.9.52 Select DDO & Fiscal Year from the dropdown (As shown in Screen – M60). 8.3.9.53 Click on “Go” button & then pending bills will be loaded. Select the bills you want to forward and click on “ Forward” button (As shown in Screen – M60). ...
+
+
+2. SOURCE REFERENCE
+   Document: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf
+   Page: 376
+   Module: N/A
+   Question ID: N/A
+   Relevance Score: 0.27
+   Retrieved Evidence: 376 8.3.9.33 DDO will login to the iBAS++ system using User ID & Password. (As shown in Screen – M44) Screen – M44 8.3.9.34 After logged in to the system, click on “Budget Execution > DDO Bills > Goods, Service & Others > Goods and Services Entry ...
+
+Best term coverage: 0.57
+Retrieved evidence:
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 383 | Screenshot: chunk_863_page_383_0_screen_m60.png | Relevance: 1.00]
+383
+
+8.3.9.52 Select DDO & Fiscal Year from the dropdown (As shown in Screen –
+M60).
+
+8.3.9.53 Click on “Go” button & then pending bills will be loaded. Select the bills
+you want to forward and click on “ Forward” button (As shown in
+Screen – M60).
+
+Screen – M60
+
+8.3.9.54 Click on “ Yes” button in the pop -up & then bill is forwarded for
+submission to AG. (As shown in Screen – M61).
+
+8.3.9.55 At this stage, iBAS++ bill status in e -GP system
+
+---
+
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 376 | Screenshot: chunk_851_page_376_0_screen_m44.png | Relevance: 0.27]
+376
+
+8.3.9.33 DDO will login to the iBAS++ system using User ID & Password. (As
+shown in Screen – M44)
+
+Screen – M44
+
+8.3.9.34 After logged in to the system, click on “Budget Execution > DDO Bills >
+Goods, Service & Others > Goods and Services Entry (By EGP) ”
+from sidebar. (As shown in Screen – M45).
+
+Screen – M45
+
+8.3.9.35 Then DDO will see all the bills which are forwarded from e-GP system
+by PE with Tender ID, Bill ID, PE’s Information,
+
+QUESTION COMPARISON
+----------------------------------------------------------------------
+Ranking by best-term coverage: CSV-only (0.57) > Embedding-only (0.57) > Hybrid CSV+embedding (0.57)
+Comparison note: term coverage measures retrieval overlap; inspect the answers and evidence for factual completeness.
+
+==========================================================================================
+QUESTION 10: What does the Debarred Tenderer List record after a 42-day suspension decision?
+==========================================================================================
+
+CSV-ONLY ANSWER
+----------------------------------------------------------------------
+Status: available
+Answer model: Offline grounded synthesis
+Answer:
+1. PE has to select the “Suspension Reason” from drop down list, suspension reason can be “Corrupt Practice, Fraudulent Practice, Collusive Practice, Coercive Practice and Obstructive Practice”. The PE selects the ‘Start Date’, and the system will automatically calculate the ‘End Date’, the duration of the suspension period is 42 calendar days. Then PE will write in text box under Description label and finally click on “Submit” button.
+2. An alert message will appear when the PE user click on submit button. “Please make sure that you have entered the correct information”.
+3. After click “Yes” button another alert message will appear. “Be double sure that, Are you sure you want to suspend the tenderer and proceed?.
+4. By clicking the “Yes” button, a new window will open, and the system will display the message “Tenderer/Consultant suspended successfully.” The PE will then upload the document by clicking the “Choose File” button, followed by the “Upload” button. File now available in HOPE’s hand to take the decision. ) NOTE: 1) If the HOPE intends to debar the suspended Tenderer, the HOPE must complete the debarment within 42 calendar days. 2) If the HOPE does not take any action within 42 calendar days, the suspension shall be automatically lifted.
+5. After approving the debarment by HOPE, the debarment details will be displayed under the Debarred Tenderer List in e-GP Home Page.
+6. To view any Tenderer debarment status PE needs to click on “Debarment -> Debarment” menu.
+7. The PE can initiate the Decision Revision process for an approved debarment by obtaining an order from the Honorable High Court. Then the PE will send the file to HOPE for approval of the revision.
+8. To start preparing the debarment decision revision process PE has to click on “Revise Decision” link.
+
+SOURCE / DOCUMENT / PAGE / RETRIEVAL EVIDENCE
+----------------------------------------------------------------------
+
+1. SOURCE REFERENCE
+   Document: e-GP System User Manual (PE)
+   Page: 344
+   Module: Opening Report, Clarification and Tender Evaluation Report respectively.
+   Question ID: N/A
+   Relevance Score: 0.44
+   Retrieved Evidence: 344 7.1.8 By clicking the “Yes” button, a new window will open, and the system will display the message “Tenderer/Consultant suspended successfully.” The PE will then upload the document by clicking the “Choose File” button, followed by the “Upload” ...
+
+
+2. SOURCE REFERENCE
+   Document: e-GP System User Manual (PE)
+   Page: 343
+   Module: Opening Report, Clarification and Tender Evaluation Report respectively.
+   Question ID: N/A
+   Relevance Score: 0.3
+   Retrieved Evidence: 343 7.1.5 PE has to select the “Suspension Reason” from drop down list, suspension reason can be “Corrupt Practice, Fraudulent Practice, Collusive Practice, Coercive Practice and Obstructive Practice”. The PE selects the ‘Start Date’, and the system ...
+
+Best term coverage: 0.14
+Retrieved evidence:
+[CSV evidence: e-GP System User Manual (PE) | Module: Opening Report, Clarification and Tender Evaluation Report respectively. | Page: 344 | Relevance: 0.44]
+Q: Opening Report, Clarification and Tender Evaluation Report respectively.
+A:
+344 7.1.8 By clicking the “Yes” button, a new window will open, and the system will display the message “Tenderer/Consultant suspended successfully.” The PE will then upload the document by clicking the “Choose File” button, followed by the “Upload” button. File now available in HOPE’s hand to take the decision. (As shown in Screen – L7) Screen – L7 NOTE: 1) If the HOPE intends to debar the suspended Tenderer, the HOPE must complete the debarment within 42 calendar days. 2) If the HOPE does not take any action within 42 calendar days, the suspension shall be automatically lifted. 7.1.9 After approving the debarment by HOPE, the debarment details will be displayed under the Debarred Tenderer List in e-GP Home Page. 7.2 Debarment >> Debarment 7.2.1 To view any Tenderer debarment status PE needs to click on “Debarment -> Debarment” menu. (As shown in Screen – L8) 7.2.2 The PE can initiate the Decision Revision process for an approved debarment by obtaining an order from the Honorable High Court. Then the PE will send the file to HOPE for approval of the revision. 7.3 To start preparing the debarment decision revision process PE has to click on “Revise Decision” link. (As shown in Screen – L8)
+
+---
+
+[CSV evidence: e-GP System User Manual (PE) | Module: Opening Report, Clarification and Tender Evaluation Report respectively. | Page: 343 | Relevance: 0.30]
+Q: Opening Report, Clarification and Tender Evaluation Report respectively.
+A:
+343 7.1.5 PE has to select the “Suspension Reason” from drop down list, suspension reason can be “Corrupt Practice, Fraudulent Practice, Collusive Practice, Coercive Practice and Obstructive Practice”. The PE selects the ‘Start Date’, and the system will automatically calculate the ‘End Date’, the duration of the suspension period is 42 calendar days. Then PE will write in text box under Description label and finally click on “Submit” button. (As shown in Screen – L4) Screen – L4 7.1.6 An alert message will appear when the PE user click on submit button. “Please make sure that you have entered the correct information”. (As shown in Screen – L5) Screen – L5 7.1.7 After click “Yes” button another alert message will appear. “Be double sure that, Are you sure you want to suspend the tenderer and proceed?” Screen – L6
+
+EMBEDDING-ONLY ANSWER
+----------------------------------------------------------------------
+Status: available
+Answer model: Offline grounded synthesis
+Answer:
+1. Tenderer can be searched by Company Name and e-Mail ID then PE has to click on “Search” button ).
+2. PE can suspend Tenderer from Procuring Agency/Organization. ). After suspension, the tenderer will not be able to participate in any tender or accept any NOA within 42 calendar days.
+3. PE has to select the “ Suspension Reason” from drop down list, suspension reason can be “Corrupt Practice, Fraudulent Practice, Collusive Practice, Coercive Practice and Obstructive Practice ”. The PE selects the ‘ Start Date’, and the system will automatically calculate the ‘ End Date ’, the duration of the suspension period is 42 calendar days.
+
+SOURCE / DOCUMENT / PAGE / RETRIEVAL EVIDENCE
+----------------------------------------------------------------------
+
+1. SOURCE REFERENCE
+   Document: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf
+   Page: 342
+   Module: N/A
+   Question ID: N/A
+   Relevance Score: 0.86
+   Retrieved Evidence: in Screen – L2) Screen – L2 7.1.3 Tenderer can be searched by Company Name and e-Mail ID then PE has to click on “Search” button (As shown in Screen – L3) Screen – L3 7.1.4 PE can suspend Tenderer from Procuring Agency/Organization . (As shown in...
+
+
+2. SOURCE REFERENCE
+   Document: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf
+   Page: 343
+   Module: N/A
+   Question ID: N/A
+   Relevance Score: 0.85
+   Retrieved Evidence: 343 7.1.5 PE has to select the “ Suspension Reason” from drop down list, suspension reason can be “Corrupt Practice, Fraudulent Practice, Collusive Practice, Coercive Practice and Obstructive Practice ”. The PE selects the ‘ Start Date’, and the sys...
+
+Best term coverage: 0.14
+Retrieved evidence:
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 342 | Relevance: 0.86]
+in Screen – L2)
+
+Screen – L2
+
+7.1.3 Tenderer can be searched by Company Name and e-Mail ID then PE has to
+click on “Search” button (As shown in Screen – L3)
+
+Screen – L3
+
+7.1.4 PE can suspend Tenderer from Procuring Agency/Organization . (As
+shown in Screen – L4). After suspension, the tenderer will not be able to
+participate in any tender or accept any NOA within 42 calendar days.
+
+---
+
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 343 | Relevance: 0.85]
+343
+
+7.1.5 PE has to select the “ Suspension Reason” from drop down list, suspension
+reason can be “Corrupt Practice, Fraudulent Practice, Collusive Practice,
+Coercive Practice and Obstructive Practice ”. The PE selects the ‘ Start
+Date’, and the system will automatically calculate the ‘ End Date ’, the
+duration of the suspension period is 42 calendar days. Then PE will write in
+text box under Description label and finally click on “ Submit”
+
+HYBRID CSV+EMBEDDING ANSWER
+----------------------------------------------------------------------
+Status: available
+Answer model: Offline grounded synthesis
+Answer:
+1. To suspend any Tenderer PE needs to click on “Debarment -> Suspension” tab ).
+2. To Initiate the suspension process PE has to click on “ Initiate Suspension” button. Tenderer can be searched by e-Mail ID and Company Name then PE has to click on “Search” button.
+3. Tenderer can be searched by Company Name and.
+4. PE has to select the “ Suspension Reason” from drop down list, suspension reason can be “Corrupt Practice, Fraudulent Practice, Collusive Practice, Coercive Practice and Obstructive Practice ”. The PE selects the ‘ Start Date’, and the system will automatically calculate the ‘ End Date ’, the duration of the suspension period is 42 calendar days.
+
+SOURCE / DOCUMENT / PAGE / RETRIEVAL EVIDENCE
+----------------------------------------------------------------------
+
+1. SOURCE REFERENCE
+   Document: e-GP System Q&A.txt
+   Page: None
+   Module: Vendor Debarment & 42-Day Temporary Suspensions
+   Question ID: N/A
+   Relevance Score: 0.32
+   Retrieved Evidence: To execute Vendor Debarment & 42-Day Temporary Suspensions - Procedure Part 1 , follow these step-by-step instructions: * Access Operational Module : * Log into the e-GP portal using your verified credentials. * Navigate to the relevant menu option ...
+
+
+2. SOURCE REFERENCE
+   Document: e-GP System Q&A.txt
+   Page: None
+   Module: Vendor Debarment & 42-Day Temporary Suspensions
+   Question ID: N/A
+   Relevance Score: 0.32
+   Retrieved Evidence: To execute Vendor Debarment & 42-Day Temporary Suspensions - Procedure Part 2 , follow these step-by-step instructions: * Access Operational Module : * Log into the e-GP portal using your verified credentials. * Navigate to the relevant menu option ...
+
+Best term coverage: 0.29
+Retrieved evidence:
+[Supplemental Q&A: e-GP System Q&A.txt, e-GP System Q&A .docx | Module: Vendor Debarment & 42-Day Temporary Suspensions | Page: N/A | Relevance: 0.32]
+Q: What are the exact step-by-step instructions for executing Vendor Debarment & 42-Day Temporary Suspensions - Procedure Part 1 in the e-GP system?
+A:
+To execute  Vendor Debarment & 42-Day Temporary Suspensions - Procedure Part 1 , follow these step-by-step instructions:
+* Access Operational Module :
+* Log into the e-GP portal using your verified credentials.
+* Navigate to the relevant menu option corresponding to  Vendor Debarment & 42-Day Temporary Suspensions .
+* Enter Required Data & Form Parameters :
+* Populate all mandatory input fields marked with red asterisks.
+* Verify data consistency against system validation rules and financial constraints.
+* Execute Security & OTP Controls :
+* Confirm authorization by entering your password or 6-digit mobile OTP code when prompted.
+* Verify that the system registers a successful transaction response.
+* Finalize Transaction & Verify Audit Record :
+* Click  "Save & Submit"  to lock the operational record in the e-GP database.
+* Confirm that the dashboard status updates to reflect the completed workflow state.
+
+---
+
+[Supplemental Q&A: e-GP System Q&A.txt, e-GP System Q&A .docx | Module: Vendor Debarment & 42-Day Temporary Suspensions | Page: N/A | Relevance: 0.32]
+Q: What are the exact step-by-step instructions for executing Vendor Debarment & 42-Day Temporary Suspensions - Procedure Part 2 in the e-GP system?
+A:
+To execute  Vendor Debarment & 42-Day Temporary Suspensions - Procedure Part 2 , follow these step-by-step instructions:
+* Access Operational Module :
+* Log into the e-GP portal using your verified credentials.
+* Navigate to the relevant menu option corresponding to  Vendor Debarment & 42-Day Temporary Suspensions .
+* Enter Required Data & Form Parameters :
+* Populate all mandatory input fields marked with red asterisks.
+* Verify data consistency against system validation rules and financial constraints.
+* Execute Security & OTP Controls :
+* Confirm authorization by entering your password or 6-digit mobile OTP code when prompted.
+* Verify that the system registers a successful transaction response.
+* Finalize Transaction & Verify Audit Record :
+* Click  "Save & Submit"  to lock the operational record in the e-GP database.
+* Confirm that the dashboard status updates to reflect the completed workflow state.
+
+---
+
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 342 | Screenshot: chunk_784_page_342_0_screen_l1.png | Relevance: 0.80]
+342
+
+7. Debarment
+
+7.1 Debarment >> Suspension
+
+7.1.1 To suspend any Tenderer PE needs to click on “Debarment -> Suspension”
+tab (As shown in Screen – L1)
+
+Screen – L1
+
+7.1.2 To Initiate the suspension process PE has to click on “ Initiate Suspension”
+button. Tenderer can be searched by e-Mail ID and Company Name then
+PE has to click on “Search” button. (As shown in Screen – L2)
+
+Screen – L2
+
+7.1.3 Tenderer can be searched by Company Name and
+
+---
+
+[Manual: e-GP System User Manual - Procuring Entity User 1 February 2026.pdf | Page 343 | Relevance: 0.25]
+343
+
+7.1.5 PE has to select the “ Suspension Reason” from drop down list, suspension
+reason can be “Corrupt Practice, Fraudulent Practice, Collusive Practice,
+Coercive Practice and Obstructive Practice ”. The PE selects the ‘ Start
+Date’, and the system will automatically calculate the ‘ End Date ’, the
+duration of the suspension period is 42 calendar days. Then PE will write in
+text box under Description label and finally click on “ Submit”
+
+QUESTION COMPARISON
+----------------------------------------------------------------------
+Ranking by best-term coverage: Hybrid CSV+embedding (0.29) > CSV-only (0.14) > Embedding-only (0.14)
+Comparison note: term coverage measures retrieval overlap; inspect the answers and evidence for factual completeness.
+
+
+==========================================================================================
+OVERALL RETRIEVAL PERFORMANCE SUMMARY
+==========================================================================================
+
+COMPARATIVE RESULTS
+--------------------------------------------------
+CSV-only: Tested=10/10 | Average Best-Term Coverage=0.44
+Embedding-only: Tested=10/10 | Average Best-Term Coverage=0.36
+Hybrid CSV+embedding: Tested=10/10 | Average Best-Term Coverage=0.45
+
+Highest Average Term Coverage: Hybrid CSV+embedding
+Coverage Score: 0.45
+
+INTERPRETATION AND KEY FINDINGS
+--------------------------------------------------
+
+1. Retrieval Performance:
+   Compare the retrieved sources and term coverage across all available retrieval modes.
+
+2. Contextual Relevance:
+   Check whether the retrieved evidence actually addresses the user's question.
+
+3. Answer Generation:
+   Evaluate whether the LLM produces a descriptive answer based on the retrieved evidence.
+
+4. Grounding:
+   Identify answers that introduce unsupported information or answer unrelated questions.
+
+5. Fallback Mechanism:
+   Check whether the system correctly handles questions with insufficient retrieved evidence.
+
+RECOMMENDED R&D IMPROVEMENTS
+--------------------------------------------------
+
+- Optimize Top-K retrieval selection.
+- Evaluate embedding and reranking performance.
+- Improve context-to-answer grounding.
+- Investigate irrelevant retrieval results.
+- Implement evidence-based fallback responses.
+- Compare CSV, PDF, and embedding-based retrieval.
+- Validate answers using a smaller controlled dataset.
+- Conduct manual evaluation of factual correctness.
+
+EVALUATION LIMITATIONS
+--------------------------------------------------
+
+- Term coverage is not a semantic relevance metric.
+- Retrieval scores may not be comparable across modes.
+- Evidence assessment requires manual validation.
+- Answer quality must be evaluated separately from retrieval quality.
+- A retrieved source does not guarantee a correct answer.
+
+END OF REPORT

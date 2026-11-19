@@ -61,7 +61,7 @@ IMAGE_DIR = DATA_DIR / "images"
 CSV_DIR = ROOT_DIR / "csv_files"
 EGP_MANUAL_CSV = CSV_DIR / "egp_manual_extracted.csv"
 EGP_REG_MANUAL_CSV = CSV_DIR / "egp_registration_manual_extracted.csv"
-EGP_EVAL_CSV = CSV_DIR / "egp_contractor_evaluation_dataset.csv"
+EGP_EVAL_CSV = CSV_DIR / "egp_manual_extracted.csv"
 
 # Ensure directories exist safely without raising PermissionError
 for d in (RAW_DIR, PROCESSED_DIR, INDEX_DIR, IMAGE_DIR):
@@ -79,16 +79,16 @@ TEXT_DIM = int(os.getenv("TEXT_DIM", "1024"))
 VISUAL_DIM = int(os.getenv("VISUAL_DIM", "768"))
 
 # Chunking Parameters
-TEXT_CHUNK_SIZE = int(os.getenv("TEXT_CHUNK_SIZE", "450"))
-TEXT_CHUNK_OVERLAP = int(os.getenv("TEXT_CHUNK_OVERLAP", "60"))
+TEXT_CHUNK_SIZE = int(os.getenv("TEXT_CHUNK_SIZE", "1800"))
+TEXT_CHUNK_OVERLAP = int(os.getenv("TEXT_CHUNK_OVERLAP", "240"))
 
 # Retrieval Top-K Parameters
-TEXT_TOP_K = int(os.getenv("TEXT_TOP_K", "20"))
-QA_TOP_K = int(os.getenv("QA_TOP_K", "20"))
-VISUAL_TOP_K = int(os.getenv("VISUAL_TOP_K", "10"))
-BM25_TOP_K = int(os.getenv("BM25_TOP_K", "20"))
-RERANK_TOP_K = int(os.getenv("RERANK_TOP_K", "25"))
-FINAL_CONTEXT_K = int(os.getenv("FINAL_CONTEXT_K", "7"))
+TEXT_TOP_K = int(os.getenv("TEXT_TOP_K", "3"))
+QA_TOP_K = int(os.getenv("QA_TOP_K", "3"))
+VISUAL_TOP_K = int(os.getenv("VISUAL_TOP_K", "2"))
+BM25_TOP_K = int(os.getenv("BM25_TOP_K", "3"))
+RERANK_TOP_K = int(os.getenv("RERANK_TOP_K", "3"))
+FINAL_CONTEXT_K = int(os.getenv("FINAL_CONTEXT_K", "2"))
 
 # Active index version
 INDEX_VERSION = os.getenv("INDEX_VERSION", "active")

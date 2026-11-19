@@ -26,30 +26,20 @@ from app.api.sync import router as sync_router
 from app.api.upload import router as upload_router
 from app.api.rag import router as rag_router
 from app.services.retrieval_service import retrieval_service
-from app.services.rag_service import load_rag_service
 from app.core.config import settings
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
-rag_service = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown lifecycle handler."""
-    global rag_service
     print(f"[main] Starting {settings.PROJECT_NAME} API Server...")
     loaded = retrieval_service.load_index_if_needed()
     if loaded:
         print("[main] FAISS index loaded and ready for questions.")
     else:
         print("[main] Notice: FAISS index not found yet. Please run ingestion script.")
-    try:
-        rag_service = load_rag_service()
-        if rag_service:
-            print(f"[main] RAG Service active with version: {rag_service.version}")
-    except Exception as e:
-        print(f"[main] Notice loading RAG service: {e}")
     yield
-    rag_service = None
     print(f"[main] Shutting down {settings.PROJECT_NAME} API Server...")
 
 app = FastAPI(

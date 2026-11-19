@@ -145,7 +145,7 @@ export default function App() {
         image_base64: attached?.base64,
         image_mime: attached?.mime,
         image_name: attached?.name,
-        top_k: 3,
+        top_k: 2,
         use_alt_model: useAltModel,
         language
       });
