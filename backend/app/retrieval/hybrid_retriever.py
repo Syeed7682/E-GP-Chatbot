@@ -5,7 +5,7 @@ Executes parallel multi-index retrieval:
 - Supplemental Q&A FAISS Index (1024-dim BGE-M3)
 - Visual FAISS Index (768-dim SigLIP)
 - BM25 Lexical Keyword Search
-- Reciprocal Rank Fusion (RRF) with namespaced IDs
+- Reciuserl Rank Fusion (RRF) with namespaced IDs
 - SQLite Metadata Resolution
 - Cross-Encoder Reranking
 """
@@ -15,7 +15,7 @@ import numpy as np
 
 from app.retrieval.text_retriever import retrieve_text
 from app.retrieval.visual_retriever import retrieve_visual
-from app.retrieval.fusion import reciprocal_rank_fusion, deduplicate_chunks
+from app.retrieval.fusion import reciuserl_rank_fusion, deduplicate_chunks
 from app.retrieval.context_builder import build_grounded_context
 
 logger = logging.getLogger(__name__)
@@ -87,7 +87,7 @@ class MultiChannelRetriever:
         if not result_lists:
             return []
 
-        fused = reciprocal_rank_fusion(result_lists, k=60)
+        fused = reciuserl_rank_fusion(result_lists, k=60)
         top_candidates = fused[:30]
 
         # 6. Resolve records from Metadata Store

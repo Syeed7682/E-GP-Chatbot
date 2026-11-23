@@ -1,0 +1,114 @@
+# user Interaction Report
+
+## 1. Interaction Metadata
+
+- Interaction ID: `44d66901-2d99-478a-b366-13fadfbd6d58`
+- Date and time: `2026-11-23T11:53:26.205721+06:00`
+- Original user question: How do I fix evaluation discrepancy error code Q10.4?
+- Effective question: How do I fix evaluation discrepancy error code Q10.4?
+- Attached image: No
+- LLM model name: `openai/gpt-oss-20b`
+- Embedding model name: `BAAI/bge-m3`
+- Embedding provider: `local`
+- Retrieval method: `FAISS dense retrieval + keyword retrieval; supplemental Q&A disabled`
+- Configured Top-K value: `2`
+- Total retrieved chunks: `2`
+- Total context characters: `3298`
+- Processing status: `Successfully processed`
+
+## 2. User Question
+
+How do I fix evaluation discrepancy error code Q10.4?
+
+## 3. Generated Answer
+
+I could not find relevant information about this in the new e‑GP manual.
+
+## 4. Retrieval Information
+
+### Retrieved Chunk 1
+- Chunk ID: `8`
+- Document name: `New e-GP Manual PDF`
+- Source type: `manual`
+- Page number: `8`
+- Screenshot/image: `data/extracted_images/chunks/chunk_8_page_8_0_screen.jpg`
+- Relevance score: `0.87`
+- Retrieved excerpt:
+
+Page 8 5. After submission an automatic e-mail will be sent to the e-mail ID using which the tenderer has registered. This e-mail would contain the Verification Code & the link to the e-mail verification page. Screen - 4 6. Please check your e-mail a...
+
+- Source metadata:
+
+```json
+{
+  "source": "New e-GP Manual PDF",
+  "page": 8,
+  "chunk_id": 8,
+  "score": 0.87,
+  "snippet": "Page 8 5. After submission an automatic e-mail will be sent to the e-mail ID using which the tenderer has registered. This e-mail would contain the Verification Code & the link to the e-mail verification page. Screen - 4 6. Please check your e-mail a...",
+  "image_path": "data/extracted_images/chunks/chunk_8_page_8_0_screen.jpg",
+  "related_sentence": "Screen - 4 6."
+}
+```
+
+### Retrieved Chunk 2
+- Chunk ID: `6`
+- Document name: `New e-GP Manual PDF`
+- Source type: `manual`
+- Page number: `6`
+- Screenshot/image: `data/extracted_images/chunks/chunk_6_page_6_0_page_please_enter_unique_email.jpg`
+- Relevance score: `0.7`
+- Retrieved excerpt:
+
+Page 6 a) Please enter the Unique e-mail ID. This e-mail ID will be the User-ID (Login-ID) for the tenderer on the e- GP portal. (Please note that the verification code will be mailed to this e-mail ID only). b) Please enter the Password. (It is very...
+
+- Source metadata:
+
+```json
+{
+  "source": "New e-GP Manual PDF",
+  "page": 6,
+  "chunk_id": 6,
+  "score": 0.7,
+  "snippet": "Page 6 a) Please enter the Unique e-mail ID. This e-mail ID will be the User-ID (Login-ID) for the tenderer on the e- GP portal. (Please note that the verification code will be mailed to this e-mail ID only). b) Please enter the Password. (It is very...",
+  "image_path": "data/extracted_images/chunks/chunk_6_page_6_0_page_please_enter_unique_email.jpg",
+  "related_sentence": "Page 6 a) Please enter the Unique e-mail ID."
+}
+```
+
+## 5. Source References
+
+- Retrieved source: `New e-GP Manual PDF`, page `8`, chunk `8`, image `data/extracted_images/chunks/chunk_8_page_8_0_screen.jpg`.
+- Retrieved source: `New e-GP Manual PDF`, page `6`, chunk `6`, image `data/extracted_images/chunks/chunk_6_page_6_0_page_please_enter_unique_email.jpg`.
+
+All listed references are retrieved sources. Sources actually used by the answer are identified in the analysis below; no source was inferred or fabricated.
+
+## 6. Answer Generation Analysis
+
+- Relevant evidence: The retrieved chunks listed above were supplied to the answer generator.
+- Evidence selection: Relevance was determined by the retrieval service's dense and keyword ranking.
+- Information used: The final answer was generated from the supplied new-manual context.
+- Multiple chunks combined: Yes
+- Excluded information: Any retrieved information not reflected in the final answer was excluded to match the user's question scope.
+- General knowledge used: Not Available; the answer-generation pipeline was instructed to use the new manual context.
+- Limitations: Not Available beyond the retrieved context and source excerpts recorded above.
+
+## 7. Retrieval & Answer Quality Assessment
+
+- Retrieval relevance: High
+- Source coverage: Complete
+- Answer grounding: `Fully grounded` if raw_sources else `Not Available`
+- Citation accuracy: `Verified` if raw_sources else `Unverified`
+- Potential retrieval issues: `None recorded`.
+- Potential answer-generation issues: `None recorded`.
+
+## 8. Processing Logs
+
+- Request validation: Completed successfully.
+- OCR status: Skipped; no image attached
+- Follow-up handling: No follow-up rewrite needed
+- Retrieval completion: Completed; 2 source(s) retrieved
+- LLM generation status: Completed using openai/gpt-oss-20b
+- Citation formatting status: Completed; 2 citation(s) formatted
+- Total processing time: `1.37 seconds`
+- Errors or warnings: `Not Available`

@@ -7,7 +7,7 @@ from app.services.document_parser import document_parser
 
 class Chunker:
     @staticmethod
-    def chunk_page(page_data: Dict[str, Any], chunk_size: int = 800, overlap: int = 150) -> List[Dict[str, Any]]:
+    def chunk_page(page_data: Dict[str, Any], chunk_size: int = 1800, overlap: int = 240) -> List[Dict[str, Any]]:
         page_num = page_data["page_number"]
         text = page_data["text"]
         if not text.strip():

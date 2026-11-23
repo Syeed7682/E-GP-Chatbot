@@ -98,7 +98,7 @@ def load_system_prompt() -> str:
             print(f"[llm_service] Error reading system prompt: {e}")
 
     return (
-        "You are Proca, an expert AI assistant for the Bangladesh e-GP (Electronic Government Procurement) system, "
+        "You are user, an expert AI assistant for the Bangladesh e-GP (Electronic Government Procurement) system, "
         "dedicated to serving both Procuring Entities (PEs) and Tenderers / Contractors. "
         "Always provide a clear, descriptive, helpful answer using the retrieved context in your own words. "
         "Never say 'The provided manual extract does not specify this information' when relevant context is present. "
@@ -188,12 +188,13 @@ class LLMService:
         prompt_text = (
             f"Context from e-GP Manuals:\n{context}\n\n"
             f"User Question: {question}\n\n"
-            f"Follow the system instructions for answer structure. Use only supplied manual and supplemental Q&A content. "
+            f"Follow the system instructions for answer structure. Use only supplied content from the new e-GP manual. "
             f"Interpret the user's wording semantically: match synonyms, paraphrases, abbreviations, and related workflow terms "
             f"to the retrieved context before deciding that information is missing. Answer with the closest supported procedure "
             f"and explain the official term when the user uses informal wording. "
             f"Include a Source line with section numbers only when the context provides them. "
-            f"For fee tables, preserve the source's exact number formatting and keep fee categories separate."
+            f"For fee tables, preserve the source's exact number formatting and keep fee categories separate. "
+            f"If the user asks only for fees, answer only with the relevant fee amounts and exceptions; do not explain payment methods or steps."
         )
         user_content.append({"type": "text", "text": prompt_text})
 
@@ -242,7 +243,7 @@ class LLMService:
 
         if not context or "No relevant context" in context or "No manual index" in context:
             return (
-                "I couldn't find an answer to your question in the official e-GP manual or Q&A records.\n\n"
+                "I could not find relevant information about this in the new e-GP manual.\n\n"
                 "Please verify your query or contact the official e-GP Helpdesk for technical assistance:"
                 + HELPDESK_CONTACT_INFO
             )
@@ -251,6 +252,26 @@ class LLMService:
             return self._steps_answer_from_context(question, context)
 
         q_lower = question.lower().strip()
+
+        # The registration manual contains an explicit fee schedule. Handle it
+        # deterministically so offline mode cannot discard the retrieved values.
+        registration_fee_match = re.search(
+            r"Registration and Renewal fees for National Tenderers will be Tk\.\s*([\d,]+\.\d{2})\s+and\s+Tk\.\s*([\d,]+\.\d{2})"
+            r".*?Registration and Renewal fees for International Tenderers will be Tk\.\s*([\d,]+\.\d{2})\s+and\s+Tk\.\s*([\d,]+\.\d{2})"
+            r".*?Individual Consultant.*?fees are not required",
+            context,
+            re.IGNORECASE | re.DOTALL,
+        )
+        if registration_fee_match and re.search(r"\b(?:fee|fees|cost|price|registration|renewal)\b", q_lower):
+            national_registration, national_renewal, international_registration, international_renewal = registration_fee_match.groups()
+            return (
+                "The e-GP registration and renewal fees are:\n\n"
+                f"- National tenderer: registration **Tk. {national_registration}**; renewal **Tk. {national_renewal}**.\n"
+                f"- International tenderer: registration **Tk. {international_registration}**; renewal **Tk. {international_renewal}**.\n"
+                "- Individual consultants: registration and renewal fees are not required for national or international tenderers.\n\n"
+                "The manual also says payment can be made through an e-GP-enlisted bank or the online payment gateway.\n\n"
+                "**Source:** Section 10, page 18"
+            )
 
         if re.match(r"^(?:what|meaning|define)\b", q_lower):
             status_match = re.search(
@@ -850,7 +871,7 @@ class LLMService:
             prompt_text = (
                 f"Retrieved e-GP manual and supplemental Q&A context (use as evidence; do not copy OCR artifacts):\n{context}\n\n"
                 f"User Question: {question}\n\n"
-                f"Follow the system instructions for answer structure and use only supplied manual and supplemental Q&A content. "
+                f"Follow the system instructions for answer structure and use only supplied content from the new e-GP manual. "
                 f"Interpret the question semantically rather than by exact keyword matching. Treat synonyms, paraphrases, "
                 f"abbreviations, and informal descriptions as possible references to retrieved official terms or workflows. "
                 f"If the context supports a related procedure, answer using that procedure and name the official term. "
@@ -977,7 +998,7 @@ class LLMService:
         greetings = {"hi", "hello", "hey", "greetings", "good morning", "good afternoon", "good evening", "assalamu alaikum", "salam"}
         if q_clean in greetings or (len(tokens) <= 2 and any(t in greetings for t in tokens)):
             return (
-                "Hey there! 👋 I'm **Proca**, your friendly Bangladesh e-GP Assistant.\n\n"
+                "Hey there! 👋 I'm **user**, your friendly Bangladesh e-GP Assistant.\n\n"
                 "I have complete knowledge of the official e-GP guidelines, manuals, and procurement rules — "
                 "supporting both **Procuring Entities (PE)** and **Tenderers & Contractors**! I'm here to help you with:\n\n"
                 "- 🔑 **Account setup, NID/OTP verification & profile management**\n"

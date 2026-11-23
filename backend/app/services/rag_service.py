@@ -77,11 +77,11 @@ def load_rag_service(index_dir: Optional[Path] = None) -> Optional[EGP_RAG_Servi
     qa_index_path = v_dir / "qa.faiss"
     vis_index_path = v_dir / "visual.faiss"
     bm25_path = v_dir / "bm25.pkl"
-    db_path = v_dir / "metadata.db"
+    db_path = Path("data/structured/metadata/pdf_manual.db")
 
     # Fallback to legacy index paths if versioned index is not yet built
-    legacy_faiss = Path("data/faiss_index/index.faiss")
-    legacy_chunks = Path("data/processed/chunks.json")
+    structured_faiss = Path("data/structured/indexes/pdf_manual.faiss")
+    structured_metadata = Path("data/structured/metadata/pdf_manual.json")
 
     pdf_index = None
     if pdf_index_path.exists():
@@ -89,10 +89,10 @@ def load_rag_service(index_dir: Optional[Path] = None) -> Optional[EGP_RAG_Servi
             pdf_index = load_faiss_index(pdf_index_path)
         except Exception as e:
             logger.warning("Could not load pdf_text.faiss: %s", e)
-    elif legacy_faiss.exists():
+    elif structured_faiss.exists():
         try:
-            pdf_index = load_faiss_index(legacy_faiss)
-            logger.info("Loaded legacy FAISS index from %s", legacy_faiss)
+            pdf_index = load_faiss_index(structured_faiss)
+            logger.info("Loaded structured FAISS index from %s", structured_faiss)
         except Exception as e:
             logger.warning("Could not load legacy faiss index: %s", e)
 
@@ -118,16 +118,16 @@ def load_rag_service(index_dir: Optional[Path] = None) -> Optional[EGP_RAG_Servi
             logger.debug("bm25.pkl not loaded: %s", e)
 
     # Initialize Metadata Store
-    if not db_path.exists() and legacy_chunks.exists():
-        # Initialize SQLite from legacy chunks.json on the fly
+    if not db_path.exists() and structured_metadata.exists():
+        # Initialize the structured SQLite metadata cache on the fly.
         try:
             import json
-            legacy_data = json.loads(legacy_chunks.read_text(encoding="utf-8"))
+            legacy_data = json.loads(structured_metadata.read_text(encoding="utf-8"))
             metadata_store = MetadataStore(db_path)
             metadata_store.insert_many(legacy_data)
-            logger.info("Seeded metadata.db from %s (%d chunks)", legacy_chunks, len(legacy_data))
+            logger.info("Seeded metadata.db from %s (%d chunks)", structured_metadata, len(legacy_data))
         except Exception as e:
-            logger.warning("Could not seed metadata.db from legacy chunks: %s", e)
+            logger.warning("Could not seed metadata.db from structured metadata: %s", e)
             metadata_store = MetadataStore(db_path)
     else:
         metadata_store = MetadataStore(db_path)

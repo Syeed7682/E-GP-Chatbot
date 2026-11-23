@@ -15,12 +15,12 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const EXTRACTED_IMAGES_DIR = path.join(PROJECT_ROOT, 'data', 'extracted_images');
+const EXTRACTED_IMAGES_DIR = path.join(PROJECT_ROOT, 'data', 'structured', 'images');
 const MANUAL_PDF_CANDIDATES = [
   'egp_manual.pdf',
   'egp_official_manual.pdf',
   'e-GP System User Manual - Procuring Entity User 1 February 2026.pdf'
-].map((filename) => path.join(PROJECT_ROOT, 'data', 'raw', filename));
+].map((filename) => path.join(PROJECT_ROOT, 'data', 'structured', filename));
 
 app.use(express.json({ limit: '50mb' }));
 
@@ -30,7 +30,7 @@ let serverCurrentVersion = SERVER_DATASET_VERSION;
 let serverDatasetHash = SERVER_DATASET_HASH;
 
 // System Prompt for e-GP Procurement Entity RAG
-const EGP_SYSTEM_PROMPT = `You are Proca, a helpful general-purpose assistant with strong expertise in Bangladesh e-GP procurement.
+const EGP_SYSTEM_PROMPT = `You are user, a helpful general-purpose assistant with strong expertise in Bangladesh e-GP procurement.
 
 Use the supplied manual context for official e-GP procedures, rules, deadlines, and menu paths. For other topics, answer normally using your general knowledge. Interpret ordinary wording semantically: for example, “ban a contractor” commonly means suspend or debar a contractor/tenderer. Never refuse merely because the exact phrase is absent. Never invent e-GP-specific rules or deadlines. Start with a direct answer, then put every procedural step on its own numbered line. Keep notes, warnings, requirements, and exceptions on separate lines. Keep it concise, correct obvious OCR line-break or split-word errors when clear, and do not copy chunk headings or extraction artifacts. For screenshots, describe only visible details and relevant supported manual guidance.`;
 

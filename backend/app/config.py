@@ -54,17 +54,18 @@ def _resolve_data_dir() -> Path:
 
 DATA_DIR = _resolve_data_dir()
 
-RAW_DIR = DATA_DIR / "raw"
-PROCESSED_DIR = DATA_DIR / "processed"
-INDEX_DIR = DATA_DIR / "indexes"
-IMAGE_DIR = DATA_DIR / "images"
+STRUCTURED_DIR = DATA_DIR / "structured"
+RAW_DIR = STRUCTURED_DIR
+PROCESSED_DIR = STRUCTURED_DIR / "metadata"
+INDEX_DIR = STRUCTURED_DIR / "indexes"
+IMAGE_DIR = STRUCTURED_DIR / "images"
 CSV_DIR = ROOT_DIR / "csv_files"
 EGP_MANUAL_CSV = CSV_DIR / "egp_manual_extracted.csv"
 EGP_REG_MANUAL_CSV = CSV_DIR / "egp_registration_manual_extracted.csv"
 EGP_EVAL_CSV = CSV_DIR / "egp_manual_extracted.csv"
 
 # Ensure directories exist safely without raising PermissionError
-for d in (RAW_DIR, PROCESSED_DIR, INDEX_DIR, IMAGE_DIR):
+for d in (STRUCTURED_DIR, RAW_DIR, PROCESSED_DIR, INDEX_DIR, IMAGE_DIR):
     try:
         d.mkdir(parents=True, exist_ok=True)
     except (PermissionError, OSError) as e:

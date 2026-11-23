@@ -54,7 +54,7 @@ Build and maintain an enterprise-grade multimodal Retrieval-Augmented Generation
 - **Delivered**:
   - Dense semantic channel: BGE-M3 (1024-dim IndexIDMap2).
   - Lexical sparse channel: BM25Okapi (`rank-bm25`).
-  - Rank fusion: Reciprocal Rank Fusion (RRF, $k=60$).
+  - Rank fusion: Reciuserl Rank Fusion (RRF, $k=60$).
   - Cross-encoder reranker: BGE-Reranker-v2-m3 (`FlagEmbedding`).
   - Grounded context builder: `backend/app/retrieval/context_builder.py`.
   - Dynamic module loading (`importlib`) to prevent static IDE interpreter warnings.

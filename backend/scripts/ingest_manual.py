@@ -17,20 +17,16 @@ from app.services.pdf_loader import pdf_loader
 from app.services.chunker import chunker
 
 def run_ingestion():
-    from app.services.csv_loader import csv_loader
+    print(f"=== Starting e-GP Manual Ingestion from egp New Manual.pdf ===")
 
-    print(f"=== Starting e-GP Manual Ingestion from CSV Data Sources ===")
-    
-    # 1. Load Procuring Entity Manual pages from CSV
-    pe_pages = csv_loader.load_manual_pages()
-    if not pe_pages:
-        print("[ingest_manual] Fallback to pdf_loader for PE manual...")
-        pe_pages = pdf_loader.load_pages()
-    print(f"Loaded {len(pe_pages)} pages from Procuring Entity Manual CSV.")
+    # Load pages directly from the new PDF. Do not use legacy CSV/manual sources.
+    pe_pages = pdf_loader.load_pages()
+    print(f"Loaded {len(pe_pages)} pages from the new manual source.")
 
-    # 2. Load Tenderer Registration Manual pages from CSV
-    reg_pages = csv_loader.load_registration_pages()
-    print(f"Loaded {len(reg_pages)} pages from Tenderer Registration Manual CSV.")
+    # Old multi-manual ingestion is intentionally disabled. Only the new manual
+    # PDF should contribute chunks and embeddings.
+    # reg_pages = csv_loader.load_registration_pages()
+    # print(f"Loaded {len(reg_pages)} pages from Tenderer Registration Manual CSV.")
 
     all_chunks = []
     chunk_counter = 1
@@ -40,18 +36,18 @@ def run_ingestion():
         page_chunks = chunker.chunk_page(page)
         for c in page_chunks:
             c["chunk_id"] = chunk_counter
-            c["source"] = "Official e-GP Procuring Entity Manual"
+            c["source"] = "New e-GP Manual PDF"
             all_chunks.append(c)
             chunk_counter += 1
 
-    # Chunk Registration manual pages
-    for page in reg_pages:
-        page_chunks = chunker.chunk_page(page)
-        for c in page_chunks:
-            c["chunk_id"] = chunk_counter
-            c["source"] = "Official e-GP Tenderer Registration Manual"
-            all_chunks.append(c)
-            chunk_counter += 1
+    # Old registration-manual chunking is intentionally disabled.
+    # for page in reg_pages:
+    #     page_chunks = chunker.chunk_page(page)
+    #     for c in page_chunks:
+    #         c["chunk_id"] = chunk_counter
+    #         c["source"] = "Official e-GP Tenderer Registration Manual"
+    #         all_chunks.append(c)
+    #         chunk_counter += 1
 
     out_file = settings.PROCESSED_DATA_PATH
     out_file.parent.mkdir(parents=True, exist_ok=True)

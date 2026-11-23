@@ -105,14 +105,14 @@ def chunk_documents(documents: List[Dict], chunk_size: int = 1800, chunk_overlap
     print(f"[text_chunker] Created {len(all_chunks)} chunks from {len(documents)} page(s).")
     return all_chunks
 
-def save_chunks(chunks: List[Dict], output_path: str = "data/processed/chunks.json") -> None:
+def save_chunks(chunks: List[Dict], output_path: str = "data/structured/metadata/pdf_manual.json") -> None:
     """Saves processed chunks to a JSON file."""
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(chunks, f, indent=2, ensure_ascii=False)
     print(f"[text_chunker] Saved {len(chunks)} chunks to '{output_path}'.")
 
-def load_chunks(input_path: str = "data/processed/chunks.json") -> List[Dict]:
+def load_chunks(input_path: str = "data/structured/metadata/pdf_manual.json") -> List[Dict]:
     """Loads chunks from an existing JSON file."""
     if not os.path.exists(input_path):
         raise FileNotFoundError(f"Chunks file not found at: {input_path}")
@@ -125,7 +125,7 @@ if __name__ == "__main__":
     import sys
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
     from app.services.document_loader import load_all_documents
-    sample_docs = load_all_documents("data/raw")
+    sample_docs = load_all_documents("data/structured")
     sample_chunks = chunk_documents(sample_docs, chunk_size=400, chunk_overlap=80)
-    save_chunks(sample_chunks, "data/processed/chunks.json")
+    save_chunks(sample_chunks, "data/structured/metadata/pdf_manual.json")
     print(f"Sample chunk: {sample_chunks[0]}")

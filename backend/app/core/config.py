@@ -47,16 +47,16 @@ class Settings:
     
     # Directory Paths
     PROJECT_ROOT: Path = ROOT_DIR
-    DATA_RAW_DIR: Path = ROOT_DIR / os.getenv("DATA_RAW_DIR", "data/raw")
+    DATA_RAW_DIR: Path = ROOT_DIR / os.getenv("DATA_RAW_DIR", "data/structured")
     CSV_DIR: Path = ROOT_DIR / os.getenv("CSV_DIR", "csv_files")
     EGP_MANUAL_CSV: Path = CSV_DIR / os.getenv("EGP_MANUAL_CSV_NAME", "egp_manual_extracted.csv")
     EGP_REG_MANUAL_CSV: Path = CSV_DIR / os.getenv("EGP_REG_MANUAL_CSV_NAME", "egp_registration_manual_extracted.csv")
     EGP_EVAL_CSV: Path = CSV_DIR / os.getenv("EGP_EVAL_CSV_NAME", "egp_manual_extracted.csv")
-    QA_DATA_PATH: Path = ROOT_DIR / os.getenv("QA_DATA_PATH", "data/raw/e-GP System Q&A.txt")
-    QA_DOCX_PATH: Path = ROOT_DIR / os.getenv("QA_DOCX_PATH", "data/raw/e-GP System Q&A .docx")
-    PROCESSED_DATA_PATH: Path = ROOT_DIR / os.getenv("PROCESSED_DATA_PATH", "data/processed/chunks.json")
-    FAISS_INDEX_PATH: Path = ROOT_DIR / os.getenv("FAISS_INDEX_PATH", "data/faiss_index/index.faiss")
-    FAISS_METADATA_PATH: Path = ROOT_DIR / os.getenv("FAISS_METADATA_PATH", "data/faiss_index/metadata.json")
-    EXTRACTED_IMAGES_DIR: Path = ROOT_DIR / "data/extracted_images"
+    QA_DATA_PATH: Path = ROOT_DIR / os.getenv("QA_DATA_PATH", "data/structured/metadata/qa.txt")
+    QA_DOCX_PATH: Path = ROOT_DIR / os.getenv("QA_DOCX_PATH", "data/structured/metadata/qa.docx")
+    PROCESSED_DATA_PATH: Path = ROOT_DIR / os.getenv("PROCESSED_DATA_PATH", "data/structured/metadata/pdf_manual.json")
+    FAISS_INDEX_PATH: Path = ROOT_DIR / os.getenv("FAISS_INDEX_PATH", "data/structured/indexes/pdf_manual.faiss")
+    FAISS_METADATA_PATH: Path = ROOT_DIR / os.getenv("FAISS_METADATA_PATH", "data/structured/metadata/pdf_manual.json")
+    EXTRACTED_IMAGES_DIR: Path = ROOT_DIR / "data/structured/images"
 
 settings = Settings()

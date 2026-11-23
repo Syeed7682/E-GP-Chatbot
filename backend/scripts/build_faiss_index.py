@@ -1,7 +1,7 @@
 """
 Script: Build FAISS Index
-Loads chunks from data/processed/chunks.json, generates embeddings via BGE-M3,
-and creates the FAISS vector index (data/faiss_index/index.faiss and metadata.json).
+Loads structured manual metadata, generates embeddings, and saves them under
+data/structured/indexes and data/structured/metadata.
 
 Usage:
     python scripts/build_faiss_index.py
@@ -11,24 +11,39 @@ import sys
 import argparse
 
 # Ensure project root is in sys.path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+BACKEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+PROJECT_ROOT = os.path.abspath(os.path.join(BACKEND_DIR, ".."))
+sys.path.insert(0, BACKEND_DIR)
 
 from app.services.text_chunker import load_chunks
 from app.services.embedding_service import embedding_service
 from app.services.faiss_service import faiss_service
+from app.services.text_cleaner import clean_text
 
 def main():
     parser = argparse.ArgumentParser(description="Build FAISS vector index from chunks.json.")
-    parser.add_argument("--chunks", default="data/faiss_index/metadata.json", help="Path to chunk records JSON")
-    parser.add_argument("--index-path", default="data/faiss_index/index.faiss", help="Path to save index.faiss")
-    parser.add_argument("--metadata-path", default="data/faiss_index/metadata.json", help="Path to save metadata.json")
+    parser.add_argument(
+        "--chunks",
+        default=os.path.join(PROJECT_ROOT, "data", "processed", "chunks.json"),
+        help="Path to chunk records JSON",
+    )
+    parser.add_argument(
+        "--index-path",
+        default=os.path.join(PROJECT_ROOT, "data", "structured", "indexes", "pdf_manual.faiss"),
+        help="Path to save index.faiss",
+    )
+    parser.add_argument(
+        "--metadata-path",
+        default=os.path.join(PROJECT_ROOT, "data", "structured", "metadata", "pdf_manual.json"),
+        help="Path to save metadata.json",
+    )
     args = parser.parse_args()
 
     print("========================================")
     print(" e-GP Manual Chatbot: Build FAISS Index")
     print("========================================")
 
-    if not embedding_service.semantic_search_available:
+    if not embedding_service.semantic_search_available and os.getenv("EGP_FORCE_OFFLINE_EMBEDDINGS", "").lower() not in {"1", "true", "yes"}:
         raise RuntimeError(
             "Cannot build the semantic FAISS index while only offline fallback "
             "embeddings are available. Initialize the configured embedding model first."
@@ -37,7 +52,7 @@ def main():
     # 1. Load chunks
     if not os.path.exists(args.chunks):
         print(f"[!] Chunks file not found at: {args.chunks}")
-        print("    Please run 'python scripts/ingest_documents.py' first.")
+        print("    Please run 'python scripts/ingest_manual.py' first.")
         sys.exit(1)
 
     chunks = load_chunks(args.chunks)
@@ -50,6 +65,8 @@ def main():
             chunk["text"] = chunk.get("content", "")
         if "page" not in chunk:
             chunk["page"] = chunk.get("page_number", 0)
+        chunk["text"] = clean_text(chunk.get("text", ""))
+        chunk["content"] = chunk["text"]
 
     print(f"1. Loaded {len(chunks)} chunks from: {args.chunks}")
 

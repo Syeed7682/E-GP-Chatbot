@@ -6,11 +6,9 @@ and saves the images with structured filenames:
 chunk_{chunk_id}_page_{page_id}_{slug}.png
 
 Updates:
-1. data/extracted_images/chunks/ (all extracted image files)
-2. data/extracted_images/images_manifest.json (complete image registry)
-3. data/processed/chunks.json (chunk records with image_path and related_sentence)
-4. data/faiss_index/metadata.json (mirror of chunks.json)
-5. data/indexes/v001/metadata.db (SQLite metadata store with image paths)
+1. data/structured/images/ (all extracted image files)
+2. data/structured/metadata/images.json (complete image registry)
+3. data/structured/metadata/pdf_manual.json (chunk records)
 """
 import io
 import json
@@ -28,12 +26,12 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 logger = logging.getLogger("rebuild_images")
 
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent
-PDF_PATH = ROOT_DIR / "data" / "raw" / "egp_manual.pdf"
+PDF_PATH = ROOT_DIR / "data" / "raw" / "egp New Manual.pdf"
 CHUNKS_PATH = ROOT_DIR / "data" / "processed" / "chunks.json"
-LEGACY_META_PATH = ROOT_DIR / "data" / "faiss_index" / "metadata.json"
+LEGACY_META_PATH = ROOT_DIR / "data" / "structured" / "metadata" / "pdf_manual.json"
 SQLITE_DB_PATH = ROOT_DIR / "data" / "indexes" / "v001" / "metadata.db"
-OUTPUT_DIR = ROOT_DIR / "data" / "extracted_images" / "chunks"
-MANIFEST_PATH = ROOT_DIR / "data" / "extracted_images" / "images_manifest.json"
+OUTPUT_DIR = ROOT_DIR / "data" / "structured" / "images"
+MANIFEST_PATH = ROOT_DIR / "data" / "structured" / "metadata" / "images.json"
 
 
 def get_fitz():
@@ -129,7 +127,8 @@ def rebuild_images():
     # Index chunks by page
     chunks_by_page: Dict[int, List[Dict[str, Any]]] = {}
     for c in chunks:
-        p = c.get("page")
+        # New-PDF ingestion stores the page as page_number; older chunks used page.
+        p = c.get("page", c.get("page_number"))
         if p is not None:
             chunks_by_page.setdefault(p, []).append(c)
 
@@ -198,7 +197,8 @@ def rebuild_images():
                     if screen_ref:
                         norm_ref = re.sub(r"[\s–—_-]", "", screen_ref.lower())
                         for c in page_chunk_list:
-                            if norm_ref in re.sub(r"[\s–—_-]", "", c["text"].lower()):
+                            chunk_content = c.get("text", c.get("content", ""))
+                            if norm_ref in re.sub(r"[\s–—_-]", "", chunk_content.lower()):
                                 chosen_chunk = c
                                 break
 
@@ -208,7 +208,11 @@ def rebuild_images():
                         chosen_chunk = page_chunk_list[chunk_idx]
 
             chunk_id = chosen_chunk["chunk_id"] if chosen_chunk else f"p{page_num}"
-            chunk_text = chosen_chunk["text"] if chosen_chunk else page_text
+            chunk_text = (
+                chosen_chunk.get("text", chosen_chunk.get("content", ""))
+                if chosen_chunk
+                else page_text
+            )
 
             # Find related sentence
             related_sentence = find_best_sentence_for_image(chunk_text, screen_ref=screen_ref)
@@ -230,7 +234,7 @@ def rebuild_images():
             except Exception:
                 file_path.write_bytes(img_data["bytes"])
 
-            relative_image_path = f"data/extracted_images/chunks/{filename}"
+            relative_image_path = f"data/structured/images/{filename}"
 
             record = {
                 "image_id": f"chunk_{chunk_id}_page_{page_num}_img_{img_order}",

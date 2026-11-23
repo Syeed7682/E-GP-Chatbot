@@ -13,9 +13,10 @@ router = APIRouter(prefix="/manual", tags=["Manual"])
 
 @router.get("/page/{page_num}", summary="Get manual page content and chunks")
 async def get_page(page_num: int):
-    """Returns chunks and details for a specific page number in the 543-page manual."""
-    if page_num < 1 or page_num > 543:
-        raise HTTPException(status_code=404, detail="Page number must be between 1 and 543.")
+    """Returns chunks and details for a page in the active manual."""
+    total_pages = _manual_page_count()
+    if page_num < 1 or page_num > total_pages:
+        raise HTTPException(status_code=404, detail=f"Page number must be between 1 and {total_pages}.")
 
     page_chunks = [c for c in faiss_service.metadata if c.get("page") == page_num or c.get("page_number") == page_num]
     
@@ -27,7 +28,7 @@ async def get_page(page_num: int):
 
     return {
         "page_number": page_num,
-        "total_pages": 543,
+        "total_pages": total_pages,
         "has_image": has_image,
         "image_url": f"/api/manual/page/{page_num}/image" if has_image else None,
         "chunks_count": len(page_chunks),
@@ -37,8 +38,9 @@ async def get_page(page_num: int):
 @router.get("/page/{page_num}/image", summary="Get extracted screenshot image of manual page")
 async def get_page_image(page_num: int):
     """Serves the extracted JPG screenshot for the requested manual page."""
-    if page_num < 1 or page_num > 543:
-        raise HTTPException(status_code=404, detail="Page number must be between 1 and 543.")
+    total_pages = _manual_page_count()
+    if page_num < 1 or page_num > total_pages:
+        raise HTTPException(status_code=404, detail=f"Page number must be between 1 and {total_pages}.")
 
     for image_path in _page_image_candidates(page_num):
         if image_path.exists():
@@ -119,15 +121,28 @@ def _page_image_candidates(page_num: int) -> List[Path]:
 
 
 def _manual_pdf_path() -> Path:
-    for filename in (
-        "egp_manual.pdf",
-        "egp_official_manual.pdf",
-        "e-GP System User Manual - Procuring Entity User 1 February 2026.pdf",
-    ):
-        pdf_path = settings.DATA_RAW_DIR / filename
-        if pdf_path.is_file():
-            return pdf_path
-    return settings.DATA_RAW_DIR / "egp_manual.pdf"
+    return settings.DATA_RAW_DIR / "egp New Manual.pdf"
+
+
+def _manual_page_count() -> int:
+    """Returns the page count for the active new manual/index."""
+    indexed_pages = [
+        c.get("page", c.get("page_number", 0))
+        for c in faiss_service.metadata
+    ]
+    max_indexed_page = max((int(page) for page in indexed_pages if page), default=0)
+    if max_indexed_page:
+        return max_indexed_page
+
+    pdf_path = _manual_pdf_path()
+    if pdf_path.is_file():
+        try:
+            import pymupdf
+            with pymupdf.open(pdf_path) as document:
+                return len(document)
+        except Exception:
+            pass
+    return 1
 
 
 @router.get("/download", summary="Download the complete e-GP manual")

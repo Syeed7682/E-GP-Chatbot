@@ -87,17 +87,22 @@ DEBARMENT_ACTION_TERMS = re.compile(
 
 
 class RetrievalService:
+    @staticmethod
+    def _page_number(chunk: Dict[str, Any], default: int = 0) -> int:
+        """Reads page metadata from both legacy and new-manual chunk formats."""
+        return int(chunk.get("page", chunk.get("page_number", default)) or default)
+
     def _repair_leading_chunk_fragment(self, chunk: Dict[str, Any]) -> str:
-        text = chunk.get("text", "")
+        text = chunk.get("text", chunk.get("content", ""))
         first_token = re.match(r"^([a-z]{2,6})\s+", text)
         if not first_token:
             return text
 
-        page = chunk.get("page")
+        page = self._page_number(chunk)
         chunk_id = chunk.get("chunk_id")
         previous_chunks = [
             previous for previous in self.faiss_service.metadata
-            if previous.get("page") == page
+            if self._page_number(previous) == page
             and isinstance(previous.get("chunk_id"), int)
             and isinstance(chunk_id, int)
             and previous["chunk_id"] < chunk_id
@@ -106,7 +111,7 @@ class RetrievalService:
             return text
 
         previous = max(previous_chunks, key=lambda item: item["chunk_id"])
-        previous_text = previous.get("text", "")
+        previous_text = previous.get("text", previous.get("content", ""))
         fragment = first_token.group(1)
 
         for word in re.finditer(r"\b[A-Za-z]+\b", previous_text):
@@ -289,65 +294,15 @@ class RetrievalService:
             expanded.extend(["debarment", "suspension", "tenderer", "hope"])
 
         for c in chunks:
-            raw_text = c.get("text", "").lower()
+            raw_text = c.get("text", c.get("content", "")).lower()
             text = self._normalize_login_terms(raw_text)
-            page = c.get("page", 0)
+            page = self._page_number(c)
             score = 0.0
 
-            # Permanent exclusion of Table of Contents / Change Log / Preface (Pages 1 to 5)
-            if page <= 5:
-                continue
-            if is_login_procedure and page not in (6, 7, 8):
-                continue
+            # Do not exclude early pages: the new 27-page manual contains
+            # substantive registration and fee information on its first pages.
             if is_authentication_intent and not AUTHENTICATION_TERMS.search(raw_text):
                 continue
-
-            # Direct intent grounding
-            if is_debarment_intent and page in (342, 343, 344, 345, 346, 347, 348):
-                score += 40.0
-            if is_login_procedure and page in (6, 7, 8):
-                score += 22.0
-            if is_account_intent:
-                if page in (6, 7, 8):
-                    score += 18.0
-                elif page == 533:
-                    score += 10.0
-
-            if is_workflow_intent and page == 199:
-                score += 25.0
-
-            if is_app_intent and page in (21, 22, 23, 24, 25):
-                score += 15.0
-
-            if is_create_tender_intent:
-                if page in (54, 55):
-                    score += 35.0
-                elif page == 56:
-                    score += 25.0
-                elif page == 45:
-                    score += 18.0
-
-            if is_delete_tender_intent:
-                if page == 178:
-                    score += 35.0
-                elif page == 191:
-                    score += 25.0
-                elif page == 309:
-                    score += 20.0
-                elif page in (78, 86, 115):
-                    score += 12.0
-
-            if is_corrigendum_intent and page in (176, 177):
-                score += 25.0
-
-            if is_retender_intent and page in (307, 308):
-                score += 25.0
-
-            if is_eval_intent and page in (208, 209, 210, 211):
-                score += 20.0
-
-            if is_security_intent and page in (56, 57, 304):
-                score += 20.0
 
             # 1. Exact multi-word phrase match (huge boost)
             matched_phrase = False
@@ -413,20 +368,21 @@ class RetrievalService:
             - context_str: Formatted context block for the LLM prompt.
             - sources: List of structured source metadata dicts with image_path.
         """
-        qa_matches = self.qa_service.search(question, limit=min(max(top_k, 1), 3))
-
-        # Check contractor evaluation CSV dataset if baseline has no direct match and not a procedure steps request
-        is_steps_query = bool(re.search(r"\b(?:steps?|step by step|procedure)\b", question, re.IGNORECASE))
-        if self.csv_qa_service and not any(m.get("direct_match") for m in qa_matches):
-            csv_matches = self.csv_qa_service.search(question, limit=min(max(top_k, 1), 3))
-            if any(m.get("direct_match") for m in csv_matches):
-                qa_matches = [m for m in csv_matches if m.get("direct_match")]
-            elif not qa_matches and csv_matches:
-                top_csv = [m for m in csv_matches if m.get("score", 0.0) >= 0.25]
-                if top_csv:
-                    qa_matches = top_csv
-
-        qa_context, qa_sources = self._format_qa_matches(qa_matches)
+        # Supplemental Q&A retrieval is disabled. Retrieval is restricted to
+        # the FAISS index generated from the structured manual data.
+        # qa_matches = self.qa_service.search(question, limit=min(max(top_k, 1), 3))
+        # is_steps_query = bool(re.search(r"\b(?:steps?|step by step|procedure)\b", question, re.IGNORECASE))
+        # if self.csv_qa_service and not any(m.get("direct_match") for m in qa_matches):
+        #     csv_matches = self.csv_qa_service.search(question, limit=min(max(top_k, 1), 3))
+        #     if any(m.get("direct_match") for m in csv_matches):
+        #         qa_matches = [m for m in csv_matches if m.get("direct_match")]
+        #     elif not qa_matches and csv_matches:
+        #         top_csv = [m for m in csv_matches if m.get("score", 0.0) >= 0.25]
+        #         if top_csv:
+        #             qa_matches = top_csv
+        # qa_context, qa_sources = self._format_qa_matches(qa_matches)
+        qa_matches = []
+        qa_context, qa_sources = "", []
 
         if not self.load_index_if_needed():
             if qa_context:
@@ -454,8 +410,11 @@ class RetrievalService:
         else:
             raw_faiss = []
 
-        # Filter out pages <= 5 (Table of contents, Change log, cover)
-        faiss_results = [r for r in raw_faiss if r.get("chunk", {}).get("page", 0) > 5]
+        # Keep all pages; the active new manual contains useful content on pages 1-5.
+        faiss_results = [
+            r for r in raw_faiss
+            if self._page_number(r.get("chunk", {})) >= 1
+        ]
         normalized_question = self._normalize_login_terms(question)
         is_login_procedure = bool(
             re.search(r"\b(?:login|log\s+in|sign\s+in)\b", normalized_question, re.IGNORECASE)
@@ -470,10 +429,8 @@ class RetrievalService:
         if is_authentication_query:
             faiss_results = [
                 result for result in faiss_results
-                if AUTHENTICATION_TERMS.search(result.get("chunk", {}).get("text", ""))
-                and (
-                    not is_login_procedure
-                    or result.get("chunk", {}).get("page") in (6, 7, 8)
+                if AUTHENTICATION_TERMS.search(
+                    result.get("chunk", {}).get("text", result.get("chunk", {}).get("content", ""))
                 )
             ]
 
@@ -529,37 +486,11 @@ class RetrievalService:
 
         # Sort and take top_k
         ranked = sorted(combined_scores.values(), key=lambda x: x["score"], reverse=True)
-        if is_debarment_query:
-            revision_query = bool(
-                re.search(r"\b(?:revise|revision|court|petition)\b", question, re.IGNORECASE)
-            )
-            priority_pages = (345, 346, 347) if revision_query else (342, 343, 344)
-            page_matches = []
-            seen_pages = set()
-            for priority_page in priority_pages:
-                page_match = next(
-                    (
-                        item for item in ranked
-                        if item["chunk"].get("page") == priority_page
-                    ),
-                    None,
-                )
-                if page_match:
-                    page_matches.append(page_match)
-                    seen_pages.add(priority_page)
-            for item in ranked:
-                page = item["chunk"].get("page")
-                if page not in seen_pages:
-                    seen_pages.add(page)
-                    page_matches.append(item)
-                if len(page_matches) == top_k:
-                    break
-            top_matches = page_matches[:top_k]
-        elif is_login_procedure:
+        if is_login_procedure:
             page_matches = []
             seen_pages = set()
             for item in ranked:
-                page = item["chunk"].get("page")
+                page = self._page_number(item["chunk"])
                 if page not in seen_pages:
                     seen_pages.add(page)
                     page_matches.append(item)
@@ -572,19 +503,19 @@ class RetrievalService:
         context_matches = top_matches
         if include_page_context:
             page_scores = {
-                item["chunk"].get("page"): item["score"]
+                self._page_number(item["chunk"]): item["score"]
                 for item in top_matches
             }
             selected_pages = set(page_scores)
             page_chunks = [
-                {"chunk": chunk, "score": page_scores[chunk.get("page")]}
+                {"chunk": chunk, "score": page_scores[self._page_number(chunk)]}
                 for chunk in self.faiss_service.metadata
-                if chunk.get("page") in selected_pages
+                if self._page_number(chunk) in selected_pages
             ]
             context_matches = sorted(
                 page_chunks,
                 key=lambda item: (
-                    item["chunk"].get("page", 0),
+                    self._page_number(item["chunk"]),
                     item["chunk"].get("chunk_id", 0),
                 ),
             )
@@ -597,7 +528,7 @@ class RetrievalService:
             score = item["score"]
             chunk = item["chunk"]
             source = chunk.get("source", "unknown")
-            page = chunk.get("page", 1)
+            page = self._page_number(chunk, 1)
             chunk_id = chunk.get("chunk_id", 0)
             text = self._repair_leading_chunk_fragment(chunk)
             image_path = chunk.get("image_path")
@@ -615,7 +546,7 @@ class RetrievalService:
             image_path = chunk.get("image_path")
             sources.append({
                 "source": source,
-                "page": chunk.get("page", 1),
+                "page": self._page_number(chunk, 1),
                 "chunk_id": chunk.get("chunk_id", 0),
                 "score": round(score, 2),
                 "snippet": text[:250] + ("..." if len(text) > 250 else ""),
@@ -626,7 +557,10 @@ class RetrievalService:
         full_context_str = "\n\n---\n\n".join(context_parts)
         if qa_context and qa_matches and not any(match["direct_match"] for match in qa_matches):
             manual_coverage = max(
-                self._term_coverage(question, item["chunk"].get("text", ""))
+                self._term_coverage(
+                    question,
+                    item["chunk"].get("text", item["chunk"].get("content", "")),
+                )
                 for item in top_matches
             )
             qa_coverage = max(

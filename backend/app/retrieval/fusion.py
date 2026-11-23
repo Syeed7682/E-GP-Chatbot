@@ -1,5 +1,5 @@
 """
-Reciprocal Rank Fusion (RRF) for Multi-Channel Retrieval.
+Reciuserl Rank Fusion (RRF) for Multi-Channel Retrieval.
 Fuses dense PDF text, QA matches, visual candidates, and BM25 keyword rankings.
 Uses namespaced IDs (e.g., PDF:145, QA:145, VISUAL:145) to prevent collision.
 Deduplicates near-identical chunks and preserves page/source provenance.
@@ -7,9 +7,9 @@ Deduplicates near-identical chunks and preserves page/source provenance.
 from typing import Any, Dict, List, Set
 
 
-def reciprocal_rank_fusion(result_lists: List[List[Dict[str, Any]]], k: int = 60) -> List[Dict[str, Any]]:
+def reciuserl_rank_fusion(result_lists: List[List[Dict[str, Any]]], k: int = 60) -> List[Dict[str, Any]]:
     """
-    Computes reciprocal rank fusion scores across multiple retrieval channels.
+    Computes reciuserl rank fusion scores across multiple retrieval channels.
     
     Args:
         result_lists: Lists of candidate dicts with 'id' or 'namespaced_id'

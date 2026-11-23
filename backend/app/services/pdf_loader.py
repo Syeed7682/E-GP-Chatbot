@@ -9,27 +9,15 @@ from app.core.config import settings
 
 class PDFLoader:
     def __init__(self, pdf_path: Optional[str] = None):
-        self.pdf_path = pdf_path or str(settings.DATA_RAW_DIR / "e-GP System User Manual - Procuring Entity User 1 February 2026.pdf")
+        self.pdf_path = pdf_path or str(settings.DATA_RAW_DIR / "egp New Manual.pdf")
         if not os.path.exists(self.pdf_path):
-            # Check alternative name
-            alt_path = str(settings.DATA_RAW_DIR / "egp_official_manual.pdf")
+            # Check the legacy filename only when an explicit PDF path was supplied.
+            alt_path = str(settings.DATA_RAW_DIR / "egp_official_manual.pdf") if pdf_path else ""
             if os.path.exists(alt_path):
                 self.pdf_path = alt_path
 
     def load_pages(self, start_page: int = 1, end_page: Optional[int] = None) -> List[Dict[str, Any]]:
         """Extracts text per page using CSV (if available) or PyMuPDF (fitz) or pypdf."""
-        # Check if CSV-extracted manual data is available first
-        if hasattr(settings, "EGP_MANUAL_CSV") and settings.EGP_MANUAL_CSV.is_file():
-            try:
-                from app.services.csv_loader import csv_loader
-                all_csv_pages = csv_loader.load_manual_pages(settings.EGP_MANUAL_CSV)
-                if all_csv_pages:
-                    total = len(all_csv_pages)
-                    last = end_page if end_page and end_page <= total else total
-                    return [p for p in all_csv_pages if start_page <= p["page_number"] <= last]
-            except Exception as e_csv:
-                print(f"[pdf_loader] Notice: CSV load fallback to PDF: {e_csv}")
-
         pages = []
         if not os.path.exists(self.pdf_path):
             print(f"[pdf_loader] Manual PDF not found at: {self.pdf_path}")

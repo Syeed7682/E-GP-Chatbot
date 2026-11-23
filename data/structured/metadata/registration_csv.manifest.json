@@ -1,0 +1,11 @@
+{
+  "source_csv": "E:\\E-gp Project manual\\csv_files\\egp New Manual.csv",
+  "records": 27,
+  "dimension": 1024,
+  "embedding_model": "BAAI/bge-m3",
+  "embedding_mode": "offline_multimodal_fallback",
+  "text_cleaning": "NFKC normalization, mojibake repair, control-character removal, whitespace cleanup",
+  "index": "E:\\E-gp Project manual\\data\\structured\\indexes\\registration_csv.faiss",
+  "metadata": "E:\\E-gp Project manual\\data\\structured\\metadata\\registration_csv.json",
+  "embeddings": "E:\\E-gp Project manual\\data\\structured\\indexes\\registration_csv.embeddings.npy"
+}

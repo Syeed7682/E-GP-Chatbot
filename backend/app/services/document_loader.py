@@ -29,7 +29,7 @@ def clean_text(text: str) -> str:
             prev_empty = True
     return "\n".join(cleaned_lines).strip()
 
-def load_pdf(file_path: str, extract_images: bool = True, images_dir: str = "data/extracted_images") -> List[Dict]:
+def load_pdf(file_path: str, extract_images: bool = True, images_dir: str = "data/structured/images") -> List[Dict]:
     """
     Extracts text and embedded portal screenshots from a single PDF manual, page by page.
     
@@ -131,7 +131,7 @@ def load_from_csv(file_path: str = None) -> List[Dict]:
             raw_text = row.get("text_content", "")
             cleaned = clean_text(raw_text)
             source = row.get("source_file", filename)
-            img_path = f"data/extracted_images/page_{page_num}.jpg"
+            img_path = f"data/structured/images/page_images_page_{page_num}.jpg"
 
             documents.append({
                 "source": source,
@@ -142,7 +142,7 @@ def load_from_csv(file_path: str = None) -> List[Dict]:
     print(f"[document_loader] Finished CSV '{filename}': {len(documents)} pages loaded.")
     return documents
 
-def load_all_documents(raw_dir: str = "data/raw") -> List[Dict]:
+def load_all_documents(raw_dir: str = "data/structured") -> List[Dict]:
     """
     Scans the raw directory and loads all supported PDF files.
     
@@ -173,7 +173,7 @@ def load_all_documents(raw_dir: str = "data/raw") -> List[Dict]:
 
 if __name__ == "__main__":
     # Test execution
-    docs = load_all_documents("data/raw")
+    docs = load_all_documents("data/structured")
     print(f"Total pages extracted: {len(docs)}")
     if docs:
         print("Sample extracted text:")

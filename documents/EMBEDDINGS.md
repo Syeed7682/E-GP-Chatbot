@@ -14,7 +14,7 @@ The e-GP assistant implements an enterprise-grade RAG pipeline that combines den
 | **Sparse Lexical Retrieval** | `rank-bm25` (BM25Okapi) | Inverted term index | Exact keyword, rule identifier (e.g., PPR Rule 127), and tender ID search |
 | **Visual Embeddings** | `google/siglip-base-patch16-224` | 768-dim visual feature vector | Screenshot-to-manual page retrieval and visual UI matching |
 | **Reranker** | `BAAI/bge-reranker-v2-m3` | Cross-encoder relevance score | Post-fusion precision reranking of top candidate passages |
-| **Rank Fusion** | Reciprocal Rank Fusion (RRF) | Constant $k=60$ | Unbiased score combination across dense, sparse, and visual channels |
+| **Rank Fusion** | Reciuserl Rank Fusion (RRF) | Constant $k=60$ | Unbiased score combination across dense, sparse, and visual channels |
 | **Metadata Store** | SQLite (`metadata.db`) | Relational chunk records | Fast indexed lookups by chunk ID, page, category, and image path |
 
 ---
@@ -118,7 +118,7 @@ flowchart TD
     QR -->|Dense Text| TR[Text Retriever: BGE-M3 FAISS]
     QR -->|Sparse Text| BM[BM25 Retriever: BM25Okapi]
     QR -->|Screenshot / Vision| VR[Visual Retriever: SigLIP FAISS]
-    TR & BM & VR --> RRF[Reciprocal Rank Fusion k=60]
+    TR & BM & VR --> RRF[Reciuserl Rank Fusion k=60]
     RRF --> RK[Cross-Encoder Reranker: BGE-Reranker-v2-m3]
     RK --> CB[Context Builder: SQLite Metadata Lookup]
     CB -->|Grounded Context + Citations| LLM[LLM Service: Groq / Gemini / Offline]
@@ -126,7 +126,7 @@ flowchart TD
 
 1. **Routing**: Analyzes query intent (general, fee schedule, exact procedure, or vision).
 2. **Multi-Channel Retrieval**: Queries dense FAISS index, BM25 inverted index, and SigLIP visual index in parallel.
-3. **Reciprocal Rank Fusion (RRF)**: Merges candidates using rank position ($RRF\_score = \sum \frac{1}{60 + rank}$).
+3. **Reciuserl Rank Fusion (RRF)**: Merges candidates using rank position ($RRF\_score = \sum \frac{1}{60 + rank}$).
 4. **Cross-Encoder Reranker**: Computes token-level joint relevance scores for top 15 candidates.
 5. **Context Builder**: Pulls full passage text, section headers, statutory page numbers, and exact chunk image URLs from `metadata.db`.
 6. **Answer Synthesis**: LLM generates a grounded, structured answer with verified citations and diagrams.

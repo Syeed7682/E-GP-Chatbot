@@ -1,6 +1,6 @@
 """
 Script: Ingest Documents
-Reads PDF manuals from data/raw/, extracts text, chunks it, and saves data/processed/chunks.json.
+Reads source documents from data/structured/, extracts text, chunks it, and saves structured metadata.
 
 Usage:
     python scripts/ingest_documents.py
@@ -17,8 +17,8 @@ from app.services.text_chunker import chunk_documents, save_chunks
 
 def main():
     parser = argparse.ArgumentParser(description="Ingest e-GP manual PDFs into text chunks.")
-    parser.add_argument("--raw-dir", default="data/raw", help="Folder containing raw PDF files")
-    parser.add_argument("--output", default="data/processed/chunks.json", help="Path to save chunks.json")
+    parser.add_argument("--raw-dir", default="data/structured", help="Folder containing source documents")
+    parser.add_argument("--output", default="data/structured/metadata/pdf_manual.json", help="Path to save structured metadata")
     parser.add_argument("--chunk-size", type=int, default=1800, help="Character size per chunk")
     parser.add_argument("--overlap", type=int, default=240, help="Character overlap between chunks")
     args = parser.parse_args()
@@ -29,7 +29,7 @@ def main():
     print(f"1. Scanning for PDFs in: {args.raw_dir}")
     documents = load_all_documents(args.raw_dir)
     if not documents:
-        print("[!] No documents found. Please place PDF files in data/raw/ and try again.")
+        print("[!] No documents found in data/structured/.")
         sys.exit(1)
 
     print(f"2. Chunking {len(documents)} page(s) (size={args.chunk_size}, overlap={args.overlap})...")

@@ -22,8 +22,8 @@ def _resolve_path(rel_or_abs_path: str) -> str:
         return root_path
     return rel_or_abs_path
 
-DEFAULT_INDEX_PATH = os.path.join(PROJECT_ROOT, "data", "faiss_index", "index.faiss")
-DEFAULT_METADATA_PATH = os.path.join(PROJECT_ROOT, "data", "faiss_index", "metadata.json")
+DEFAULT_INDEX_PATH = os.path.join(PROJECT_ROOT, "data", "structured", "indexes", "pdf_manual.faiss")
+DEFAULT_METADATA_PATH = os.path.join(PROJECT_ROOT, "data", "structured", "metadata", "pdf_manual.json")
 
 class FaissService:
     def __init__(self, index_path: str = DEFAULT_INDEX_PATH, metadata_path: str = DEFAULT_METADATA_PATH):

@@ -71,7 +71,7 @@ def main() -> int:
 
         print(f"\n--- Evaluating Upgraded EGP_RAG_Service (Version: {args.rag_version}) ---")
         hits = 0
-        reciprocal_rank_sum = 0.0
+        reciuserl_rank_sum = 0.0
         for case in cases:
             _, sources, _ = rag.retrieve(case["question"], top_k=args.top_k)
             rank = next(
@@ -84,7 +84,7 @@ def main() -> int:
             )
             if rank is not None:
                 hits += 1
-                reciprocal_rank_sum += 1.0 / rank
+                reciuserl_rank_sum += 1.0 / rank
             observed = [
                 f"{source.get('source_type', 'manual')}:"
                 f"{source.get('question_number') if source.get('source_type') == 'qa' else source.get('page')}"
@@ -100,7 +100,7 @@ def main() -> int:
             f"mode=RAG_Service version={args.rag_version} "
             f"top_k={args.top_k} cases={count} "
             f"hit_rate@{args.top_k}={hits / count:.3f} "
-            f"mrr@{args.top_k}={reciprocal_rank_sum / count:.3f}\n"
+            f"mrr@{args.top_k}={reciuserl_rank_sum / count:.3f}\n"
         )
         return 0 if hits == count else 1
     if not faiss_service.load():
@@ -122,7 +122,7 @@ def main() -> int:
     )
 
     hits = 0
-    reciprocal_rank_sum = 0.0
+    reciuserl_rank_sum = 0.0
     for case in cases:
         _, sources = retrieval.retrieve(case["question"], top_k=args.top_k)
         rank = next(
@@ -135,7 +135,7 @@ def main() -> int:
         )
         if rank is not None:
             hits += 1
-            reciprocal_rank_sum += 1.0 / rank
+            reciuserl_rank_sum += 1.0 / rank
         observed = [
             f"{source.get('source_type', 'manual')}:"
             f"{source.get('question_number') if source.get('source_type') == 'qa' else source.get('page')}"
@@ -151,7 +151,7 @@ def main() -> int:
         f"mode={'semantic' if args.semantic else 'keyword-only'} "
         f"top_k={args.top_k} cases={count} "
         f"hit_rate@{args.top_k}={hits / count:.3f} "
-        f"mrr@{args.top_k}={reciprocal_rank_sum / count:.3f}"
+        f"mrr@{args.top_k}={reciuserl_rank_sum / count:.3f}"
     )
     return 0 if hits == count else 1
 

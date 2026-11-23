@@ -1,4 +1,4 @@
-# e-GP Assistant (Proca)
+# e-GP Assistant (user)
 ### Enterprise Multimodal AI Assistant for Bangladesh e-GP (Procuring Entities & Tenderers / Contractors)
 
 An AI-powered document intelligence and procedural assistant that helps users understand and navigate the **Bangladesh Electronic Government Procurement (e-GP)** ecosystem under the Public Procurement Act (PPA 2006) and Public Procurement Rules (PPR 2008).
@@ -30,7 +30,7 @@ The platform serves both **Procuring Entities (PEs)** and **Tenderers / Contract
 |---|---|
 | **Frontend** | React 19, TypeScript, Vite, Tailwind CSS, Lucide Icons |
 | **Backend** | Python 3.12, FastAPI, Uvicorn, PyMuPDF |
-| **Vector & Retrieval** | FAISS `IndexIDMap2(IndexFlatIP)`, `rank-bm25`, Reciprocal Rank Fusion ($k=60$) |
+| **Vector & Retrieval** | FAISS `IndexIDMap2(IndexFlatIP)`, `rank-bm25`, Reciuserl Rank Fusion ($k=60$) |
 | **Embeddings & Reranking** | `BAAI/bge-m3` (1024-dim), `google/siglip-base-patch16-224` (768-dim), `BAAI/bge-reranker-v2-m3` |
 | **Inference Models** | Groq `openai/gpt-oss-20b` (text), Groq `qwen/qwen3.8-27b` (multimodal/vision), Google Gemini Flash (fallback) |
 | **Local / Browser Storage** | IndexedDB, SQLite (`metadata.db`) |
@@ -120,7 +120,26 @@ GROQ_API_KEY=your_groq_api_key_here
 GEMINI_API_KEY=your_gemini_api_key_here  # Optional fallback
 ```
 
-### 3. Launching the Application
+### 3. Index the New Manual PDF
+The indexing pipeline uses only `data/raw/egp New Manual.pdf`. Run ingestion first, then build the FAISS index.
+
+**Bash:**
+```bash
+cd "/e/E-gp Project manual"
+source .venv/Scripts/activate
+python backend/scripts/ingest_manual.py
+python backend/scripts/build_faiss_index.py
+```
+
+**PowerShell:**
+```powershell
+& ".venv\Scripts\python.exe" backend\scripts\ingest_manual.py
+& ".venv\Scripts\python.exe" backend\scripts\build_faiss_index.py
+```
+
+The generated files are saved to `data/processed/chunks.json`, `data/faiss_index/index.faiss`, and `data/faiss_index/metadata.json`.
+
+### 4. Launching the Application
 Execute the Windows launcher:
 ```powershell
 .\run.bat

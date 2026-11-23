@@ -306,7 +306,7 @@ ALL DELIVERABLES SUCCESSFULLY COMPLETED AND VERIFIED.
          * Added 'NON_PORTAL_TERMS' and 'PROCUREMENT_KEYWORDS' domain validators.
          * If an uploaded image contains non-portal attributes and the query lacks procurement terms, the system rejects it gracefully:
            "The uploaded image does not appear to be an official e-GP portal screen, error dialog, or procurement document. Please upload an official e-GP portal screenshot."
-         * Added intent handlers for conversational queries ("who are you", greetings, "what is this") to introduce Proca's official mandate instead of retrieving irrelevant chunks.
+         * Added intent handlers for conversational queries ("who are you", greetings, "what is this") to introduce user's official mandate instead of retrieving irrelevant chunks.
 
 25. HUGGING FACE TOKEN INTEGRATION, SCREENSHOT OCR & DEBARMENT LIST GROUNDING
    [x] Cleaned Technical Developer Jargon from Civil-Service Portal UI:
@@ -348,7 +348,7 @@ ALL DELIVERABLES SUCCESSFULLY COMPLETED AND VERIFIED.
        - Live verified: querying tender preparation returns '/api/manual/chunk/145/image' (HTTP 200).
    [x] System Prompt & Official Helpdesk Escalation:
        - Removed rigid disclaimer phrase ("The provided manual extract does not specify this information").
-       - Updated 'system_prompt.txt', 'system_prompt.py', and 'llm_service.py' to generate comprehensive, synthesized answers in Proca's own words.
+       - Updated 'system_prompt.txt', 'system_prompt.py', and 'llm_service.py' to generate comprehensive, synthesized answers in user's own words.
        - When no answer is found in manual records, the system politely declines to invent facts and recommends official Bangladesh e-GP Helpdesk contact channels:
          * Hotline: 16575 (from any mobile network in Bangladesh)
          * Phone: +880 9609112233 / +880 1762625528–31

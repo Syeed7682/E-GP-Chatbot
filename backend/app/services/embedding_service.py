@@ -52,6 +52,10 @@ class EmbeddingService:
 
     def _initialize(self):
         """Initializes the active embedding provider based on environment."""
+        if os.getenv("EGP_FORCE_OFFLINE_EMBEDDINGS", "").lower() in {"1", "true", "yes"}:
+            self._mode = "offline_multimodal_fallback"
+            print(f"[embedding_service] Forced offline multimodal embedding mode ({self.dimension}-dim).")
+            return
         # 1. Check if local multimodal/sentence-transformers model is available
         try:
             import importlib
@@ -269,7 +273,7 @@ embedding_service = EmbeddingService()
 if __name__ == "__main__":
     print("Testing Multimodal Embedding Service...")
     sample_text = "e-GP Portal Login Screen and Password"
-    sample_img_path = "data/extracted_images/page_6_img_0.jpg"
+    sample_img_path = "data/structured/images/page_images_page_6.jpg"
 
     t_vec = embedding_service.embed_text(sample_text)
     print(f"Text vector shape: {t_vec.shape}, norm: {np.linalg.norm(t_vec):.4f}")

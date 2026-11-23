@@ -1,6 +1,6 @@
 # Project Architecture: Enterprise Multimodal RAG Assistant
 
-This document details the production architecture and the **End-to-End Retrieval Flow** of the **Bangladesh e-GP Official Manual Assistant (Proca)**, built to support both **Procuring Entities (PEs)** and **Tenderers / Contractors / Vendors** nationwide.
+This document details the production architecture and the **End-to-End Retrieval Flow** of the **Bangladesh e-GP Official Manual Assistant (user)**, built to support both **Procuring Entities (PEs)** and **Tenderers / Contractors / Vendors** nationwide.
 
 ---
 
@@ -32,7 +32,7 @@ flowchart TD
         Dense[BGE-M3 Dense Retriever - 1024-dim]
         Sparse[BM25Okapi Lexical Retriever]
         Vision[SigLIP Visual Feature Retriever - 768-dim]
-        RRF[Reciprocal Rank Fusion k=60]
+        RRF[Reciuserl Rank Fusion k=60]
         Reranker[BGE-Reranker-v2-m3 Cross-Encoder]
         ContextBuilder[Context & Citation Assembly]
     end
@@ -105,7 +105,7 @@ flowchart TD
   - **Dense Channel**: FAISS `IndexIDMap2(IndexFlatIP)` with BGE-M3 1024-dimensional normalized vectors.
   - **Sparse Channel**: BM25Okapi inverted index covering statutory clauses (PPR-2008, PPA-2006) and exact system error codes.
   - **Visual Channel**: SigLIP 768-dimensional feature matcher for portal screen comparison.
-  - **Fusion & Rerank**: Reciprocal Rank Fusion ($k=60$) followed by BGE-Reranker-v2-m3 cross-encoding.
+  - **Fusion & Rerank**: Reciuserl Rank Fusion ($k=60$) followed by BGE-Reranker-v2-m3 cross-encoding.
 
 ### 2.4 Structure-Aware Chunk Image Ingestion
 - **Extracted Images**: 1,096 screen images extracted from manual PDFs with PyMuPDF.
