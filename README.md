@@ -14,9 +14,9 @@ The platform serves both **Procuring Entities (PEs)** and **Tenderers / Contract
 - **Dual-Audience Scope:** Serves both Procuring Entities (APP planning, tender creation, opening, evaluation, NOA, contract signing) and Tenderers/Contractors (registration, e-Payment, e-BG mapping, tender purchasing, online bid preparation, joint venture setups).
 - **Multi-Channel RAG Pipeline:** Combines dense semantic search (BGE-M3 1024-dim), sparse lexical ranking (BM25Okapi), visual screenshot matching (SigLIP 768-dim), and cross-encoder precision reranking (BGE-Reranker-v2-m3).
 - **Interactive Action Pills on Every Response:**
-  - 🖼️ **`View Scenario — Screen / Page`**: Expandable modal/card rendering the exact manual diagram or portal screenshot mapped to the procedural step, with multi-page carousel navigation.
-  - 📖 **`Source Reference`**: Expandable citation block linking to official manual page numbers (e.g., `p. 199, p. 415`) and supplemental Q&A records.
-  - 📞 **`Contact Helpdesk`**: Instant access to official BPPA / CPTU Helpdesk contact channels (Hotline `16575`, support numbers, and official emails).
+  - ðŸ–¼ï¸ **`View Scenario â€” Screen / Page`**: Expandable modal/card rendering the exact manual diagram or portal screenshot mapped to the procedural step, with multi-page carousel navigation.
+  - ðŸ“– **`Source Reference`**: Expandable citation block linking to official manual page numbers (e.g., `p. 199, p. 415`) and supplemental Q&A records.
+  - ðŸ“ž **`Contact Helpdesk`**: Instant access to official BPPA / CPTU Helpdesk contact channels (Hotline `16575`, support numbers, and official emails).
 - **Automated Helpdesk Escalation:** If a user query falls outside the official manual records, the system politely clarifies the limitation and renders the complete Helpdesk contact block directly.
 - **Multimodal Screenshot Diagnostics:** Upload portal screenshots to diagnose error codes, BOQ discrepancies, and verification screens via OCR and vision models.
 - **CSV Data Source Integration:** Utilizes structured CSV extractions (`csv_files/`) alongside original manuals and 1,000 official Q&A records.
@@ -40,15 +40,15 @@ The platform serves both **Procuring Entities (PEs)** and **Tenderers / Contract
 
 ## Knowledge Base Sources
 
-1. **Official User Manuals**:
-   - `egp_manual.pdf` (543 pages — Comprehensive Procuring Entity & System Manual).
-   - `eGP_NewUserRegManual_English.pdf` (27 pages — Contractor & User Registration Manual).
-2. **Supplemental Q&A Datasets**:
-   - `e-GP System Q&A.txt` / `.docx` (1,000 baseline procedural questions & answers).
-3. **Structured CSV Layer (`csv_files/`)**:
-   - `egp_manual_extracted.csv`: Structured 543-page manual records.
-   - `egp_registration_manual_extracted.csv`: Structured 27-page registration records.
-   - `egp_contractor_evaluation_dataset.csv`: 729 verified question-and-answer pairs covering contractor and evaluation workflows.
+1. **Current Official Manual**:
+   - `csv_files/egp New Manual.csv` (27 page-level records for the current registration manual).
+2. **Structured Retrieval Assets**:
+   - `data/structured/indexes/pdf_manual.faiss`: Active FAISS vector index.
+   - `data/structured/metadata/pdf_manual.json`: Matching cleaned page metadata.
+   - `data/structured/indexes/registration_csv.faiss`: CSV embedding index.
+   - `data/structured/images/`: Extracted manual images.
+3. **Archived manuals and supplemental Q&A are not active retrieval sources.**
+
 
 ---
 
@@ -56,53 +56,52 @@ The platform serves both **Procuring Entities (PEs)** and **Tenderers / Contract
 
 ```text
 .
-├── backend/
-│   ├── app/
-│   │   ├── api/                 # Chat, health, manual, sync endpoints
-│   │   ├── core/                # Configuration, security, database
-│   │   ├── prompts/             # Dual-audience system prompts (system_prompt.txt)
-│   │   ├── schemas/             # Pydantic request/response schemas
-│   │   ├── services/            # Retrieval, embeddings, vision, citations, LLM
-│   │   └── main.py              # FastAPI application entry point
-│   ├── scripts/                 # Ingestion & index-building scripts (ingest_all.py, etc.)
-│   ├── tests/                   # Automated pytest suite (62 passing tests)
-│   └── requirements.txt
-│
-├── csv_files/                   # Structured CSV data sources
-│   ├── egp_contractor_evaluation_dataset.csv
-│   ├── egp_manual_extracted.csv
-│   └── egp_registration_manual_extracted.csv
-│
-├── data/
-│   ├── raw/                     # Original PDF manuals & Q&A documents
-│   ├── processed/               # Processed chunks (chunks.json)
-│   ├── faiss_index/             # Dense FAISS vectors & metadata
-│   ├── indexes/                 # Versioned index store (v001/) with active_version.json
-│   └── extracted_images/        # 1,096 cropped chunk diagrams & screen images
-│
-├── documents/                   # Architecture, API specs, deployment guides
-│   ├── INDEX.md                 # Documentation index
-│   ├── PROJECT_ARCHITECTURE.md  # Detailed architecture & component flows
-│   ├── API_DOCUMENTATION.md     # OpenAPI route documentation
-│   ├── DEPLOYMENT_GUIDE.md      # Deployment instructions (Local, Render, Netlify)
-│   ├── EMBEDDINGS.md            # Multi-channel embedding & indexing guide
-│   └── PROJECT_PLAN.md          # Completed development phases (1–8)
-│
-├── frontend/
-│   ├── src/
-│   │   ├── components/          # GovtChatArea, HelpdeskContactCard, Header, Sidebar
-│   │   ├── services/            # API client and streaming handlers
-│   │   ├── types/               # TypeScript interfaces
-│   │   └── App.tsx              # Main application shell
-│   ├── package.json
-│   └── vite.config.ts
-│
-├── Nessery_dumpings/            # Archived scratch scripts & developer utility files
-│
-├── .env.example                 # Environment configuration template
-├── netlify.toml                 # Netlify SPA routing rules
-├── requirements.txt             # Root requirements pointer
-└── run.bat                      # One-click Windows development launcher
+â”œâ”€â”€ backend/
+â”‚   â”œâ”€â”€ app/
+â”‚   â”‚   â”œâ”€â”€ api/                 # Chat, health, manual, sync endpoints
+â”‚   â”‚   â”œâ”€â”€ core/                # Configuration, security, database
+â”‚   â”‚   â”œâ”€â”€ prompts/             # Dual-audience system prompts (system_prompt.txt)
+â”‚   â”‚   â”œâ”€â”€ schemas/             # Pydantic request/response schemas
+â”‚   â”‚   â”œâ”€â”€ services/            # Retrieval, embeddings, vision, citations, LLM
+â”‚   â”‚   â””â”€â”€ main.py              # FastAPI application entry point
+â”‚   â”œâ”€â”€ scripts/                 # Ingestion & index-building scripts (ingest_all.py, etc.)
+â”‚   â”œâ”€â”€ tests/                   # Automated pytest suite (62 passing tests)
+â”‚   â””â”€â”€ requirements.txt
+â”‚
+â”œâ”€â”€ csv_files/                   # Structured CSV data sources
+â”‚   â”œâ”€â”€ egp_contractor_evaluation_dataset.csv
+â”‚   â”œâ”€â”€ egp_manual_extracted.csv
+â”‚   â””â”€â”€ egp_registration_manual_extracted.csv
+â”‚
+â”œâ”€â”€ data/
+   structured/
+       indexes/              # FAISS indexes and embedding artifacts
+       metadata/             # JSON/SQLite metadata
+       images/               # Extracted manual images
+â”‚
+â”œâ”€â”€ documents/                   # Architecture, API specs, deployment guides
+â”‚   â”œâ”€â”€ INDEX.md                 # Documentation index
+â”‚   â”œâ”€â”€ PROJECT_ARCHITECTURE.md  # Detailed architecture & component flows
+â”‚   â”œâ”€â”€ API_DOCUMENTATION.md     # OpenAPI route documentation
+â”‚   â”œâ”€â”€ DEPLOYMENT_GUIDE.md      # Deployment instructions (Local, Render, Netlify)
+â”‚   â”œâ”€â”€ EMBEDDINGS.md            # Multi-channel embedding & indexing guide
+â”‚   â””â”€â”€ PROJECT_PLAN.md          # Completed development phases (1â€“8)
+â”‚
+â”œâ”€â”€ frontend/
+â”‚   â”œâ”€â”€ src/
+â”‚   â”‚   â”œâ”€â”€ components/          # GovtChatArea, HelpdeskContactCard, Header, Sidebar
+â”‚   â”‚   â”œâ”€â”€ services/            # API client and streaming handlers
+â”‚   â”‚   â”œâ”€â”€ types/               # TypeScript interfaces
+â”‚   â”‚   â””â”€â”€ App.tsx              # Main application shell
+â”‚   â”œâ”€â”€ package.json
+â”‚   â””â”€â”€ vite.config.ts
+â”‚
+â”œâ”€â”€ Nessery_dumpings/            # Archived scratch scripts & developer utility files
+â”‚
+â”œâ”€â”€ .env.example                 # Environment configuration template
+â”œâ”€â”€ netlify.toml                 # Netlify SPA routing rules
+â”œâ”€â”€ requirements.txt             # Root requirements pointer
+â””â”€â”€ run.bat                      # One-click Windows development launcher
 ```
 
 ---
@@ -120,39 +119,38 @@ GROQ_API_KEY=your_groq_api_key_here
 GEMINI_API_KEY=your_gemini_api_key_here  # Optional fallback
 ```
 
-### 3. Index the New Manual PDF
-The indexing pipeline uses only `data/raw/egp New Manual.pdf`. Run ingestion first, then build the FAISS index.
+### 3. Build the Structured Manual Index
+The current 27-page CSV manual is already structured. Rebuild its cleaned embeddings directly into `data/structured/`.
 
 **Bash:**
 ```bash
 cd "/e/E-gp Project manual"
 source .venv/Scripts/activate
-python backend/scripts/ingest_manual.py
-python backend/scripts/build_faiss_index.py
+python backend/scripts/build_csv_embeddings.py --offline
+python backend/scripts/build_faiss_index.py --chunks data/structured/metadata/pdf_manual.json
 ```
 
 **PowerShell:**
 ```powershell
-& ".venv\Scripts\python.exe" backend\scripts\ingest_manual.py
-& ".venv\Scripts\python.exe" backend\scripts\build_faiss_index.py
+& ".venv\Scripts\python.exe" backend\scripts\build_csv_embeddings.py --offline
+& ".venv\Scripts\python.exe" backend\scripts\build_faiss_index.py --chunks data\structured\metadata\pdf_manual.json
 ```
 
-The generated files are saved to `data/processed/chunks.json`, `data/faiss_index/index.faiss`, and `data/faiss_index/metadata.json`.
+Generated files are saved under `data/structured/indexes/` and `data/structured/metadata/`. Chat reports are saved under `documentation/interactions/`.
 
-### 4. Launching the Application
 Execute the Windows launcher:
 ```powershell
 .\run.bat
 ```
 Or start manually:
 
-**Terminal 1 — Backend:**
+**Terminal 1 â€” Backend:**
 ```powershell
 cd backend
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-**Terminal 2 — Frontend:**
+**Terminal 2 â€” Frontend:**
 ```powershell
 cd frontend
 npm run dev
@@ -180,8 +178,8 @@ npm run build --prefix frontend
 
 ## Official Helpdesk Escalation Contacts
 
-- 📞 **e-GP Helpdesk Hotline:** `16575` *(from any mobile network in Bangladesh)*
-- ☎️ **Telephone Support:** `+880 9609112233` / `+880 1762625528–31`
-- ✉️ **Email Support:** `helpdesk@eprocure.gov.bd` / `e-gphelpdesk@cptu.gov.bd`
-- 🌐 **Official Portal:** [eprocure.gov.bd](https://www.eprocure.gov.bd)
-- 🏢 **Authority:** Bangladesh Public Procurement Authority (BPPA) / CPTU, IMED, Ministry of Planning
+- ðŸ“ž **e-GP Helpdesk Hotline:** `16575` *(from any mobile network in Bangladesh)*
+- â˜Žï¸ **Telephone Support:** `+880 9609112233` / `+880 1762625528â€“31`
+- âœ‰ï¸ **Email Support:** `helpdesk@eprocure.gov.bd` / `e-gphelpdesk@cptu.gov.bd`
+- ðŸŒ **Official Portal:** [eprocure.gov.bd](https://www.eprocure.gov.bd)
+- ðŸ¢ **Authority:** Bangladesh Public Procurement Authority (BPPA) / CPTU, IMED, Ministry of Planning
