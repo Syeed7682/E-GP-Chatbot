@@ -17,10 +17,8 @@ const PORT = process.env.PORT || 3000;
 const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const EXTRACTED_IMAGES_DIR = path.join(PROJECT_ROOT, 'data', 'structured', 'images');
 const MANUAL_PDF_CANDIDATES = [
-  'egp_manual.pdf',
-  'egp_official_manual.pdf',
-  'e-GP System User Manual - Procuring Entity User 1 February 2026.pdf'
-].map((filename) => path.join(PROJECT_ROOT, 'data', 'structured', filename));
+  path.join(PROJECT_ROOT, 'data', 'structured', 'source', 'new_manual.pdf'),
+];
 
 app.use(express.json({ limit: '50mb' }));
 

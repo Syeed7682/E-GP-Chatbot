@@ -37,11 +37,25 @@ def main() -> None:
 
     records = []
     for row in rows:
-        text = clean_text(row.get("text_content") or "")
+        question = clean_text(row.get("question") or "")
+        ground_truth = clean_text(row.get("ground_truth_answer") or "")
+        source_text = row.get("text_content") or ""
+        # Ground-truth rows contain the answer separately from the page excerpt.
+        # Include both fields so retrieval can directly ground the LLM answer.
+        text = clean_text(
+            f"Question: {question}\nGround-truth answer: {ground_truth}\n{source_text}"
+        )
+        raw_pages = str(row.get("page_number") or "0")
+        pages = [part.strip() for part in raw_pages.replace(",", ";").split(";") if part.strip().isdigit()]
+        page_number = int(pages[0]) if pages else 0
         records.append({
-            "chunk_id": f"csv_page_{row.get('page_number', len(records) + 1)}",
-            "page": int(row.get("page_number") or 0),
-            "page_number": int(row.get("page_number") or 0),
+            "chunk_id": f"ground_truth_{row.get('question_id') or len(records) + 1}",
+            "question_id": row.get("question_id") or "",
+            "question": question,
+            "ground_truth_answer": ground_truth,
+            "page": page_number,
+            "page_number": page_number,
+            "pages": [int(page) for page in pages],
             "source": row.get("source_file") or args.csv.name,
             "section_title": row.get("detected_section") or "",
             "text": text,
@@ -49,7 +63,7 @@ def main() -> None:
             "char_count": len(text),
             "word_count": len(text.split()),
             "image_count": int(row.get("image_count") or 0),
-            "source_type": "manual_csv",
+            "source_type": "ground_truth_csv",
         })
 
     if args.offline:

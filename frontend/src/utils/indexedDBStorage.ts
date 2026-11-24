@@ -189,6 +189,16 @@ export async function clearAllLocalMessages(): Promise<void> {
   }
 }
 
+export async function deleteLocalMessage(id: string): Promise<void> {
+  try {
+    const db = await openDatabase();
+    const tx = db.transaction('messages', 'readwrite');
+    tx.objectStore('messages').delete(id);
+  } catch {
+    memoryStore.messages.delete(id);
+  }
+}
+
 // Outbox mutations for offline synchronization
 export async function queueMutation(mutation: SyncMutation): Promise<void> {
   try {

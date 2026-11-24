@@ -38,7 +38,7 @@ Standard conversation endpoint for text queries and optional base64 screenshots.
   "previous_question": null,
   "image_base64": null,
   "image_mime": "image/png",
-  "top_k": 5,
+  "top_k": 3,
   "use_alt_model": false
 }
 ```
@@ -48,7 +48,7 @@ Standard conversation endpoint for text queries and optional base64 screenshots.
 - `previous_question` *(string, optional)*: Previous query for multi-turn topic continuity.
 - `image_base64` *(string, optional)*: Base64-encoded image string for screenshot queries.
 - `image_mime` *(string, optional)*: MIME type (`image/png`, `image/jpeg`). Default: `image/png`.
-- `top_k` *(int, optional)*: Number of source chunks to retrieve (1–20, default 5).
+- `top_k` *(int, optional)*: Number of source chunks to retrieve (1–20, default 3).
 - `use_alt_model` *(bool, optional)*: Forces multimodal model (`qwen/qwen3.8-27b`) for inference.
 
 **Response (JSON):**

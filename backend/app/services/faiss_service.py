@@ -24,6 +24,12 @@ def _resolve_path(rel_or_abs_path: str) -> str:
 
 DEFAULT_INDEX_PATH = os.path.join(PROJECT_ROOT, "data", "structured", "indexes", "pdf_manual.faiss")
 DEFAULT_METADATA_PATH = os.path.join(PROJECT_ROOT, "data", "structured", "metadata", "pdf_manual.json")
+SUPPLEMENTAL_INDEX_PATHS = [
+    (
+        os.path.join(PROJECT_ROOT, "data", "structured", "indexes", "ground_truth_csv.faiss"),
+        os.path.join(PROJECT_ROOT, "data", "structured", "metadata", "ground_truth_csv.json"),
+    ),
+]
 
 class FaissService:
     def __init__(self, index_path: str = DEFAULT_INDEX_PATH, metadata_path: str = DEFAULT_METADATA_PATH):
@@ -97,6 +103,22 @@ class FaissService:
             self.index = faiss.read_index(idx_path)
             with open(meta_path, "r", encoding="utf-8") as f:
                 self.metadata = json.load(f)
+            # Merge approved supplemental datasets into the active search index.
+            # This keeps one retrieval API while preserving separate files on disk.
+            for supplemental_idx_path, supplemental_meta_path in SUPPLEMENTAL_INDEX_PATHS:
+                if not os.path.exists(supplemental_idx_path) or not os.path.exists(supplemental_meta_path):
+                    continue
+                supplemental_index = faiss.read_index(supplemental_idx_path)
+                with open(supplemental_meta_path, "r", encoding="utf-8") as supplemental_file:
+                    supplemental_metadata = json.load(supplemental_file)
+                if supplemental_index.d != self.index.d or supplemental_index.ntotal != len(supplemental_metadata):
+                    print(f"[faiss_service] Skipping incompatible supplemental index '{supplemental_idx_path}'.")
+                    continue
+                merged_index = faiss.IndexFlatIP(self.index.d)
+                merged_index.add(self.index.reconstruct_n(0, self.index.ntotal))
+                merged_index.add(supplemental_index.reconstruct_n(0, supplemental_index.ntotal))
+                self.index = merged_index
+                self.metadata.extend(supplemental_metadata)
             print(f"[faiss_service] Successfully loaded FAISS index ({self.index.ntotal} vectors) from '{idx_path}'.")
             return True
         except Exception as e:

@@ -14,6 +14,7 @@ import {
   getLocalMessages,
   saveMessageLocally,
   clearAllLocalMessages,
+  deleteLocalMessage,
   queueMutation
 } from './utils/indexedDBStorage';
 import { fastHash } from './utils/crypto';
@@ -207,6 +208,17 @@ export default function App() {
     }
   };
 
+  const handleDeleteHistoryItem = async (id: string) => {
+    await deleteLocalMessage(id);
+    setMessages((previous) => previous.filter((message) => message.id !== id));
+  };
+
+  const handleSelectHistoryItem = (message: ChatMessage) => {
+    setActiveTab('chat');
+    setInputQuestion(message.text);
+    setIsMobileSidebarOpen(false);
+  };
+
   return (
     <div className="glass-site flex h-dvh flex-col overflow-hidden bg-[#F4F7F5] text-[#263746] font-sans">
       {/* 1. Government-Style Header */}
@@ -233,7 +245,9 @@ export default function App() {
           syncState={syncState}
           isMobileOpen={isMobileSidebarOpen}
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
-          onSelectSuggestedQuestion={handleSelectSuggestedQuestion}
+          history={messages}
+          onDeleteHistoryItem={handleDeleteHistoryItem}
+          onSelectHistoryItem={handleSelectHistoryItem}
           onNewChat={handleNewChat}
           onClearConversation={handleClearConversation}
           language={language}

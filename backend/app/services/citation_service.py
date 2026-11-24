@@ -30,6 +30,10 @@ class CitationService:
                     return f"/api/manual/chunk/{cid}/image"
 
         if page is not None and page > 0:
+            embedded_dir = settings.EXTRACTED_IMAGES_DIR
+            embedded = sorted(embedded_dir.glob(f"page_{int(page):02d}_image_*.*"))
+            if embedded:
+                return f"/api/manual/images/{embedded[0].name}"
             return CitationService.resolve_screenshot_path(page)
 
         return None
@@ -45,6 +49,10 @@ class CitationService:
             matches = list(chunks_dir.glob(f"chunk_*_page_{page}_*.*"))
             if matches:
                 return f"/api/manual/page/{page}/image"
+
+        embedded = sorted(settings.EXTRACTED_IMAGES_DIR.glob(f"page_{int(page):02d}_image_*.*"))
+        if embedded:
+            return f"/api/manual/images/{embedded[0].name}"
 
         # Check if raw PDF is available for on-the-fly rendering
         for filename in (

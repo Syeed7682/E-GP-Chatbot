@@ -30,7 +30,7 @@ class Settings:
     
     # Retrieval Settings
     VECTOR_DB: str = os.getenv("VECTOR_DB", "faiss").strip()
-    TOP_K: int = int(os.getenv("TOP_K", "10"))
+    TOP_K: int = int(os.getenv("TOP_K", "3"))
     
     # Host and Port Settings
     BACKEND_HOST: str = os.getenv("BACKEND_HOST", "127.0.0.1").strip()

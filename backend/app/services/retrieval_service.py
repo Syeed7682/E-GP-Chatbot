@@ -546,6 +546,7 @@ class RetrievalService:
             image_path = chunk.get("image_path")
             sources.append({
                 "source": source,
+                "source_type": chunk.get("source_type", "manual"),
                 "page": self._page_number(chunk, 1),
                 "chunk_id": chunk.get("chunk_id", 0),
                 "score": round(score, 2),

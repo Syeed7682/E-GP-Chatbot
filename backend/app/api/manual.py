@@ -114,14 +114,15 @@ async def get_manual_image(filename: str):
 def _page_image_candidates(page_num: int) -> List[Path]:
     chunks_dir = settings.EXTRACTED_IMAGES_DIR / "chunks"
     chunk_matches = list(chunks_dir.glob(f"chunk_*_page_{page_num}_*.*")) if chunks_dir.exists() else []
-    return chunk_matches + [
+    embedded_matches = sorted(settings.EXTRACTED_IMAGES_DIR.glob(f"page_{int(page_num):02d}_image_*.*"))
+    return chunk_matches + embedded_matches + [
         settings.EXTRACTED_IMAGES_DIR / f"page_{page_num}.jpg",
         settings.EXTRACTED_IMAGES_DIR / f"page_{page_num}.png",
     ]
 
 
 def _manual_pdf_path() -> Path:
-    return settings.DATA_RAW_DIR / "egp New Manual.pdf"
+    return settings.DATA_RAW_DIR / "source" / "new_manual.pdf"
 
 
 def _manual_page_count() -> int:

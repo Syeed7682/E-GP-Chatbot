@@ -1,0 +1,11 @@
+{
+  "source_csv": "data\\structured\\source\\egp ground truth.csv",
+  "records": 143,
+  "dimension": 1024,
+  "embedding_model": "BAAI/bge-m3",
+  "embedding_mode": "offline_multimodal_fallback",
+  "text_cleaning": "NFKC normalization, mojibake repair, control-character removal, whitespace cleanup",
+  "index": "data\\structured\\indexes\\ground_truth_csv.faiss",
+  "metadata": "data\\structured\\metadata\\ground_truth_csv.json",
+  "embeddings": "data\\structured\\indexes\\ground_truth_csv.embeddings.npy"
+}
