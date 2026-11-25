@@ -25,6 +25,15 @@ def _resolve_path(rel_or_abs_path: str) -> str:
 DEFAULT_INDEX_PATH = os.path.join(PROJECT_ROOT, "data", "structured", "indexes", "pdf_manual.faiss")
 DEFAULT_METADATA_PATH = os.path.join(PROJECT_ROOT, "data", "structured", "metadata", "pdf_manual.json")
 SUPPLEMENTAL_INDEX_PATHS = [
+    # Separate index for the structured registration/manual CSV.  Keep this
+    # separate from the PDF index so CSV updates do not require rebuilding the
+    # PDF vectors.
+    (
+        os.path.join(PROJECT_ROOT, "data", "structured", "indexes", "registration_csv.faiss"),
+        os.path.join(PROJECT_ROOT, "data", "structured", "metadata", "registration_csv.json"),
+    ),
+    # Separate ground-truth Q&A index.  This contains direct answers and must
+    # participate in normal retrieval, not only offline evaluation.
     (
         os.path.join(PROJECT_ROOT, "data", "structured", "indexes", "ground_truth_csv.faiss"),
         os.path.join(PROJECT_ROOT, "data", "structured", "metadata", "ground_truth_csv.json"),

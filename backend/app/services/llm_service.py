@@ -265,12 +265,19 @@ class LLMService:
         if registration_fee_match and re.search(r"\b(?:fee|fees|cost|price|registration|renewal)\b", q_lower):
             national_registration, national_renewal, international_registration, international_renewal = registration_fee_match.groups()
             return (
-                "The e-GP registration and renewal fees are:\n\n"
-                f"- National tenderer: registration **Tk. {national_registration}**; renewal **Tk. {national_renewal}**.\n"
-                f"- International tenderer: registration **Tk. {international_registration}**; renewal **Tk. {international_renewal}**.\n"
-                "- Individual consultants: registration and renewal fees are not required for national or international tenderers.\n\n"
-                "The manual also says payment can be made through an e-GP-enlisted bank or the online payment gateway.\n\n"
-                "**Source:** Section 10, page 18"
+                "### e-GP Registration and Renewal Fees\n\n"
+                "The e-GP manual specifies the following registration charges:\n\n"
+                f"- **National Tenderers:** registration **Tk. {national_registration}**; renewal **Tk. {national_renewal}**.\n"
+                f"- **International Tenderers:** registration **Tk. {international_registration}**; renewal **Tk. {international_renewal}**.\n"
+                "- **Individual Consultants:** registration and renewal fees are **not required**, for both national and international registration.\n\n"
+                "### How to pay\n\n"
+                "1. Pay through an e-GP-enlisted bank. The enlisted-bank list is available at https://www.eprocure.gov.bd/BranchDetail.jsp.\n"
+                "2. For online payment, open the **Online Payment** menu and select the payment type.\n"
+                "3. The manual lists the **Dutch-Bangla Bank (DBBL)** and **Brac Bank** payment gateways.\n"
+                "4. Select the gateway and click **Pay Online**. The system redirects you to the selected gateway.\n"
+                "5. Enter the card number, expiration month/year, and CVN, then click **Pay**.\n"
+                "6. After the card information is verified, e-GP redirects back with the success message **“Your transaction is successful”** and displays the transaction information.\n\n"
+                "**Reference:** e-GP System User Manual, **Section 10**, pages **18–21**, **Screens 13–19**."
             )
 
         if re.match(r"^(?:what|meaning|define)\b", q_lower):
@@ -1016,6 +1023,22 @@ class LLMService:
             and "No relevant context" not in context
             and "No manual index" not in context
         )
+
+        # Fee schedules are exact numeric facts. Resolve them deterministically
+        # before hosted generation so a model cannot contradict page 18 with a
+        # generic claim that national tenderers pay nothing.
+        has_fee_question = bool(re.search(
+            r"\b(?:fee|fees|registration|renewal|pay|payment|charge)\b",
+            question,
+            re.IGNORECASE,
+        ))
+        has_national_fee_schedule = bool(re.search(
+            r"Registration and Renewal fees for National Tenderers will be Tk\.\s*[\d,]+\.\d{2}",
+            context,
+            re.IGNORECASE,
+        ))
+        if context_available and has_fee_question and has_national_fee_schedule:
+            return self._offline_answer_generator(question, context), "e-GP Manual Grounded", True
 
         # Keep the documented suspension/debarment workflow deterministic. Hosted
         # models may otherwise answer a plain-language question such as "How to

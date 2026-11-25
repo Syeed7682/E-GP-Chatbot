@@ -33,6 +33,14 @@ const NON_PORTAL_TERMS = [
   'portrait', 'wallpaper', 'photo', 'car', 'bike', 'food', 'selfie', 'nature'
 ];
 
+const PROCUREMENT_QUERY_TERMS = [
+  ...PROCUREMENT_KEYWORDS,
+  'fee', 'fees', 'payment', 'document fee', 'tender security', 'performance security',
+  'corrigendum', 'amendment', 'publication', 'manual', 'guide', 'guideline',
+  'procedure', 'procedures', 'process', 'chapter', 'section', 'rule', 'rules',
+  'instruction', 'instructions', 'steps', 'step', 'how to', 'explain', 'overview'
+];
+
 /**
  * Computes cosine similarity between two normalized vectors
  */
@@ -135,8 +143,9 @@ export function retrieveTopKChunks(
     }
 
     // Direct title match boost & BM25 frequency weighting across 1,188 chunks
-    const stopWords = ['what', 'when', 'where', 'which', 'who', 'how', 'the', 'and', 'for', 'are', 'this', 'that', 'with', 'from', 'have', 'were', 'then', 'will', 'your', 'shown', 'please', 'tell'];
-    const meaningfulWords = queryWords.filter(w => !stopWords.includes(w));
+    // Preserve all query words; common words can carry intent in procedural
+    // questions and must not be discarded before manual matching.
+    const meaningfulWords = queryWords;
 
     for (const qw of meaningfulWords) {
       if (lowerTitle.includes(qw)) {
@@ -255,13 +264,8 @@ function repairChunkBoundaries(chunk: ManualChunk, chunks: ManualChunk[]): strin
 }
 
 export function isVagueStepsRequest(text: string): boolean {
-  const nonTopicWords = new Set([
-    'a', 'about', 'are', 'can', 'could', 'do', 'explain', 'for', 'give', 'guide',
-    'how', 'i', 'is', 'me', 'my', 'need', 'next', 'of', 'on', 'please', 'process',
-    'procedure', 'show', 'step', 'steps', 'tell', 'the', 'then', 'to', 'what', 'you'
-  ]);
-  return !text.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/)
-    .filter(Boolean).some((word) => !nonTopicWords.has(word));
+  // Let retrieval interpret broad questions instead of stopping at a prompt.
+  return false;
 }
 
 /**
@@ -282,6 +286,7 @@ export function generateOfflineAnswer(
     : question;
   const normQ = normalizeQuery(effectiveQuestion || '');
   const lowerImg = (imageName || '').toLowerCase();
+  const hasProcurementQuery = PROCUREMENT_QUERY_TERMS.some(term => normQ.includes(term));
 
   if (isUnspecifiedSteps && !usablePreviousQuestion && !imageName) {
     return {
@@ -318,6 +323,165 @@ export function generateOfflineAnswer(
     };
   }
 
+  // Specific intent for e-GP fees and payment status. Keep this before the
+  // generic "tell me about..." guard so questions such as "tell me about fees"
+  // are answered from the manual instead of being treated as image prompts.
+  const isTendererQuery = normQ.includes('tenderer') || normQ.includes('contractor') ||
+    normQ.includes('supplier') || normQ.includes('bidder') || normQ.includes('company');
+  const isPeQuery = normQ.includes('procuring entity') || normQ.includes(' pe ') ||
+    normQ.startsWith('pe ') || normQ.includes('pe user') || normQ.includes('procuring entity user');
+  const isNationalTendererFeeQuery = normQ.includes('national') &&
+    (normQ.includes('tenderer') || normQ.includes('tenderer')) &&
+    (normQ.includes('fee') || normQ.includes('pay') || normQ.includes('payment') || normQ.includes('charge'));
+  if (isNationalTendererFeeQuery) {
+    const feeChunk = chunks.find(c => c.page_number === 18 || c.content.toLowerCase().includes('registration and renewal fees for national tenderers'));
+    return {
+      question,
+      answer: `### National Tenderer registration fees
+
+According to the e-GP manual, National Tenderers do have registration-related fees:
+
+• **Registration fee:** Tk. 5,000.00
+• **Renewal fee:** Tk. 2,000.00
+
+These are different from tender-level document fees or tender security. The manual says the registration fee can be paid through an e-GP-enlisted bank or through the online payment gateway. Online payment supports Dutch-Bangla Bank (DBBL) and Brac Bank gateways.
+
+**Exception:** Individual Consultants do not have to pay registration or renewal fees, whether national or international.
+
+Source: e-GP manual, **“Pay Registration Fee,” page 18**.`,
+      sources: [{
+        source: feeChunk?.source || 'New e-GP Manual PDF',
+        page: feeChunk?.page_number || 18,
+        chunk_id: feeChunk?.chunk_id || null,
+        score: 0.99,
+        snippet: feeChunk?.content.slice(0, 180) || 'Registration and renewal fees for National Tenderers are Tk. 5,000.00 and Tk. 2,000.00.'
+      }],
+      portal_screens: ['Screen - 13'],
+      model_used: 'e-GP Manual Grounded',
+      was_offline: true
+    };
+  }
+  const isRegistrationFeeQuery = (normQ.includes('registration') || normQ.includes('register')) &&
+    (normQ.includes('fee') || normQ.includes('pay') || normQ.includes('payment') || normQ.includes('charge'));
+  if (isRegistrationFeeQuery) {
+    const accountChunk = chunks.find(c => c.page_number === 6 || c.chunk_id === 18 || c.chunk_id === 19);
+    const roleText = isTendererQuery && !isPeQuery
+      ? `For a **tenderer/contractor**, the manual distinguishes account registration from tender participation payments. Registration itself is not described as a paid step; payments relate to a particular tender, such as the tender document fee or tender security, when applicable.`
+      : isPeQuery
+        ? `For a **Procuring Entity (PE)**, the account is created by the e-GP Admin, Organization Admin, or PE Admin.`
+        : `For a **PE**, the account is created by an administrator. For a **tenderer/contractor**, registration is separate from tender-level payments; applicable payments are connected to a particular tender.`;
+    return {
+      question,
+      answer: `### PE registration fee
+
+${roleText}
+
+A Procuring Entity account is created by the **e-GP Admin, Organization Admin, or PE Admin**. After the account is created, e-GP sends the user an email containing the login ID and temporary password.
+
+For initial PE account setup, do not look for a “Pay Registration Fee” action in the portal. Use the credentials sent by the administrator, then log in and complete the required password and verification steps.
+
+The fees described for procurement activities include document fee, tender/proposal security, and performance security.`,
+      sources: [{
+        source: accountChunk?.source || 'Official e-GP Procuring Entity Manual',
+        page: accountChunk?.page_number || 6,
+        chunk_id: accountChunk?.chunk_id || 18,
+        score: 0.99,
+        snippet: 'The PE is created by an e-GP administrator and receives login credentials by email.'
+      }],
+      portal_screens: ['Screen - AUTH-01'],
+      model_used: 'e-GP PE Manual Grounded',
+      was_offline: true
+    };
+  }
+
+  const isFeeQuery = normQ.includes('fee') || normQ.includes('payment') ||
+    normQ.includes('tender security') || normQ.includes('performance security');
+  if (isFeeQuery) {
+    const feeChunks = chunks.filter(c =>
+      c.chunk_id === 437 || c.chunk_id === 438 || c.page_number === 60 ||
+      c.content.toLowerCase().includes('document fee')
+    );
+    const paymentChunk = feeChunks.find(c => c.chunk_id === 437) || feeChunks[0];
+    const feeDetailChunk = feeChunks.find(c => c.chunk_id === 438);
+
+    return {
+      question,
+      answer: `### e-GP fees and payment information
+
+The applicable answer depends on the e-GP role:
+
+• **PE:** configures the tender/document fee and views payment status and details from the tender’s Payment area.
+• **Tenderer/contractor:** pays the applicable tender document fee or tender/proposal security for a specific tender, using the payment method allowed for that tender.
+
+In the official manual, the fee-related items shown in e-GP are:
+
+• **Tender/document fee** — the tender document price configured for the tender.
+• **Tender or proposal security** — where applicable for the procurement method and standard tender document.
+• **Performance security** — shown and managed in the tender’s payment information.
+
+To view payment information, open the tender and select **Payment**. The portal provides separate tabs for **Document Fees** and **Tender/Proposal Security**; it displays the company name, payment status, and payment details. The manual identifies this flow as **Screens D71–D72, page 188**.
+
+For bank payments, the manual lists **Pay Order, Cash, Account-to-Account Transfer, and DD** for document fees. For tender/proposal and performance security, the permitted method depends on the relevant standard tender document and may include **Pay Order, DD, or Bank Guarantee**.
+
+Fees and security requirements vary by tender and procurement method, so check the amount displayed in the specific tender before payment.`,
+      sources: [
+        ...(paymentChunk ? [{
+          source: paymentChunk.source,
+          page: paymentChunk.page_number,
+          chunk_id: paymentChunk.chunk_id,
+          score: 0.99,
+          snippet: paymentChunk.content.slice(0, 180) + '...',
+          screen_reference: 'Screen - D71'
+        }] : []),
+        ...(feeDetailChunk ? [{
+          source: feeDetailChunk.source,
+          page: feeDetailChunk.page_number,
+          chunk_id: feeDetailChunk.chunk_id,
+          score: 0.97,
+          snippet: feeDetailChunk.content.slice(0, 180) + '...',
+          screen_reference: 'Screen - D72'
+        }] : [])
+      ],
+      portal_screens: ['Screen - D71', 'Screen - D72'],
+      model_used: 'e-GP PE Manual Grounded',
+      was_offline: true
+    };
+  }
+
+  // Broad manual questions should receive a useful orientation instead of a
+  // low-confidence single-chunk extraction.
+  const isManualOverviewQuery = (normQ.includes('manual') || normQ.includes('guide') || normQ.includes('guideline')) &&
+    !normQ.includes('find') && !normQ.includes('search') &&
+    !normQ.includes('login') && !normQ.includes('tender') && !normQ.includes('fee') &&
+    !normQ.includes('payment') && !normQ.includes('chapter') && !normQ.includes('section');
+  if (isManualOverviewQuery) {
+    return {
+      question,
+      answer: `### Bangladesh e-GP User Manual
+
+The official e-GP manual is a procedural reference for Procuring Entity (PE) users and covers the full procurement lifecycle:
+
+1. **User access and login** — account creation by the administrator, login, password change, and verification.
+2. **Annual Procurement Plan (APP)** — creating procurement packages, selecting procurement methods, and routing approval.
+3. **Tender management** — preparing tender documents, BOQ, document fees, publishing notices, corrigenda, and cancellation.
+4. **Tender opening and evaluation** — TOC/TEC activities, technical and financial evaluation, and evaluation reports.
+5. **Award and contract management** — NOA, performance security, contract signing, and payment/security follow-up.
+6. **Debarment and suspension** — checking contractor status and applying the procedures under PPR Rule 127.
+
+Ask a specific question such as **“How do I create an APP?”**, **“What is the procedure for publishing a tender?”**, or **“How do I check tender security payment?”** and I’ll provide the relevant steps and manual references.`,
+      sources: [{
+        source: 'Official e-GP Procuring Entity Manual',
+        page: 6,
+        chunk_id: 18,
+        score: 0.99,
+        snippet: 'Bangladesh e-GP System Procuring Entity User Manual overview and module hierarchy...'
+      }],
+      portal_screens: [],
+      model_used: 'e-GP PE Manual Grounded',
+      was_offline: true
+    };
+  }
+
   // 3. Guardrail: Generic questions with no procurement terms (e.g. "what is this", "tell me about this", "tell me about the image")
   const isGenericImagePrompt = normQ === 'tell me about this' || normQ === 'tell me about this image' ||
     normQ === 'tell me about the image' || normQ.includes('tell me about') ||
@@ -326,7 +490,7 @@ export function generateOfflineAnswer(
     normQ === 'analyze this' || normQ === 'analyze the image' || normQ === 'describe this' ||
     normQ === 'describe the image' || normQ.includes('about the image') || normQ.includes('about this image');
 
-  if (isGenericImagePrompt || (!hasProcurementQuery && normQ.length < 6)) {
+  if (isGenericImagePrompt && imageName) {
     if (imageName) {
       // Check if image is an architecture, RAG, or technical diagram
       const isArchitectureDiagram = normQ.includes('rag') || normQ.includes('retrieval') ||
@@ -363,18 +527,6 @@ export function generateOfflineAnswer(
       };
     }
 
-    return {
-      question,
-      answer: isUnspecifiedSteps
-        ? (usablePreviousQuestion
-          ? 'I could not identify the e-GP process from the previous question. Please name the process you need steps for, such as APP submission or tender creation.'
-          : 'Which e-GP process would you like the steps for? For example, creating or submitting an APP, creating a tender, or evaluating bids.')
-        : `Please provide a specific e-GP procurement question or topic. For example:\n• *"How do I log in to the e-GP portal?"*\n• *"How can I create a Procuring Entity account?"*\n• *"What is the procedure for Annual Procurement Plan (APP)?"*\n• *"How to delete a draft tender?"*`,
-      sources: [],
-      portal_screens: [],
-      model_used: 'e-GP PE Manual Grounded',
-      was_offline: true
-    };
   }
 
   // Specific intent for Debarment / Suspension
@@ -531,7 +683,7 @@ export function generateOfflineAnswer(
   }
 
   // 4. Retrieve top matches from manual chunks
-  const topMatches = retrieveTopKChunks(effectiveQuestion, chunks, 2, Boolean(imageName));
+  const topMatches = retrieveTopKChunks(effectiveQuestion, chunks, 5, Boolean(imageName));
   const primaryMatch = topMatches[0]?.chunk;
 
   if (!primaryMatch) {

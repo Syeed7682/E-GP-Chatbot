@@ -2,7 +2,7 @@
 Chat Schemas (app/schemas/chat.py).
 Defines request and response structures for the chat API.
 """
-from typing import List, Optional
+from typing import List, Optional, Union
 from pydantic import BaseModel, Field
 
 class ChatRequest(BaseModel):
@@ -13,7 +13,7 @@ class ChatRequest(BaseModel):
     image_base64: Optional[str] = Field(None, description="Alias for image base64")
     image_name: Optional[str] = Field(None, description="Optional uploaded image filename")
     image_mime: Optional[str] = Field("image/png", description="MIME type of the uploaded image")
-    top_k: Optional[int] = Field(3, description="Number of manual chunks to retrieve", ge=1, le=20)
+    top_k: Optional[int] = Field(5, description="Number of manual chunks to retrieve", ge=1, le=20)
     use_alt_model: bool = Field(False, description="Use the E2 Groq vision-language model")
     language: str = Field("en", pattern="^(en|bn)$", description="Response language: English or Bangla")
 
@@ -21,7 +21,7 @@ class SourceDocument(BaseModel):
     """Reference to a manual passage or supplemental Q&A entry."""
     source: str = Field("Official e-GP Procuring Entity Manual", description="Document name")
     page: Optional[int] = Field(None, description="Page number in official PDF, when applicable")
-    chunk_id: Optional[int] = Field(None, description="Unique indexed chunk, when applicable")
+    chunk_id: Optional[Union[int, str]] = Field(None, description="Unique indexed chunk, when applicable")
     score: float = Field(..., description="Relevance similarity score")
     snippet: str = Field(..., description="Representative excerpt text")
     screen_reference: Optional[str] = Field(None, description="Portal screen identifier (e.g. Screen - D50)")

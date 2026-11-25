@@ -89,7 +89,7 @@ QA_TOP_K = int(os.getenv("QA_TOP_K", "3"))
 VISUAL_TOP_K = int(os.getenv("VISUAL_TOP_K", "2"))
 BM25_TOP_K = int(os.getenv("BM25_TOP_K", "3"))
 RERANK_TOP_K = int(os.getenv("RERANK_TOP_K", "3"))
-FINAL_CONTEXT_K = int(os.getenv("FINAL_CONTEXT_K", "2"))
+FINAL_CONTEXT_K = int(os.getenv("FINAL_CONTEXT_K", "4"))
 
 # Active index version
 INDEX_VERSION = os.getenv("INDEX_VERSION", "active")
